@@ -1,0 +1,95 @@
+_schema-version: "3.1"
+ID: redigo-logistics-cockpit
+version: 1.2.0
+description: "Redigo Logistics Cockpit - SAP/WMS Integration Middleware"
+
+parameters:
+  enable-parallel-deployments: true
+
+modules:
+  # ─────────────────────────────────
+  # Approuter (UI entry point)
+  # ─────────────────────────────────
+  - name: redigo-approuter
+    type: approuter.nodejs
+    path: approuter
+    parameters:
+      disk-quota: 256M
+      memory: 256M
+    requires:
+      - name: redigo-uaa
+      - name: redigo-destination
+      - name: redigo-api
+        group: destinations
+        properties:
+          name: redigo-api
+          url: ~{url}
+          forwardAuthToken: true
+
+  # ─────────────────────────────────
+  # SAPUI5 Frontend (Static Content)
+  # ─────────────────────────────────
+  - name: redigo-ui
+    type: html5
+    path: webapp
+    parameters:
+      disk-quota: 256M
+      memory: 256M
+    build-parameters:
+      builder: custom
+      commands:
+        - echo "Static UI5 app - no build needed"
+
+  # ─────────────────────────────────
+  # Node.js Backend (API)
+  # ─────────────────────────────────
+  - name: redigo-api
+    type: nodejs
+    path: .
+    parameters:
+      disk-quota: 512M
+      memory: 512M
+    properties:
+      url: ${default-url}
+    provides:
+      - name: redigo-api
+        properties:
+          url: ${default-url}
+    requires:
+      - name: redigo-db
+      - name: redigo-uaa
+    build-parameters:
+      ignore:
+        - webapp/
+        - approuter/
+        - docs/
+        - tools/
+
+resources:
+  # ─────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────
+  - name: redigo-db
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: postgresql-db
+      service-plan: standard
+
+  # ─────────────────────────────────
+  # XSUAA (Authentication)
+  # ─────────────────────────────────
+  - name: redigo-uaa
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: xs-security.json
+
+  # ─────────────────────────────────
+  # Destination Service
+  # ─────────────────────────────────
+  - name: redigo-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite

@@ -1,0 +1,60 @@
+{
+  "_version": "1.65.0",
+  "sap.app": {
+    "id": "com.redigo.logistics.cockpit",
+    "type": "application",
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "applicationVersion": {
+      "version": "1.2.0"
+    },
+    "dataSources": {
+      "mainService": {
+        "uri": "/api/",
+        "type": "JSON"
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": false
+    }
+  },
+  "sap.ui5": {
+    "rootView": {
+      "viewName": "com.redigo.logistics.cockpit.view.App",
+      "type": "XML",
+      "id": "app",
+      "async": true
+    },
+    "dependencies": {
+      "minUI5Version": "1.120.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.ui.layout": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "com.redigo.logistics.cockpit.i18n.i18n",
+          "supportedLocales": ["", "tr"],
+          "fallbackLocale": "tr"
+        }
+      },
+      "": {
+        "type": "sap.ui.model.json.JSONModel",
+        "settings": {}
+      }
+    }
+  }
+}

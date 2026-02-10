@@ -1,0 +1,20 @@
+{
+  "folders": [
+    {
+      "path": "/Users/bb/Desktop/AntiGravity/RedigoLogisticsWizard",
+      "name": "RedigoLogisticsWizard"
+    },
+    {
+      "path": "/Users/bb/Desktop/TapoNVR",
+      "name": "TapoNVR"
+    },
+    {
+      "path": "/Users/bb/Desktop/RedigoLogisticsWizard-v1.2",
+      "name": "RedigoLogisticsWizard-v1.2"
+    }
+  ],
+  "settings": {
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true
+  }
+}

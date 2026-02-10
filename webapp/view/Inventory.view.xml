@@ -1,0 +1,93 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.Inventory"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m">
+
+  <Page title="{i18n>invTitle}" showNavButton="false">
+
+    <headerContent>
+      <Button icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
+    </headerContent>
+
+    <subHeader>
+      <OverflowToolbar>
+        <SearchField width="300px" placeholder="Search by material or action..." liveChange="onSearch" />
+        <ToolbarSpacer />
+        <Select id="warehouseFilter" change="onFilterChange">
+          <core:Item xmlns:core="sap.ui.core" key="ALL" text="All Warehouses" />
+        </Select>
+        <ObjectStatus text="{inv>/count} movements" state="Information" />
+      </OverflowToolbar>
+    </subHeader>
+
+    <content>
+      <!-- Movement Mappings Summary -->
+      <Panel headerText="Active Movement Mappings" class="sapUiSmallMargin">
+        <Table items="{inv>/mappings}" mode="None">
+          <columns>
+            <Column><Text text="{i18n>invWarehouse}" /></Column>
+            <Column><Text text="{i18n>invAction}" /></Column>
+            <Column><Text text="{i18n>invSAPMvtType}" /></Column>
+            <Column><Text text="Description" /></Column>
+            <Column><Text text="Target Plant" /></Column>
+            <Column><Text text="Target SLoc" /></Column>
+          </columns>
+          <items>
+            <ColumnListItem>
+              <cells>
+                <Text text="{inv>warehouse_code}" />
+                <ObjectStatus text="{inv>wms_action_code}" state="Information" />
+                <ObjectNumber number="{inv>sap_movement_type}" emphasized="true" />
+                <Text text="{inv>description}" />
+                <Text text="{inv>sap_to_plant}" />
+                <Text text="{inv>sap_to_stor_loc}" />
+              </cells>
+            </ColumnListItem>
+          </items>
+        </Table>
+      </Panel>
+
+      <!-- Recent Inventory Transactions -->
+      <Panel headerText="Recent Inventory Movements" class="sapUiSmallMargin">
+        <Table
+          id="invTxTable"
+          items="{inv>/transactions}"
+          growing="true"
+          growingThreshold="25">
+
+          <columns>
+            <Column><Text text="{i18n>invAction}" /></Column>
+            <Column><Text text="{i18n>invMaterial}" /></Column>
+            <Column hAlign="End"><Text text="{i18n>invQuantity}" /></Column>
+            <Column><Text text="{i18n>invSAPMvtType}" /></Column>
+            <Column><Text text="{i18n>invWarehouse}" /></Column>
+            <Column><Text text="{i18n>txStatus}" /></Column>
+            <Column><Text text="SAP Doc" /></Column>
+            <Column><Text text="Timestamp" /></Column>
+          </columns>
+
+          <items>
+            <ColumnListItem
+              highlight="{= ${inv>status} === 'SUCCESS' ? 'Success' : ${inv>status} === 'FAILED' ? 'Error' : 'None'}">
+              <cells>
+                <Text text="{inv>action}" />
+                <Text text="{inv>material}" />
+                <ObjectNumber number="{inv>quantity}" unit="{inv>uom}" />
+                <ObjectNumber number="{inv>sap_movement_type}" emphasized="true" />
+                <Text text="{inv>warehouse_code}" />
+                <ObjectStatus text="{inv>status}"
+                  state="{= ${inv>status} === 'SUCCESS' ? 'Success' : ${inv>status} === 'FAILED' ? 'Error' : 'Warning'}" />
+                <Text text="{inv>sap_doc_number}" />
+                <Text text="{inv>created_at_fmt}" />
+              </cells>
+            </ColumnListItem>
+          </items>
+
+        </Table>
+      </Panel>
+
+    </content>
+
+  </Page>
+
+</mvc:View>

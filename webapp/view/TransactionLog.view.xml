@@ -1,0 +1,81 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.TransactionLog"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m">
+
+  <Page title="{i18n>txTitle}" showNavButton="false">
+
+    <headerContent>
+      <Button icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
+    </headerContent>
+
+    <subHeader>
+      <OverflowToolbar>
+        <SearchField width="300px" placeholder="Search by action or delivery..." liveChange="onSearch" />
+        <ToolbarSpacer />
+        <Select id="directionFilter" change="onFilterChange">
+          <core:Item xmlns:core="sap.ui.core" key="ALL" text="All Directions" />
+          <core:Item xmlns:core="sap.ui.core" key="SAP_TO_WMS" text="SAP → WMS" />
+          <core:Item xmlns:core="sap.ui.core" key="WMS_TO_SAP" text="WMS → SAP" />
+        </Select>
+        <Select id="statusFilter" change="onFilterChange">
+          <core:Item xmlns:core="sap.ui.core" key="ALL" text="All Status" />
+          <core:Item xmlns:core="sap.ui.core" key="PENDING" text="Pending" />
+          <core:Item xmlns:core="sap.ui.core" key="SUCCESS" text="Success" />
+          <core:Item xmlns:core="sap.ui.core" key="FAILED" text="Failed" />
+          <core:Item xmlns:core="sap.ui.core" key="RETRYING" text="Retrying" />
+          <core:Item xmlns:core="sap.ui.core" key="DEAD" text="Dead (DLQ)" />
+        </Select>
+        <ObjectStatus text="{txLog>/count} transactions" state="Information" />
+      </OverflowToolbar>
+    </subHeader>
+
+    <content>
+      <Table
+        id="txTable"
+        items="{txLog>/data}"
+        growing="true"
+        growingThreshold="50"
+        growingScrollToLoad="true">
+
+        <columns>
+          <Column width="130px"><Text text="{i18n>txAction}" /></Column>
+          <Column width="100px"><Text text="{i18n>txDirection}" /></Column>
+          <Column width="100px"><Text text="{i18n>txStatus}" /></Column>
+          <Column width="150px"><Text text="{i18n>txSAPFunction}" /></Column>
+          <Column width="100px"><Text text="SAP Doc" /></Column>
+          <Column width="80px" hAlign="End"><Text text="{i18n>txDuration}" /></Column>
+          <Column width="60px" hAlign="Center"><Text text="{i18n>txRetryCount}" /></Column>
+          <Column><Text text="{i18n>txStarted}" /></Column>
+          <Column><Text text="{i18n>txError}" /></Column>
+        </columns>
+
+        <items>
+          <ColumnListItem
+            highlight="{= ${txLog>status} === 'SUCCESS' ? 'Success' : ${txLog>status} === 'FAILED' || ${txLog>status} === 'DEAD' ? 'Error' : ${txLog>status} === 'RETRYING' ? 'Warning' : 'None'}"
+            type="Active"
+            press="onTxPress">
+            <cells>
+              <Text text="{txLog>action}" />
+              <ObjectStatus
+                text="{txLog>direction}"
+                state="{= ${txLog>direction} === 'SAP_TO_WMS' ? 'Information' : 'Success'}" />
+              <ObjectStatus
+                text="{txLog>status}"
+                state="{= ${txLog>status} === 'SUCCESS' ? 'Success' : ${txLog>status} === 'FAILED' || ${txLog>status} === 'DEAD' ? 'Error' : ${txLog>status} === 'RETRYING' ? 'Warning' : 'None'}" />
+              <Text text="{txLog>sap_function}" />
+              <Text text="{txLog>sap_doc_number}" />
+              <ObjectNumber number="{txLog>duration_ms}" unit="ms" />
+              <ObjectNumber number="{txLog>retry_count}" />
+              <Text text="{txLog>started_at_fmt}" />
+              <Text text="{txLog>error_message}" maxLines="1" />
+            </cells>
+          </ColumnListItem>
+        </items>
+
+      </Table>
+    </content>
+
+  </Page>
+
+</mvc:View>

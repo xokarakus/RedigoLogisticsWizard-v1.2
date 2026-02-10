@@ -1,0 +1,154 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.WorkOrderDetail"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  xmlns:l="sap.ui.layout"
+  xmlns:f="sap.ui.layout.form">
+
+  <Page title="Work Order: {detail>/sap_delivery_no}" showNavButton="true" navButtonPress="onNavBack">
+
+    <headerContent>
+      <ObjectStatus
+        text="{detail>/status}"
+        state="{= ${detail>/status} === 'PGI_POSTED' || ${detail>/status} === 'GR_POSTED' ? 'Success' : ${detail>/status} === 'FAILED' ? 'Error' : 'Warning'}" />
+      <Button text="Send to WMS" icon="sap-icon://outbox" press="onSendToWMS" type="Emphasized"
+        visible="{= ${detail>/status} === 'RECEIVED'}" />
+    </headerContent>
+
+    <content>
+      <IconTabBar id="detailTabs" expandable="false">
+
+        <!-- TAB 1: Overview -->
+        <items>
+          <IconTabFilter text="Overview" icon="sap-icon://hint" key="overview">
+            <l:Grid defaultSpan="XL6 L6 M12 S12" class="sapUiSmallMarginTop">
+
+              <!-- SAP Info -->
+              <Panel headerText="{i18n>wodSAPInfo}">
+                <f:SimpleForm editable="false" layout="ResponsiveGridLayout" columnsL="2" columnsM="1">
+                  <Label text="{i18n>woDeliveryNo}" />
+                  <Text text="{detail>/sap_delivery_no}" />
+                  <Label text="Delivery Type" />
+                  <Text text="{detail>/sap_delivery_type}" />
+                  <Label text="Document Date" />
+                  <Text text="{detail>/sap_doc_date}" />
+                  <Label text="Ship-To" />
+                  <Text text="{detail>/sap_ship_to}" />
+                  <Label text="Sold-To" />
+                  <Text text="{detail>/sap_sold_to}" />
+                  <Label text="{i18n>woType}" />
+                  <ObjectStatus text="{detail>/order_type}"
+                    state="{= ${detail>/order_type} === 'OUTBOUND' ? 'Information' : 'Success'}" />
+                </f:SimpleForm>
+              </Panel>
+
+              <!-- WMS Info -->
+              <Panel headerText="{i18n>wodWMSInfo}">
+                <f:SimpleForm editable="false" layout="ResponsiveGridLayout" columnsL="2" columnsM="1">
+                  <Label text="WMS Order ID" />
+                  <Text text="{detail>/wms_order_id}" />
+                  <Label text="{i18n>woWarehouse}" />
+                  <Text text="{detail>/warehouse_code}" />
+                  <Label text="Received At" />
+                  <Text text="{detail>/received_at_fmt}" />
+                  <Label text="Sent to WMS At" />
+                  <Text text="{detail>/sent_to_wms_at_fmt}" />
+                  <Label text="Completed At" />
+                  <Text text="{detail>/completed_at_fmt}" />
+                  <Label text="SAP Posted At" />
+                  <Text text="{detail>/sap_posted_at_fmt}" />
+                </f:SimpleForm>
+              </Panel>
+
+            </l:Grid>
+          </IconTabFilter>
+
+          <!-- TAB 2: Lines -->
+          <IconTabFilter text="{i18n>wodLines}" icon="sap-icon://list" key="lines"
+            count="{detail>/lineCount}">
+            <Table items="{detail>/lines}">
+              <columns>
+                <Column><Text text="Item" /></Column>
+                <Column><Text text="{i18n>wodMaterial}" /></Column>
+                <Column><Text text="{i18n>wodBatch}" /></Column>
+                <Column hAlign="End"><Text text="{i18n>wodRequestedQty}" /></Column>
+                <Column hAlign="End"><Text text="{i18n>wodPickedQty}" /></Column>
+                <Column hAlign="End"><Text text="{i18n>wodFinalQty}" /></Column>
+                <Column><Text text="{i18n>wodUoM}" /></Column>
+                <Column hAlign="Center"><Text text="{i18n>wodClosed}" /></Column>
+                <Column><Text text="HU / Serial" /></Column>
+              </columns>
+              <items>
+                <ColumnListItem
+                  highlight="{= ${detail>wms_picked_qty} &lt; ${detail>sap_requested_qty} ? 'Warning' : 'Success'}">
+                  <cells>
+                    <Text text="{detail>sap_item_no}" />
+                    <ObjectIdentifier title="{detail>sap_material}" />
+                    <Text text="{detail>sap_batch}" />
+                    <ObjectNumber number="{detail>sap_requested_qty}" unit="{detail>sap_uom}" />
+                    <ObjectNumber
+                      number="{detail>wms_picked_qty}"
+                      state="{= ${detail>wms_picked_qty} &lt; ${detail>sap_requested_qty} ? 'Warning' : 'Success'}" />
+                    <ObjectNumber number="{detail>sap_final_qty}" />
+                    <Text text="{detail>wms_uom}" />
+                    <core:Icon src="{= ${detail>is_closed} ? 'sap-icon://accept' : 'sap-icon://border'}"
+                      color="{= ${detail>is_closed} ? '#2b7c2b' : '#999'}" />
+                    <Text text="{detail>hu_serial_info}" />
+                  </cells>
+                </ColumnListItem>
+              </items>
+            </Table>
+          </IconTabFilter>
+
+          <!-- TAB 3: Transaction History -->
+          <IconTabFilter text="Transactions" icon="sap-icon://activity-items" key="transactions"
+            count="{detail>/txCount}">
+            <Table items="{detail>/transactions}">
+              <columns>
+                <Column><Text text="{i18n>txAction}" /></Column>
+                <Column><Text text="{i18n>txDirection}" /></Column>
+                <Column><Text text="{i18n>txStatus}" /></Column>
+                <Column><Text text="{i18n>txSAPFunction}" /></Column>
+                <Column><Text text="{i18n>txDuration}" /></Column>
+                <Column><Text text="{i18n>txRetryCount}" /></Column>
+                <Column><Text text="{i18n>txStarted}" /></Column>
+                <Column><Text text="{i18n>txError}" /></Column>
+              </columns>
+              <items>
+                <ColumnListItem>
+                  <cells>
+                    <Text text="{detail>action}" />
+                    <Text text="{detail>direction}" />
+                    <ObjectStatus text="{detail>status}"
+                      state="{= ${detail>status} === 'SUCCESS' ? 'Success' : ${detail>status} === 'FAILED' || ${detail>status} === 'DEAD' ? 'Error' : 'Warning'}" />
+                    <Text text="{detail>sap_function}" />
+                    <ObjectNumber number="{detail>duration_ms}" unit="ms" />
+                    <ObjectNumber number="{detail>retry_count}" />
+                    <Text text="{detail>started_at_fmt}" />
+                    <Text text="{detail>error_message}" maxLines="2" />
+                  </cells>
+                </ColumnListItem>
+              </items>
+            </Table>
+          </IconTabFilter>
+
+          <!-- TAB 4: Raw Payloads -->
+          <IconTabFilter text="Raw Data" icon="sap-icon://syntax" key="raw">
+            <l:Grid defaultSpan="XL6 L6 M12 S12">
+              <Panel headerText="SAP Raw Payload">
+                <TextArea value="{detail>/sap_raw_payload_str}" rows="20" width="100%" editable="false" growing="true" />
+              </Panel>
+              <Panel headerText="WMS Raw Payload">
+                <TextArea value="{detail>/wms_raw_payload_str}" rows="20" width="100%" editable="false" growing="true" />
+              </Panel>
+            </l:Grid>
+          </IconTabFilter>
+
+        </items>
+      </IconTabBar>
+    </content>
+
+  </Page>
+
+</mvc:View>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redigo Logistics Cockpit</title>
+  <style>
+    .errBox { padding: 20px; margin: 20px; background: #fff3f3; border: 2px solid #cc0000; border-radius: 8px; font-family: monospace; font-size: 13px; color: #cc0000; white-space: pre-wrap; }
+    #loadMsg { padding: 40px; font-family: Arial; color: #555; }
+  </style>
+  <script>
+    window.onerror = function(msg, url, line) {
+      document.body.insertAdjacentHTML("beforeend", '<div class="errBox">JS Error: ' + msg + '\n' + url + ':' + line + '</div>');
+    };
+  </script>
+  <script
+    id="sap-ui-bootstrap"
+    src="https://ui5.sap.com/resources/sap-ui-core.js"
+    data-sap-ui-theme="sap_horizon"
+    data-sap-ui-language="tr"
+    data-sap-ui-resourceroots='{"com.redigo.logistics.cockpit": "./"}'
+    data-sap-ui-compatVersion="edge"
+    data-sap-ui-async="true"
+    data-sap-ui-libs="sap.m,sap.ui.layout"
+  ></script>
+  <script>
+    function showErr(msg) {
+      document.body.insertAdjacentHTML("beforeend", '<div class="errBox">' + msg + '</div>');
+    }
+    sap.ui.require([
+      "sap/ui/core/Component",
+      "sap/ui/core/ComponentContainer"
+    ], function (Component, ComponentContainer) {
+      document.getElementById("loadMsg").textContent = "Component olusturuluyor...";
+      Component.create({
+        name: "com.redigo.logistics.cockpit"
+      }).then(function (oComponent) {
+        document.getElementById("loadMsg").textContent = "Component OK, rendering...";
+        new ComponentContainer({
+          component: oComponent,
+          height: "100%"
+        }).placeAt("content");
+      }).catch(function (err) {
+        showErr("Component.create FAILED:\n" + err.message + "\n\n" + (err.stack || ""));
+      });
+    });
+  </script>
+</head>
+<body class="sapUiBody sapUiSizeCompact" id="content">
+  <div id="loadMsg">SAPUI5 yukleniyor...</div>
+</body>
+</html>

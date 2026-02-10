@@ -1,0 +1,113 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.Configuration"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  xmlns:l="sap.ui.layout"
+  xmlns:f="sap.ui.layout.form">
+
+  <Page title="{i18n>cfgTitle}" showNavButton="false">
+
+    <content>
+      <IconTabBar expandable="false">
+        <items>
+
+          <!-- TAB 1: Warehouses -->
+          <IconTabFilter text="{i18n>cfgWarehouses}" icon="sap-icon://factory" key="warehouses"
+            count="{cfg>/warehouseCount}">
+
+            <OverflowToolbar>
+              <Title text="{i18n>cfgWarehouses}" level="H5" />
+              <ToolbarSpacer />
+              <Button text="Add Warehouse" icon="sap-icon://add" press="onAddWarehouse" type="Emphasized" />
+            </OverflowToolbar>
+
+            <Table id="warehouseTable" items="{cfg>/warehouses}" mode="None">
+              <columns>
+                <Column><Text text="{i18n>cfgCode}" /></Column>
+                <Column><Text text="{i18n>cfgName}" /></Column>
+                <Column><Text text="{i18n>cfgPlant}" /></Column>
+                <Column><Text text="{i18n>cfgStorLoc}" /></Column>
+                <Column><Text text="{i18n>cfgWMSCode}" /></Column>
+                <Column><Text text="{i18n>cfgProvider}" /></Column>
+                <Column hAlign="Center"><Text text="{i18n>cfgActive}" /></Column>
+                <Column width="150px" hAlign="Center"><Text text="Actions" /></Column>
+              </columns>
+              <items>
+                <ColumnListItem>
+                  <cells>
+                    <Text text="{cfg>code}" />
+                    <Text text="{cfg>name}" />
+                    <Text text="{cfg>sap_plant}" />
+                    <Text text="{cfg>sap_stor_loc}" />
+                    <Text text="{cfg>wms_code}" />
+                    <ObjectStatus text="{cfg>wms_provider}" state="Information" />
+                    <core:Icon
+                      src="{= ${cfg>is_active} ? 'sap-icon://accept' : 'sap-icon://decline'}"
+                      color="{= ${cfg>is_active} ? '#2b7c2b' : '#cc0000'}" />
+                    <HBox justifyContent="Center">
+                      <Button icon="sap-icon://edit" press="onEditWarehouse" type="Transparent" />
+                      <Button icon="sap-icon://inventory" text="{i18n>cfgArchive}" press="onArchiveWarehouse"
+                        type="Transparent" visible="{cfg>is_active}" />
+                    </HBox>
+                  </cells>
+                </ColumnListItem>
+              </items>
+            </Table>
+          </IconTabFilter>
+
+          <!-- TAB 2: Movement Mappings -->
+          <IconTabFilter text="{i18n>cfgMappings}" icon="sap-icon://transfer" key="mappings"
+            count="{cfg>/mappingCount}">
+
+            <OverflowToolbar>
+              <Title text="{i18n>cfgMappings}" level="H5" />
+              <ToolbarSpacer />
+              <Button text="Add Mapping" icon="sap-icon://add" press="onAddMapping" type="Emphasized" />
+            </OverflowToolbar>
+
+            <Table id="mappingTable" items="{cfg>/mappings}" mode="None">
+              <columns>
+                <Column><Text text="{i18n>invWarehouse}" /></Column>
+                <Column><Text text="WMS Action" /></Column>
+                <Column><Text text="SAP Mvt Type" /></Column>
+                <Column><Text text="Override Plant" /></Column>
+                <Column><Text text="Override SLoc" /></Column>
+                <Column><Text text="To Plant" /></Column>
+                <Column><Text text="To SLoc" /></Column>
+                <Column><Text text="Description" /></Column>
+                <Column hAlign="Center"><Text text="{i18n>cfgActive}" /></Column>
+                <Column width="150px" hAlign="Center"><Text text="Actions" /></Column>
+              </columns>
+              <items>
+                <ColumnListItem>
+                  <cells>
+                    <Text text="{cfg>warehouse_code}" />
+                    <ObjectStatus text="{cfg>wms_action_code}" state="Information" />
+                    <ObjectNumber number="{cfg>sap_movement_type}" emphasized="true" />
+                    <Text text="{cfg>sap_plant}" />
+                    <Text text="{cfg>sap_stor_loc}" />
+                    <Text text="{cfg>sap_to_plant}" />
+                    <Text text="{cfg>sap_to_stor_loc}" />
+                    <Text text="{cfg>description}" />
+                    <core:Icon
+                      src="{= ${cfg>is_active} ? 'sap-icon://accept' : 'sap-icon://decline'}"
+                      color="{= ${cfg>is_active} ? '#2b7c2b' : '#cc0000'}" />
+                    <HBox justifyContent="Center">
+                      <Button icon="sap-icon://edit" press="onEditMapping" type="Transparent" />
+                      <Button icon="sap-icon://inventory" text="{i18n>cfgArchive}" press="onArchiveMapping"
+                        type="Transparent" visible="{cfg>is_active}" />
+                    </HBox>
+                  </cells>
+                </ColumnListItem>
+              </items>
+            </Table>
+          </IconTabFilter>
+
+        </items>
+      </IconTabBar>
+    </content>
+
+  </Page>
+
+</mvc:View>

@@ -1,0 +1,152 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.Dashboard"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:l="sap.ui.layout">
+
+  <Page title="{i18n>dashTitle}" showNavButton="false">
+
+    <headerContent>
+      <Button icon="sap-icon://refresh" text="{i18n>btnRefresh}" press="onRefreshDashboard" type="Emphasized" />
+    </headerContent>
+
+    <content>
+      <!-- KPI Tiles Row 1 -->
+      <HBox wrap="Wrap" class="sapUiSmallMarginTop sapUiSmallMarginBegin">
+
+        <GenericTile
+          header="{i18n>dashTotalOrders}"
+          subheader="all time"
+          press="onTilePress"
+          class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+          <TileContent>
+            <NumericContent value="{dashboard>/totalOrders}" icon="sap-icon://shipping-status" />
+          </TileContent>
+        </GenericTile>
+
+        <GenericTile
+          header="{i18n>dashInProgress}"
+          subheader="active now"
+          press="onTilePress"
+          class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+          <TileContent>
+            <NumericContent value="{dashboard>/inProgress}" icon="sap-icon://process" valueColor="Critical" />
+          </TileContent>
+        </GenericTile>
+
+        <GenericTile
+          header="{i18n>dashCompleted}"
+          subheader="today"
+          press="onTilePress"
+          class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+          <TileContent>
+            <NumericContent value="{dashboard>/completedToday}" icon="sap-icon://accept" valueColor="Good" />
+          </TileContent>
+        </GenericTile>
+
+        <GenericTile
+          header="{i18n>dashFailed}"
+          subheader="errors"
+          state="{= ${dashboard>/failedCount} > 0 ? 'Loaded' : 'Loaded'}"
+          press="onTilePress"
+          class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+          <TileContent>
+            <NumericContent value="{dashboard>/failedCount}" icon="sap-icon://alert"
+              valueColor="{= ${dashboard>/failedCount} > 0 ? 'Error' : 'Good'}" />
+          </TileContent>
+        </GenericTile>
+
+      </HBox>
+
+      <!-- KPI Tiles Row 2 -->
+      <HBox wrap="Wrap" class="sapUiSmallMarginBegin">
+
+        <GenericTile
+          header="{i18n>dashTodayIngest}"
+          subheader="ingested"
+          class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+          <TileContent>
+            <NumericContent value="{dashboard>/todayIngest}" icon="sap-icon://incoming-call" />
+          </TileContent>
+        </GenericTile>
+
+        <GenericTile
+          header="{i18n>dashPendingSAP}"
+          subheader="awaiting SAP"
+          class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+          <TileContent>
+            <NumericContent value="{dashboard>/pendingSAP}" icon="sap-icon://time-entry-request" valueColor="Critical" />
+          </TileContent>
+        </GenericTile>
+
+        <GenericTile
+          header="{i18n>dashDLQCount}"
+          subheader="dead letters"
+          class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+          <TileContent>
+            <NumericContent value="{dashboard>/dlqCount}" icon="sap-icon://warning2"
+              valueColor="{= ${dashboard>/dlqCount} > 0 ? 'Error' : 'Good'}" />
+          </TileContent>
+        </GenericTile>
+
+        <GenericTile
+          header="{i18n>dashAvgLatency}"
+          subheader="milliseconds"
+          class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+          <TileContent>
+            <NumericContent value="{dashboard>/avgLatency}" scale="ms" icon="sap-icon://latency" />
+          </TileContent>
+        </GenericTile>
+
+      </HBox>
+
+      <!-- Recent Work Orders Table -->
+      <Panel headerText="Recent Work Orders" class="sapUiSmallMarginTop sapUiSmallMargin">
+        <Table
+          id="recentOrdersTable"
+          items="{dashboard>/recentOrders}"
+          growing="true"
+          growingThreshold="10"
+          mode="SingleSelectMaster"
+          selectionChange="onOrderSelect">
+
+          <headerToolbar>
+            <OverflowToolbar>
+              <Title text="Last 24 Hours" level="H5" />
+              <ToolbarSpacer />
+              <SearchField width="250px" placeholder="{i18n>btnSearch}" liveChange="onSearchOrders" />
+            </OverflowToolbar>
+          </headerToolbar>
+
+          <columns>
+            <Column><Text text="{i18n>woDeliveryNo}" /></Column>
+            <Column><Text text="{i18n>woType}" /></Column>
+            <Column><Text text="{i18n>woStatus}" /></Column>
+            <Column><Text text="{i18n>woWarehouse}" /></Column>
+            <Column><Text text="{i18n>woLines}" /></Column>
+            <Column><Text text="{i18n>woReceivedAt}" /></Column>
+          </columns>
+
+          <items>
+            <ColumnListItem type="Navigation" press="onOrderPress">
+              <cells>
+                <ObjectIdentifier title="{dashboard>sap_delivery_no}" text="{dashboard>sap_delivery_type}" />
+                <ObjectStatus
+                  text="{dashboard>order_type}"
+                  state="{= ${dashboard>order_type} === 'OUTBOUND' ? 'Information' : 'Success'}" />
+                <ObjectStatus
+                  text="{dashboard>status}"
+                  state="{= ${dashboard>status} === 'COMPLETED' || ${dashboard>status} === 'PGI_POSTED' || ${dashboard>status} === 'GR_POSTED' ? 'Success' : ${dashboard>status} === 'FAILED' ? 'Error' : ${dashboard>status} === 'IN_PROGRESS' ? 'Warning' : 'None'}" />
+                <Text text="{dashboard>warehouse_code}" />
+                <Text text="{dashboard>line_count}" />
+                <Text text="{dashboard>received_at_formatted}" />
+              </cells>
+            </ColumnListItem>
+          </items>
+        </Table>
+      </Panel>
+
+    </content>
+  </Page>
+
+</mvc:View>

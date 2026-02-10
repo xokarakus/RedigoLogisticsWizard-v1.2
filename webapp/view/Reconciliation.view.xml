@@ -1,0 +1,59 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.Reconciliation"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m">
+
+  <Page title="{i18n>recTitle}" showNavButton="false">
+
+    <headerContent>
+      <Button text="{i18n>recRunNow}" icon="sap-icon://synchronize" press="onRunNow" type="Emphasized" />
+      <Button icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
+    </headerContent>
+
+    <content>
+      <Table
+        id="recTable"
+        items="{recon>/data}"
+        growing="true"
+        growingThreshold="20">
+
+        <columns>
+          <Column width="120px"><Text text="{i18n>recRunDate}" /></Column>
+          <Column width="120px"><Text text="{i18n>recWarehouse}" /></Column>
+          <Column width="100px" hAlign="End"><Text text="{i18n>recSAPOpen}" /></Column>
+          <Column width="100px" hAlign="End"><Text text="{i18n>recWMSOpen}" /></Column>
+          <Column width="120px" hAlign="End"><Text text="{i18n>recDiscrepancies}" /></Column>
+          <Column width="100px"><Text text="{i18n>recStatus}" /></Column>
+          <Column><Text text="Reviewed By" /></Column>
+          <Column width="150px" hAlign="Center"><Text text="Actions" /></Column>
+        </columns>
+
+        <items>
+          <ColumnListItem
+            highlight="{= ${recon>discrepancy_count} > 0 ? 'Error' : 'Success'}">
+            <cells>
+              <Text text="{recon>run_date}" />
+              <Text text="{recon>warehouse_code}" />
+              <ObjectNumber number="{recon>total_sap_open}" />
+              <ObjectNumber number="{recon>total_wms_open}" />
+              <ObjectNumber
+                number="{recon>discrepancy_count}"
+                state="{= ${recon>discrepancy_count} > 0 ? 'Error' : 'Success'}" />
+              <ObjectStatus text="{recon>status}"
+                state="{= ${recon>status} === 'REVIEWED' ? 'Success' : ${recon>status} === 'COMPLETED' ? 'Warning' : 'None'}" />
+              <Text text="{recon>reviewed_by}" />
+              <HBox justifyContent="Center">
+                <Button text="Details" icon="sap-icon://detail-view" press="onViewDetails" type="Transparent" />
+                <Button text="Mark Reviewed" press="onMarkReviewed" type="Transparent"
+                  visible="{= ${recon>status} !== 'REVIEWED'}" />
+              </HBox>
+            </cells>
+          </ColumnListItem>
+        </items>
+
+      </Table>
+    </content>
+
+  </Page>
+
+</mvc:View>

@@ -1,0 +1,45 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.App"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  height="100%">
+
+  <SplitApp id="splitApp">
+    <masterPages>
+      <Page title="Redigo v1.2">
+        <List id="navList" itemPress="onNavSelect">
+          <StandardListItem title="{i18n>navDashboard}" icon="sap-icon://home" type="Active">
+            <customData><core:CustomData key="target" value="dashboard" /></customData>
+          </StandardListItem>
+          <StandardListItem title="{i18n>navWorkOrders}" icon="sap-icon://shipping-status" type="Active">
+            <customData><core:CustomData key="target" value="workOrders" /></customData>
+          </StandardListItem>
+          <StandardListItem title="{i18n>navInventory}" icon="sap-icon://inventory" type="Active">
+            <customData><core:CustomData key="target" value="inventory" /></customData>
+          </StandardListItem>
+          <StandardListItem title="{i18n>navTransactions}" icon="sap-icon://activity-items" type="Active">
+            <customData><core:CustomData key="target" value="transactionLog" /></customData>
+          </StandardListItem>
+          <StandardListItem title="{i18n>navDLQ}" icon="sap-icon://warning2" type="Active">
+            <customData><core:CustomData key="target" value="dlq" /></customData>
+          </StandardListItem>
+          <StandardListItem title="{i18n>navReconciliation}" icon="sap-icon://compare-2" type="Active">
+            <customData><core:CustomData key="target" value="reconciliation" /></customData>
+          </StandardListItem>
+          <StandardListItem title="{i18n>navConfiguration}" icon="sap-icon://action-settings" type="Active">
+            <customData><core:CustomData key="target" value="configuration" /></customData>
+          </StandardListItem>
+        </List>
+      </Page>
+    </masterPages>
+    <detailPages>
+      <Page id="emptyPage" showHeader="false">
+        <content>
+          <BusyIndicator size="44px" class="sapUiMediumMarginTop" />
+        </content>
+      </Page>
+    </detailPages>
+  </SplitApp>
+
+</mvc:View>

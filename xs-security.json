@@ -1,0 +1,49 @@
+{
+  "xsappname": "redigo-logistics-cockpit",
+  "tenant-mode": "dedicated",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.Admin",
+      "description": "Full admin access"
+    },
+    {
+      "name": "$XSAPPNAME.Operator",
+      "description": "Operations: view orders, replay DLQ"
+    },
+    {
+      "name": "$XSAPPNAME.Viewer",
+      "description": "Read-only access"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "RedigoAdmin",
+      "description": "Admin role",
+      "scope-references": ["$XSAPPNAME.Admin"]
+    },
+    {
+      "name": "RedigoOperator",
+      "description": "Operator role",
+      "scope-references": ["$XSAPPNAME.Operator"]
+    },
+    {
+      "name": "RedigoViewer",
+      "description": "Viewer role",
+      "scope-references": ["$XSAPPNAME.Viewer"]
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "Redigo Admin",
+      "role-template-references": ["$XSAPPNAME.RedigoAdmin"]
+    },
+    {
+      "name": "Redigo Operator",
+      "role-template-references": ["$XSAPPNAME.RedigoOperator"]
+    },
+    {
+      "name": "Redigo Viewer",
+      "role-template-references": ["$XSAPPNAME.RedigoViewer"]
+    }
+  ]
+}

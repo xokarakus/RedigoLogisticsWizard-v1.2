@@ -1,0 +1,92 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.WorkOrders"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:l="sap.ui.layout">
+
+  <Page title="{i18n>woTitle}" showNavButton="false">
+
+    <headerContent>
+      <SegmentedButton id="typeFilter" selectionChange="onTypeFilterChange">
+        <items>
+          <SegmentedButtonItem text="{i18n>woFilterAll}" key="ALL" />
+          <SegmentedButtonItem text="{i18n>woOutbound}" key="OUTBOUND" />
+          <SegmentedButtonItem text="{i18n>woInbound}" key="INBOUND" />
+        </items>
+      </SegmentedButton>
+      <Button icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
+      <Button icon="sap-icon://excel-attachment" text="{i18n>btnExport}" press="onExport" type="Transparent" />
+    </headerContent>
+
+    <subHeader>
+      <OverflowToolbar>
+        <SearchField width="300px" placeholder="Search by Delivery No..." liveChange="onSearch" />
+        <ToolbarSpacer />
+        <Select id="statusFilter" change="onStatusFilterChange">
+          <core:Item xmlns:core="sap.ui.core" key="ALL" text="{i18n>woFilterAll}" />
+          <core:Item xmlns:core="sap.ui.core" key="RECEIVED" text="Received" />
+          <core:Item xmlns:core="sap.ui.core" key="SENT_TO_WMS" text="Sent to WMS" />
+          <core:Item xmlns:core="sap.ui.core" key="IN_PROGRESS" text="In Progress" />
+          <core:Item xmlns:core="sap.ui.core" key="PARTIALLY_DONE" text="Partially Done" />
+          <core:Item xmlns:core="sap.ui.core" key="COMPLETED" text="Completed" />
+          <core:Item xmlns:core="sap.ui.core" key="PGI_POSTED" text="PGI Posted" />
+          <core:Item xmlns:core="sap.ui.core" key="GR_POSTED" text="GR Posted" />
+          <core:Item xmlns:core="sap.ui.core" key="FAILED" text="Failed" />
+        </Select>
+        <ObjectStatus text="{workOrders>/count} orders" state="Information" />
+      </OverflowToolbar>
+    </subHeader>
+
+    <content>
+      <Table
+        id="workOrdersTable"
+        items="{workOrders>/data}"
+        growing="true"
+        growingThreshold="25"
+        growingScrollToLoad="true"
+        mode="SingleSelectMaster"
+        selectionChange="onRowSelect">
+
+        <columns>
+          <Column width="140px"><Text text="{i18n>woDeliveryNo}" /></Column>
+          <Column width="80px"><Text text="Del.Type" /></Column>
+          <Column width="100px"><Text text="{i18n>woType}" /></Column>
+          <Column width="120px"><Text text="{i18n>woStatus}" /></Column>
+          <Column width="120px"><Text text="{i18n>woWarehouse}" /></Column>
+          <Column width="100px"><Text text="Ship-To" /></Column>
+          <Column width="60px" hAlign="Center"><Text text="{i18n>woLines}" /></Column>
+          <Column width="80px"><Text text="Priority" /></Column>
+          <Column><Text text="{i18n>woReceivedAt}" /></Column>
+          <Column><Text text="{i18n>woCompletedAt}" /></Column>
+        </columns>
+
+        <items>
+          <ColumnListItem type="Navigation" press="onRowPress">
+            <cells>
+              <ObjectIdentifier title="{workOrders>sap_delivery_no}" />
+              <Text text="{workOrders>sap_delivery_type}" />
+              <ObjectStatus
+                text="{workOrders>order_type}"
+                state="{= ${workOrders>order_type} === 'OUTBOUND' ? 'Information' : 'Success'}"
+                icon="{= ${workOrders>order_type} === 'OUTBOUND' ? 'sap-icon://outbox' : 'sap-icon://inbox'}" />
+              <ObjectStatus
+                text="{workOrders>status}"
+                state="{= ${workOrders>status} === 'PGI_POSTED' || ${workOrders>status} === 'GR_POSTED' || ${workOrders>status} === 'COMPLETED' ? 'Success' : ${workOrders>status} === 'FAILED' || ${workOrders>status} === 'CANCELLED' ? 'Error' : ${workOrders>status} === 'IN_PROGRESS' || ${workOrders>status} === 'PARTIALLY_DONE' ? 'Warning' : 'None'}" />
+              <Text text="{workOrders>warehouse_code}" />
+              <Text text="{workOrders>sap_ship_to}" />
+              <ObjectNumber number="{workOrders>line_count}" />
+              <ObjectNumber
+                number="{workOrders>priority}"
+                state="{= ${workOrders>priority} > 5 ? 'Error' : ${workOrders>priority} > 0 ? 'Warning' : 'None'}" />
+              <Text text="{workOrders>received_at_fmt}" />
+              <Text text="{workOrders>completed_at_fmt}" />
+            </cells>
+          </ColumnListItem>
+        </items>
+
+      </Table>
+    </content>
+
+  </Page>
+
+</mvc:View>

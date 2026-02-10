@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TESTO — SAP Lojistik Süreç Test Aracı | Redigo</title>
+  <meta name="description" content="TESTO: SAP MM/SD lojistik süreçleri için profesyonel süreç test aracı. Redigo Logistics Wizard entegrasyonu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="testo.css">
+</head>
+<body>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SIDEBAR                                     -->
+  <!-- ═══════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 40 40" fill="none">
+          <rect x="2" y="2" width="36" height="36" rx="8" stroke="url(#brand-grad)" stroke-width="2.5" fill="none"/>
+          <path d="M12 14h16M12 20h10M12 26h14" stroke="url(#brand-grad)" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="30" cy="26" r="4" fill="#00ffc8" opacity="0.8"/>
+          <path d="M28.5 26l1 1 2-2" stroke="#0a0e27" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="brand-grad" x1="0" y1="0" x2="40" y2="40">
+              <stop stop-color="#00d4ff"/>
+              <stop offset="1" stop-color="#00ffc8"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">TESTO</span>
+        <span class="brand-sub">Process Testing</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-view="dashboard" id="nav-dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-view="scenarios" id="nav-scenarios">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg>
+        <span>Test Senaryoları</span>
+      </a>
+      <a href="#" class="nav-item" data-view="execution" id="nav-execution">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span>Test Çalıştır</span>
+      </a>
+      <a href="#" class="nav-item" data-view="reports" id="nav-reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        <span>Raporlar</span>
+      </a>
+      <a href="#" class="nav-item" data-view="settings" id="nav-settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        <span>Ayarlar</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="connection-badge" id="connectionBadge">
+        <span class="conn-dot"></span>
+        <span class="conn-text">Mock Mode</span>
+      </div>
+      <div class="version-tag">Redigo v1.2 · Testo v1.0</div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MAIN CONTENT                                -->
+  <!-- ═══════════════════════════════════════════ -->
+  <main class="main-content" id="mainContent">
+
+    <!-- ─── DASHBOARD VIEW ─── -->
+    <section class="view active" id="view-dashboard">
+      <header class="view-header">
+        <div class="view-title-group">
+          <h1 class="view-title">Dashboard</h1>
+          <p class="view-subtitle">Süreç test durumuna genel bakış</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" id="btnRefreshDashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Yenile
+          </button>
+          <button class="btn btn-primary" id="btnRunAllFromDash">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Tümünü Çalıştır
+          </button>
+        </div>
+      </header>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-card kpi-total">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+          </div>
+          <div class="kpi-content">
+            <span class="kpi-value" id="kpiTotalScenarios">0</span>
+            <span class="kpi-label">Toplam Senaryo</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-pass">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="kpi-content">
+            <span class="kpi-value" id="kpiPassed">0</span>
+            <span class="kpi-label">Başarılı</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-fail">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          </div>
+          <div class="kpi-content">
+            <span class="kpi-value" id="kpiFailed">0</span>
+            <span class="kpi-label">Başarısız</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-warn">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div class="kpi-content">
+            <span class="kpi-value" id="kpiWarning">0</span>
+            <span class="kpi-label">Uyarı</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-notrun">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          </div>
+          <div class="kpi-content">
+            <span class="kpi-value" id="kpiNotRun">0</span>
+            <span class="kpi-label">Çalıştırılmadı</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-rate">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          </div>
+          <div class="kpi-content">
+            <span class="kpi-value" id="kpiPassRate">—</span>
+            <span class="kpi-label">Başarı Oranı</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Process Coverage -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Süreç Kapsam Haritası</h2>
+          <span class="panel-badge">SAP MM / SD</span>
+        </div>
+        <div class="process-map" id="processMap">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+
+      <!-- Recent Runs -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Son Çalıştırmalar</h2>
+          <button class="btn btn-xs btn-ghost" onclick="app.navigateTo('reports')">Tümünü Gör →</button>
+        </div>
+        <div class="recent-runs-table" id="recentRunsTable">
+          <table>
+            <thead>
+              <tr>
+                <th>Çalıştırma ID</th>
+                <th>Tarih / Saat</th>
+                <th>Senaryo Sayısı</th>
+                <th>Başarılı</th>
+                <th>Başarısız</th>
+                <th>Uyarı</th>
+                <th>Süre</th>
+                <th>Durum</th>
+              </tr>
+            </thead>
+            <tbody id="recentRunsBody">
+              <!-- Filled by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── SCENARIOS VIEW ─── -->
+    <section class="view" id="view-scenarios">
+      <header class="view-header">
+        <div class="view-title-group">
+          <h1 class="view-title">Test Senaryoları</h1>
+          <p class="view-subtitle">SAP MM/SD süreç test senaryolarını yönetin</p>
+        </div>
+        <div class="header-actions">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Senaryo ara..." id="scenarioSearch">
+          </div>
+          <select class="filter-select" id="scenarioFilterModule">
+            <option value="all">Tüm Modüller</option>
+            <option value="MM">SAP MM</option>
+            <option value="SD">SAP SD</option>
+            <option value="WM">WM / EWM</option>
+            <option value="LE">Lojistik</option>
+            <option value="INT">Entegrasyon</option>
+          </select>
+          <select class="filter-select" id="scenarioFilterStatus">
+            <option value="all">Tüm Durumlar</option>
+            <option value="PASS">Başarılı</option>
+            <option value="FAIL">Başarısız</option>
+            <option value="WARNING">Uyarı</option>
+            <option value="NOT_RUN">Çalıştırılmadı</option>
+          </select>
+          <button class="btn btn-primary" id="btnNewScenario">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Yeni Senaryo
+          </button>
+        </div>
+      </header>
+
+      <div class="scenario-grid" id="scenarioGrid">
+        <!-- Filled by JS -->
+      </div>
+    </section>
+
+    <!-- ─── EXECUTION VIEW ─── -->
+    <section class="view" id="view-execution">
+      <header class="view-header">
+        <div class="view-title-group">
+          <h1 class="view-title">Test Çalıştır</h1>
+          <p class="view-subtitle">Senaryoları seçin ve çalıştırın</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" id="btnSelectAll">Tümünü Seç</button>
+          <button class="btn btn-ghost" id="btnDeselectAll">Seçimi Kaldır</button>
+          <button class="btn btn-accent" id="btnRunSelected" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Seçilenleri Çalıştır
+          </button>
+        </div>
+      </header>
+
+      <!-- Execution Checklist -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Senaryo Seçimi</h2>
+          <span class="panel-badge" id="selectedCount">0 seçili</span>
+        </div>
+        <div class="execution-checklist" id="executionChecklist">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+
+      <!-- Execution Progress -->
+      <div class="panel" id="executionProgressPanel" style="display:none">
+        <div class="panel-header">
+          <h2 class="panel-title">Çalıştırma İlerlemesi</h2>
+          <span class="panel-badge live-badge" id="executionStatus">Çalışıyor...</span>
+        </div>
+
+        <div class="execution-progress">
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="executionProgressBar" style="width:0%"></div>
+          </div>
+          <div class="progress-stats">
+            <span id="progressText">0 / 0</span>
+            <span id="progressTime">00:00</span>
+          </div>
+        </div>
+
+        <div class="execution-log" id="executionLog">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── REPORTS VIEW ─── -->
+    <section class="view" id="view-reports">
+      <header class="view-header">
+        <div class="view-title-group">
+          <h1 class="view-title">Raporlar</h1>
+          <p class="view-subtitle">Test çalıştırma geçmişi ve detaylı raporlar</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" id="btnExportReport">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Raporu İndir
+          </button>
+        </div>
+      </header>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Çalıştırma Geçmişi</h2>
+        </div>
+        <div class="report-table-container">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tarih / Saat</th>
+                <th>Çalıştıran</th>
+                <th>Senaryo</th>
+                <th>Geçti</th>
+                <th>Kaldı</th>
+                <th>Uyarı</th>
+                <th>Süre</th>
+                <th>Sonuç</th>
+                <th>Detay</th>
+              </tr>
+            </thead>
+            <tbody id="reportTableBody">
+              <!-- Filled by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Report Detail Modal (hidden) -->
+      <div class="modal-overlay" id="reportDetailModal" style="display:none">
+        <div class="modal">
+          <div class="modal-header">
+            <h2 class="modal-title" id="reportModalTitle">Çalıştırma Detayı</h2>
+            <button class="modal-close" id="btnCloseReportModal">&times;</button>
+          </div>
+          <div class="modal-body" id="reportModalBody">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── SETTINGS VIEW ─── -->
+    <section class="view" id="view-settings">
+      <header class="view-header">
+        <div class="view-title-group">
+          <h1 class="view-title">Ayarlar</h1>
+          <p class="view-subtitle">Testo yapılandırması ve bağlantı ayarları</p>
+        </div>
+      </header>
+
+      <div class="settings-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Bağlantı Ayarları</h2>
+          </div>
+          <div class="settings-form">
+            <div class="form-group">
+              <label>API Endpoint</label>
+              <input type="text" id="settingApiUrl" value="http://localhost:3000" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Çalışma Modu</label>
+              <select id="settingMode" class="form-input">
+                <option value="mock" selected>Mock (Simülasyon)</option>
+                <option value="live">Canlı (SAP Bağlantısı)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Timeout (ms)</label>
+              <input type="number" id="settingTimeout" value="30000" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Paralel Çalıştırma</label>
+              <select id="settingParallel" class="form-input">
+                <option value="1">Sıralı (1)</option>
+                <option value="3" selected>3 Paralel</option>
+                <option value="5">5 Paralel</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="btnSaveSettings">Kaydet</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Test Verisi Yönetimi</h2>
+          </div>
+          <div class="settings-form">
+            <button class="btn btn-ghost" id="btnExportScenarios" style="width:100%;margin-bottom:12px">
+              📤 Senaryoları Dışa Aktar (JSON)
+            </button>
+            <button class="btn btn-ghost" id="btnImportScenarios" style="width:100%;margin-bottom:12px">
+              📥 Senaryo İçe Aktar (JSON)
+            </button>
+            <input type="file" id="importFileInput" accept=".json" style="display:none">
+            <button class="btn btn-ghost" id="btnResetAll" style="width:100%;color:#ff4757">
+              🗑️ Tüm Verileri Sıfırla
+            </button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Hakkında</h2>
+          </div>
+          <div class="about-content">
+            <div class="about-logo">
+              <svg viewBox="0 0 60 60" fill="none" width="60" height="60">
+                <rect x="3" y="3" width="54" height="54" rx="12" stroke="url(#about-grad)" stroke-width="3" fill="none"/>
+                <path d="M18 21h24M18 30h15M18 39h21" stroke="url(#about-grad)" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="45" cy="39" r="6" fill="#00ffc8" opacity="0.8"/>
+                <path d="M42.5 39l1.5 1.5 3-3" stroke="#0a0e27" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <defs>
+                  <linearGradient id="about-grad" x1="0" y1="0" x2="60" y2="60">
+                    <stop stop-color="#00d4ff"/>
+                    <stop offset="1" stop-color="#00ffc8"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <h3>TESTO v1.0</h3>
+            <p>SAP MM/SD Lojistik Süreç Test Aracı</p>
+            <p class="about-meta">Redigo Logistics Wizard v1.2 entegrasyonu</p>
+            <p class="about-meta">SAP MM · SD · WM · LE Süreç Testleri</p>
+            <p class="about-meta">15+ Danışman · 20 Yıl Lojistik · 5 Yıl Test Deneyimi</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- NEW SCENARIO MODAL                          -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="modal-overlay" id="scenarioModal" style="display:none">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2 class="modal-title" id="scenarioModalTitle">Yeni Test Senaryosu</h2>
+        <button class="modal-close" id="btnCloseScenarioModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Senaryo Adı *</label>
+            <input type="text" id="scnName" class="form-input" placeholder="Ör: Satınalma Siparişi Oluşturma">
+          </div>
+          <div class="form-group">
+            <label>Senaryo Kodu *</label>
+            <input type="text" id="scnCode" class="form-input" placeholder="Ör: SAP-MM-PO-001">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Modül *</label>
+            <select id="scnModule" class="form-input">
+              <option value="MM">SAP MM (Malzeme Yönetimi)</option>
+              <option value="SD">SAP SD (Satış & Dağıtım)</option>
+              <option value="WM">WM / EWM (Depo Yönetimi)</option>
+              <option value="LE">LE (Lojistik Yürütme)</option>
+              <option value="INT">Entegrasyon</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Öncelik</label>
+            <select id="scnPriority" class="form-input">
+              <option value="critical">Kritik</option>
+              <option value="high">Yüksek</option>
+              <option value="medium" selected>Orta</option>
+              <option value="low">Düşük</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Açıklama</label>
+          <textarea id="scnDescription" class="form-input form-textarea" rows="3" placeholder="Sürecin amacı ve kapsamı..."></textarea>
+        </div>
+
+        <div class="panel-header" style="margin-top:16px; padding-left:0">
+          <h3 class="panel-title" style="font-size:14px">Test Adımları</h3>
+          <button class="btn btn-xs btn-ghost" id="btnAddStep">+ Adım Ekle</button>
+        </div>
+        <div class="steps-editor" id="stepsEditor">
+          <!-- Filled by JS -->
+        </div>
+
+        <div class="form-group" style="margin-top:16px">
+          <label>Ön Koşullar</label>
+          <textarea id="scnPreconditions" class="form-input form-textarea" rows="2" placeholder="Test öncesi sağlanması gereken koşullar..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Beklenen Sonuç</label>
+          <textarea id="scnExpectedResult" class="form-input form-textarea" rows="2" placeholder="Başarılı test sonrası beklenen durum..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btnCancelScenario">İptal</button>
+        <button class="btn btn-primary" id="btnSaveScenario">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- STEP DETAIL MODAL                           -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="modal-overlay" id="stepDetailModal" style="display:none">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2 class="modal-title" id="stepDetailTitle">Adım Detayı</h2>
+        <button class="modal-close" id="btnCloseStepDetail">&times;</button>
+      </div>
+      <div class="modal-body" id="stepDetailBody">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- TOAST CONTAINER                             -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- STATUS BAR                                  -->
+  <!-- ═══════════════════════════════════════════ -->
+  <footer class="status-bar" id="statusBar">
+    <div class="status-left">
+      <span class="status-item">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusConnection">Mock Mode Aktif</span>
+      </span>
+      <span class="status-divider">|</span>
+      <span class="status-item" id="statusLastRun">Son Çalıştırma: —</span>
+    </div>
+    <div class="status-right">
+      <span class="status-item" id="statusPassFail">Başarı: — / Hata: —</span>
+      <span class="status-divider">|</span>
+      <span class="status-item" id="statusTime"></span>
+    </div>
+  </footer>
+
+  <script src="testo.js"></script>
+</body>
+</html>

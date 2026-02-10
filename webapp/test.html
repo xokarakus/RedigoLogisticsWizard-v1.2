@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>UI5 Test</title>
+  <script>
+    window.onerror = function(msg, url, line) {
+      document.getElementById("out").innerHTML += "<p style='color:red'>ERROR: " + msg + " (" + url + ":" + line + ")</p>";
+    };
+  </script>
+  <script
+    id="sap-ui-bootstrap"
+    src="https://ui5.sap.com/resources/sap-ui-core.js"
+    data-sap-ui-theme="sap_horizon"
+    data-sap-ui-libs="sap.m"
+    data-sap-ui-async="true"
+  ></script>
+  <script>
+    sap.ui.require(["sap/m/App", "sap/m/Page", "sap/m/Text", "sap/m/Button"], function (App, Page, Text, Button) {
+      new App({
+        pages: [
+          new Page({
+            title: "UI5 Test - Calisiyor!",
+            content: [
+              new Text({ text: "SAPUI5 basariyla yuklendi. Bu sayfayi goruyorsan CDN calisiyor." }).addStyleClass("sapUiMediumMargin")
+            ]
+          })
+        ]
+      }).placeAt("content");
+    });
+  </script>
+</head>
+<body class="sapUiBody" id="content">
+  <div id="out" style="padding:20px;font-family:monospace">Yukleniyor...</div>
+</body>
+</html>

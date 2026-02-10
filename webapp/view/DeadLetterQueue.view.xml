@@ -1,0 +1,78 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.DeadLetterQueue"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:l="sap.ui.layout">
+
+  <Page title="{i18n>dlqTitle}" showNavButton="false">
+
+    <headerContent>
+      <Button icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
+      <ObjectStatus text="{dlq>/count} items" state="Error" />
+    </headerContent>
+
+    <content>
+      <Table
+        id="dlqTable"
+        items="{dlq>/data}"
+        growing="true"
+        growingThreshold="25"
+        mode="SingleSelectMaster"
+        selectionChange="onItemSelect">
+
+        <columns>
+          <Column width="130px"><Text text="{i18n>txAction}" /></Column>
+          <Column width="150px"><Text text="{i18n>txSAPFunction}" /></Column>
+          <Column width="120px"><Text text="Delivery" /></Column>
+          <Column width="60px" hAlign="Center"><Text text="{i18n>txRetryCount}" /></Column>
+          <Column><Text text="{i18n>dlqErrorMessage}" /></Column>
+          <Column><Text text="{i18n>txStarted}" /></Column>
+          <Column width="200px" hAlign="Center"><Text text="Actions" /></Column>
+        </columns>
+
+        <items>
+          <ColumnListItem highlight="Error">
+            <cells>
+              <Text text="{dlq>action}" />
+              <Text text="{dlq>sap_function}" />
+              <Text text="{dlq>delivery_no}" />
+              <ObjectNumber number="{dlq>retry_count}" state="Error" />
+              <Text text="{dlq>error_message}" maxLines="2" />
+              <Text text="{dlq>started_at_fmt}" />
+              <HBox justifyContent="Center">
+                <Button text="{i18n>dlqEdit}" icon="sap-icon://edit" press="onEditPayload" type="Transparent"
+                  class="sapUiTinyMarginEnd" />
+                <Button text="{i18n>dlqReplay}" icon="sap-icon://refresh" press="onReplay" type="Emphasized"
+                  class="sapUiTinyMarginEnd" />
+                <Button text="{i18n>dlqDiscard}" icon="sap-icon://delete" press="onDiscard" type="Reject" />
+              </HBox>
+            </cells>
+          </ColumnListItem>
+        </items>
+
+      </Table>
+
+      <!-- Edit Payload Dialog (shown on Edit press) -->
+      <l:VerticalLayout id="editSection" visible="{dlq>/editVisible}" class="sapUiSmallMargin" width="100%">
+        <Panel headerText="Edit Payload for Replay">
+          <l:Grid defaultSpan="XL6 L6 M12 S12">
+            <Panel headerText="{i18n>dlqOriginalPayload}">
+              <TextArea value="{dlq>/selectedOriginal}" rows="15" width="100%" editable="false" />
+            </Panel>
+            <Panel headerText="{i18n>dlqEditedPayload}">
+              <TextArea id="editedPayload" value="{dlq>/selectedEdited}" rows="15" width="100%" editable="true" />
+            </Panel>
+          </l:Grid>
+          <OverflowToolbar>
+            <ToolbarSpacer />
+            <Button text="{i18n>cfgCancel}" press="onCancelEdit" />
+            <Button text="Save &amp; Replay" press="onSaveAndReplay" type="Emphasized" />
+          </OverflowToolbar>
+        </Panel>
+      </l:VerticalLayout>
+
+    </content>
+
+  </Page>
+
+</mvc:View>
