@@ -1,53 +1,105 @@
 sap.ui.define([
   "sap/ui/core/mvc/Controller",
   "sap/ui/model/json/JSONModel",
+  "sap/ui/model/Filter",
+  "sap/ui/model/FilterOperator",
   "sap/m/MessageBox",
   "sap/m/MessageToast",
   "com/redigo/logistics/cockpit/util/API"
-], function (Controller, JSONModel, MessageBox, MessageToast, API) {
+], function (Controller, JSONModel, Filter, FilterOperator, MessageBox, MessageToast, API) {
   "use strict";
-
-  var DEMO_RECON = [
-    { id: "r1", run_date: "2026-02-10", warehouse_code: "WH-IST-01", total_sap_open: 45, total_wms_open: 43, discrepancies: [{ delivery: "0080001199", issue: "SAP'de acik, WMS'de yok" }, { delivery: "0080001205", issue: "Miktar uyusmazligi" }], status: "COMPLETED", reviewed_by: null },
-    { id: "r2", run_date: "2026-02-10", warehouse_code: "WH-ANK-01", total_sap_open: 22, total_wms_open: 22, discrepancies: [], status: "COMPLETED", reviewed_by: null },
-    { id: "r3", run_date: "2026-02-10", warehouse_code: "WH-IZM-01", total_sap_open: 18, total_wms_open: 19, discrepancies: [{ delivery: "WMS-887321", issue: "WMS'de var, SAP'de yok" }], status: "COMPLETED", reviewed_by: null },
-    { id: "r4", run_date: "2026-02-09", warehouse_code: "WH-IST-01", total_sap_open: 51, total_wms_open: 51, discrepancies: [], status: "REVIEWED", reviewed_by: "ahmet.demir" },
-    { id: "r5", run_date: "2026-02-09", warehouse_code: "WH-ANK-01", total_sap_open: 25, total_wms_open: 24, discrepancies: [{ delivery: "0080001180", issue: "SAP'de acik, WMS tamamladi" }], status: "REVIEWED", reviewed_by: "mehmet.yilmaz" }
-  ];
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.Reconciliation", {
     onInit: function () {
-      this._oModel = new JSONModel({ data: [], count: 0 });
+      this._oModel = new JSONModel({ data: [], count: 0, countText: "", warehouseOptions: [] });
       this.getView().setModel(this._oModel, "recon");
       this._loadData();
     },
+
+    _getText: function (sKey, aArgs) {
+      var oBundle = this.getView().getModel("i18n").getResourceBundle();
+      return oBundle.getText(sKey, aArgs);
+    },
+
     _loadData: function () {
       var that = this;
       API.get("/api/reconciliation").then(function (result) {
-        var aRaw = (result.data && result.data.length) ? result.data : DEMO_RECON;
-        aRaw.forEach(function (r) { r.discrepancy_count = (r.discrepancies || []).length; });
-        that._oModel.setProperty("/data", aRaw);
-        that._oModel.setProperty("/count", aRaw.length);
+        var aData = (result.data || []).map(function (r) {
+          r.discrepancy_count = (r.discrepancies || []).length;
+          return r;
+        });
+        that._oModel.setProperty("/data", aData);
+        that._oModel.setProperty("/count", aData.length);
+        that._oModel.setProperty("/countText", that._getText("recReportCount", [aData.length]));
+        that._applyFilters();
+      });
+
+      // Load warehouses for filter dropdown
+      API.get("/api/config/warehouses").then(function (result) {
+        var aWarehouses = result.data || [];
+        var aOptions = [{ key: "ALL", text: that._getText("recAllWarehouses") }];
+        aWarehouses.forEach(function (w) {
+          aOptions.push({ key: w.code, text: w.code + " \u2013 " + w.name });
+        });
+        that._oModel.setProperty("/warehouseOptions", aOptions);
       });
     },
+
+    _applyFilters: function () {
+      var oTable = this.byId("recTable");
+      if (!oTable) { return; }
+      var oBinding = oTable.getBinding("items");
+      if (!oBinding) { return; }
+
+      var aFilters = [];
+
+      // Warehouse filter
+      var oWarehouseFilter = this.byId("warehouseFilter");
+      if (oWarehouseFilter) {
+        var sWarehouse = oWarehouseFilter.getSelectedKey();
+        if (sWarehouse && sWarehouse !== "ALL") {
+          aFilters.push(new Filter("warehouse_code", FilterOperator.EQ, sWarehouse));
+        }
+      }
+
+      // Status filter
+      var oStatusFilter = this.byId("statusFilter");
+      if (oStatusFilter) {
+        var sStatus = oStatusFilter.getSelectedKey();
+        if (sStatus && sStatus !== "ALL") {
+          aFilters.push(new Filter("status", FilterOperator.EQ, sStatus));
+        }
+      }
+
+      oBinding.filter(aFilters.length > 0 ? new Filter({ filters: aFilters, and: true }) : []);
+
+      var iFiltered = oBinding.getLength();
+      this._oModel.setProperty("/countText", this._getText("recReportCount", [iFiltered]));
+    },
+
     onRefresh: function () { this._loadData(); },
+    onFilterChange: function () { this._applyFilters(); },
+
     onRunNow: function () {
-      MessageBox.confirm("Tum depolar icin mutabakat baslatilsin mi?", {
-        onClose: function (sAction) { if (sAction === MessageBox.Action.OK) { MessageToast.show("Mutabakat baslatildi (demo mod)"); } }
+      var that = this;
+      MessageBox.confirm(this._getText("msgConfirmReconciliation"), {
+        onClose: function (sAction) { if (sAction === MessageBox.Action.OK) { MessageToast.show(that._getText("msgReconciliationStarted")); } }
       });
     },
+
     onViewDetails: function (oEvent) {
       var oCtx = oEvent.getSource().getBindingContext("recon");
       var aDisc = oCtx.getProperty("discrepancies") || [];
-      var sDetails = aDisc.map(function (d) { return d.delivery + ": " + d.issue; }).join("\n") || "Uyusmazlik bulunamadi.";
-      MessageBox.information(sDetails, { title: "Uyusmazlik Detaylari" });
+      var sDetails = aDisc.map(function (d) { return d.delivery + ": " + d.issue; }).join("\n") || this._getText("msgNoDiscrepancies");
+      MessageBox.information(sDetails, { title: this._getText("msgDiscrepancyDetails") });
     },
+
     onMarkReviewed: function (oEvent) {
       var oCtx = oEvent.getSource().getBindingContext("recon");
       var iIdx = oCtx.getPath().split("/").pop();
       this._oModel.setProperty("/data/" + iIdx + "/status", "REVIEWED");
       this._oModel.setProperty("/data/" + iIdx + "/reviewed_by", "cockpit_user");
-      MessageToast.show("Incelendi olarak isaretlendi");
+      MessageToast.show(this._getText("msgMarkedReviewed"));
     }
   });
 });

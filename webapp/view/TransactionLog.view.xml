@@ -1,7 +1,8 @@
 <mvc:View
   controllerName="com.redigo.logistics.cockpit.controller.TransactionLog"
   xmlns:mvc="sap.ui.core.mvc"
-  xmlns="sap.m">
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
 
   <Page title="{i18n>txTitle}" showNavButton="false">
 
@@ -11,22 +12,26 @@
 
     <subHeader>
       <OverflowToolbar>
-        <SearchField width="300px" placeholder="Search by action or delivery..." liveChange="onSearch" />
+        <SearchField width="300px" placeholder="{i18n>txSearchPlaceholder}" liveChange="onSearch" />
         <ToolbarSpacer />
+        <Select id="actionFilter" change="onFilterChange"
+          items="{txLog>/actionOptions}">
+          <core:Item key="{txLog>key}" text="{txLog>text}" />
+        </Select>
         <Select id="directionFilter" change="onFilterChange">
-          <core:Item xmlns:core="sap.ui.core" key="ALL" text="All Directions" />
-          <core:Item xmlns:core="sap.ui.core" key="SAP_TO_WMS" text="SAP → WMS" />
-          <core:Item xmlns:core="sap.ui.core" key="WMS_TO_SAP" text="WMS → SAP" />
+          <core:Item key="ALL" text="{i18n>txAllDirections}" />
+          <core:Item key="SAP_TO_WMS" text="{i18n>txSAPtoWMS}" />
+          <core:Item key="WMS_TO_SAP" text="{i18n>txWMStoSAP}" />
         </Select>
         <Select id="statusFilter" change="onFilterChange">
-          <core:Item xmlns:core="sap.ui.core" key="ALL" text="All Status" />
-          <core:Item xmlns:core="sap.ui.core" key="PENDING" text="Pending" />
-          <core:Item xmlns:core="sap.ui.core" key="SUCCESS" text="Success" />
-          <core:Item xmlns:core="sap.ui.core" key="FAILED" text="Failed" />
-          <core:Item xmlns:core="sap.ui.core" key="RETRYING" text="Retrying" />
-          <core:Item xmlns:core="sap.ui.core" key="DEAD" text="Dead (DLQ)" />
+          <core:Item key="ALL" text="{i18n>txAllStatus}" />
+          <core:Item key="PENDING" text="{i18n>txPending}" />
+          <core:Item key="SUCCESS" text="{i18n>txSuccess}" />
+          <core:Item key="FAILED" text="{i18n>txFailed}" />
+          <core:Item key="RETRYING" text="{i18n>txRetrying}" />
+          <core:Item key="DEAD" text="{i18n>txDead}" />
         </Select>
-        <ObjectStatus text="{txLog>/count} transactions" state="Information" />
+        <ObjectStatus text="{txLog>/countText}" state="Information" />
       </OverflowToolbar>
     </subHeader>
 
@@ -43,7 +48,7 @@
           <Column width="100px"><Text text="{i18n>txDirection}" /></Column>
           <Column width="100px"><Text text="{i18n>txStatus}" /></Column>
           <Column width="150px"><Text text="{i18n>txSAPFunction}" /></Column>
-          <Column width="100px"><Text text="SAP Doc" /></Column>
+          <Column width="100px"><Text text="{i18n>txSAPDoc}" /></Column>
           <Column width="80px" hAlign="End"><Text text="{i18n>txDuration}" /></Column>
           <Column width="60px" hAlign="Center"><Text text="{i18n>txRetryCount}" /></Column>
           <Column><Text text="{i18n>txStarted}" /></Column>

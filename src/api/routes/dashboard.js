@@ -1,0 +1,49 @@
+const express = require('express');
+const router = express.Router();
+const JsonStore = require('../../shared/jsonStore');
+
+const woStore = new JsonStore('work_orders.json');
+const txStore = new JsonStore('transactions.json');
+
+// GET /api/dashboard/kpis - Compute KPIs from data
+router.get('/kpis', (req, res) => {
+  const orders = woStore.readAll();
+  const txs = txStore.readAll();
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const totalOrders = orders.length;
+  const inProgress = orders.filter(o =>
+    ['IN_PROGRESS', 'SENT_TO_WMS', 'PICKING_COMPLETE', 'PARTIALLY_DONE'].includes(o.status)
+  ).length;
+  const completedToday = orders.filter(o =>
+    o.status === 'COMPLETED' && o.completed_at && o.completed_at.slice(0, 10) === today
+  ).length;
+  const failedCount = orders.filter(o => o.status === 'FAILED').length;
+  const todayIngest = orders.filter(o =>
+    o.received_at && o.received_at.slice(0, 10) === today
+  ).length;
+  const pendingSAP = orders.filter(o =>
+    ['RECEIVED', 'SENT_TO_WMS', 'IN_PROGRESS', 'PICKING_COMPLETE'].includes(o.status)
+  ).length;
+  const dlqCount = txs.filter(t => t.status === 'DEAD').length;
+
+  // Average latency from successful transactions
+  const successTx = txs.filter(t => t.status === 'SUCCESS' && t.duration_ms);
+  const avgLatency = successTx.length > 0
+    ? Math.round(successTx.reduce((sum, t) => sum + t.duration_ms, 0) / successTx.length)
+    : 0;
+
+  res.json({
+    totalOrders,
+    inProgress,
+    completedToday,
+    failedCount,
+    todayIngest,
+    pendingSAP,
+    dlqCount,
+    avgLatency
+  });
+});
+
+module.exports = router;

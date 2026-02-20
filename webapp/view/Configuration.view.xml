@@ -19,7 +19,7 @@
             <OverflowToolbar>
               <Title text="{i18n>cfgWarehouses}" level="H5" />
               <ToolbarSpacer />
-              <Button text="Add Warehouse" icon="sap-icon://add" press="onAddWarehouse" type="Emphasized" />
+              <Button text="{i18n>cfgAddWarehouse}" icon="sap-icon://add" press="onAddWarehouse" type="Emphasized" />
             </OverflowToolbar>
 
             <Table id="warehouseTable" items="{cfg>/warehouses}" mode="None">
@@ -31,7 +31,7 @@
                 <Column><Text text="{i18n>cfgWMSCode}" /></Column>
                 <Column><Text text="{i18n>cfgProvider}" /></Column>
                 <Column hAlign="Center"><Text text="{i18n>cfgActive}" /></Column>
-                <Column width="150px" hAlign="Center"><Text text="Actions" /></Column>
+                <Column width="150px" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
               </columns>
               <items>
                 <ColumnListItem>
@@ -47,8 +47,6 @@
                       color="{= ${cfg>is_active} ? '#2b7c2b' : '#cc0000'}" />
                     <HBox justifyContent="Center">
                       <Button icon="sap-icon://edit" press="onEditWarehouse" type="Transparent" />
-                      <Button icon="sap-icon://inventory" text="{i18n>cfgArchive}" press="onArchiveWarehouse"
-                        type="Transparent" visible="{cfg>is_active}" />
                     </HBox>
                   </cells>
                 </ColumnListItem>
@@ -63,21 +61,21 @@
             <OverflowToolbar>
               <Title text="{i18n>cfgMappings}" level="H5" />
               <ToolbarSpacer />
-              <Button text="Add Mapping" icon="sap-icon://add" press="onAddMapping" type="Emphasized" />
+              <Button text="{i18n>cfgAddMapping}" icon="sap-icon://add" press="onAddMapping" type="Emphasized" />
             </OverflowToolbar>
 
             <Table id="mappingTable" items="{cfg>/mappings}" mode="None">
               <columns>
                 <Column><Text text="{i18n>invWarehouse}" /></Column>
-                <Column><Text text="WMS Action" /></Column>
-                <Column><Text text="SAP Mvt Type" /></Column>
-                <Column><Text text="Override Plant" /></Column>
-                <Column><Text text="Override SLoc" /></Column>
-                <Column><Text text="To Plant" /></Column>
-                <Column><Text text="To SLoc" /></Column>
-                <Column><Text text="Description" /></Column>
+                <Column><Text text="{i18n>cfgWMSAction}" /></Column>
+                <Column><Text text="{i18n>cfgSAPMvtType}" /></Column>
+                <Column><Text text="{i18n>cfgOverridePlant}" /></Column>
+                <Column><Text text="{i18n>cfgOverrideSLoc}" /></Column>
+                <Column><Text text="{i18n>cfgToPlant}" /></Column>
+                <Column><Text text="{i18n>cfgToSLoc}" /></Column>
+                <Column><Text text="{i18n>cfgDescription}" /></Column>
                 <Column hAlign="Center"><Text text="{i18n>cfgActive}" /></Column>
-                <Column width="150px" hAlign="Center"><Text text="Actions" /></Column>
+                <Column width="150px" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
               </columns>
               <items>
                 <ColumnListItem>
@@ -95,13 +93,135 @@
                       color="{= ${cfg>is_active} ? '#2b7c2b' : '#cc0000'}" />
                     <HBox justifyContent="Center">
                       <Button icon="sap-icon://edit" press="onEditMapping" type="Transparent" />
-                      <Button icon="sap-icon://inventory" text="{i18n>cfgArchive}" press="onArchiveMapping"
-                        type="Transparent" visible="{cfg>is_active}" />
                     </HBox>
                   </cells>
                 </ColumnListItem>
               </items>
             </Table>
+          </IconTabFilter>
+
+          <!-- TAB 3: Process Configurations (Süreç Uyarlamaları) -->
+          <IconTabFilter text="{i18n>cfgProcessConfigs}" icon="sap-icon://process" key="processConfigs"
+            count="{cfg>/processConfigCount}">
+
+            <OverflowToolbar>
+              <Title text="{i18n>cfgProcessConfigs}" level="H5" />
+              <ToolbarSpacer />
+              <Button text="{i18n>cfgAddProcessConfig}" icon="sap-icon://add" press="onAddProcessConfig" type="Emphasized" />
+            </OverflowToolbar>
+
+            <Table id="processConfigTable" items="{cfg>/processConfigs}" mode="None">
+              <columns>
+                <Column><Text text="{i18n>cfgPlant}" /></Column>
+                <Column><Text text="{i18n>invWarehouse}" /></Column>
+                <Column><Text text="{i18n>cfgDeliveryType}" /></Column>
+                <Column><Text text="{i18n>cfgDeliveryTypeDesc}" /></Column>
+                <Column><Text text="{i18n>cfgProcessType}" /></Column>
+                <Column><Text text="{i18n>cfgMvtType}" /></Column>
+                <Column><Text text="{i18n>cfgCompany}" /></Column>
+                <Column><Text text="{i18n>cfgCompanyCode}" /></Column>
+                <Column><Text text="{i18n>cfgApiBaseUrl}" /></Column>
+                <Column><Text text="{i18n>cfgBapiName}" /></Column>
+                <Column><Text text="{i18n>cfgGmCode}" /></Column>
+                <Column width="150px" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
+              </columns>
+              <items>
+                <ColumnListItem>
+                  <cells>
+                    <ObjectNumber number="{cfg>plant_code}" emphasized="true" />
+                    <Text text="{cfg>warehouse_code}" />
+                    <ObjectStatus text="{cfg>delivery_type}" state="Information" />
+                    <Text text="{cfg>delivery_type_desc}" />
+                    <ObjectStatus text="{cfg>process_type}" state="{= ${cfg>process_type} === 'GI' ? 'Warning' : ${cfg>process_type} === 'GR' ? 'Success' : 'Information'}" />
+                    <ObjectNumber number="{cfg>mvt_type}" emphasized="true" />
+                    <Text text="{cfg>company_name}" />
+                    <Text text="{cfg>company_code}" />
+                    <Text text="{cfg>api_base_url}" wrapping="false" />
+                    <Text text="{cfg>bapi_name}" />
+                    <Text text="{cfg>gm_code}" />
+                    <HBox justifyContent="Center">
+                      <Button icon="sap-icon://edit" press="onEditProcessConfig" type="Transparent" />
+                      <Button icon="sap-icon://delete" press="onDeleteProcessConfig" type="Transparent" />
+                    </HBox>
+                  </cells>
+                </ColumnListItem>
+              </items>
+            </Table>
+          </IconTabFilter>
+
+          <!-- TAB 4: Process Types (Süreç Tipleri) -->
+          <IconTabFilter text="{i18n>cfgProcessTypes}" icon="sap-icon://workflow-tasks" key="processTypes"
+            count="{cfg>/processTypeCount}">
+
+            <OverflowToolbar>
+              <Title text="{i18n>cfgProcessTypes}" level="H5" />
+              <ToolbarSpacer />
+              <Button text="{i18n>cfgAddProcessType}" icon="sap-icon://add" press="onAddProcessType" type="Emphasized" />
+            </OverflowToolbar>
+
+            <Table id="processTypeTable" items="{cfg>/processTypes}" mode="SingleSelectMaster"
+              selectionChange="onSelectProcessType">
+              <columns>
+                <Column width="120px"><Text text="{i18n>cfgTypeCode}" /></Column>
+                <Column><Text text="{i18n>cfgTypeName}" /></Column>
+                <Column width="100px" hAlign="Center"><Text text="{i18n>cfgStepCount}" /></Column>
+                <Column width="150px" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
+              </columns>
+              <items>
+                <ColumnListItem>
+                  <cells>
+                    <ObjectStatus text="{cfg>code}" state="Information" />
+                    <Text text="{cfg>name}" />
+                    <ObjectNumber number="{cfg>stepCount}" />
+                    <HBox justifyContent="Center">
+                      <Button icon="sap-icon://edit" press="onEditProcessType" type="Transparent" />
+                      <Button icon="sap-icon://delete" press="onDeleteProcessType" type="Transparent" />
+                    </HBox>
+                  </cells>
+                </ColumnListItem>
+              </items>
+            </Table>
+
+            <!-- Steps of selected type -->
+            <Panel headerText="{i18n>cfgTypeSteps}" visible="{= !!${cfg>/selectedType}}">
+              <OverflowToolbar>
+                <Title text="{cfg>/selectedTypeName}" level="H5" />
+                <ToolbarSpacer />
+                <Button text="{i18n>cfgAddStep}" icon="sap-icon://add" press="onAddStep" type="Emphasized" />
+              </OverflowToolbar>
+
+              <Table items="{cfg>/selectedTypeSteps}">
+                <columns>
+                  <Column width="80px"><Text text="{i18n>cfgStepNo}" /></Column>
+                  <Column><Text text="{i18n>cfgStepName}" /></Column>
+                  <Column><Text text="{i18n>cfgStepSource}" /></Column>
+                  <Column><Text text="{i18n>cfgStepTarget}" /></Column>
+                  <Column><Text text="{i18n>cfgStepDirection}" /></Column>
+                  <Column><Text text="{i18n>cfgStepApi}" /></Column>
+                  <Column width="150px" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
+                </columns>
+                <items>
+                  <ColumnListItem>
+                    <cells>
+                      <ObjectNumber number="{cfg>step_no}" />
+                      <Text text="{cfg>name}" />
+                      <Text text="{cfg>source}" />
+                      <Text text="{cfg>target}" />
+                      <ObjectStatus text="{cfg>direction}" state="{= ${cfg>direction} === 'INBOUND' ? 'Success' : 'Warning'}" />
+                      <Text text="{cfg>api}" />
+                      <HBox justifyContent="Center">
+                        <Button icon="sap-icon://edit" press="onEditStep" type="Transparent" />
+                        <Button icon="sap-icon://delete" press="onDeleteStep" type="Transparent" />
+                      </HBox>
+                    </cells>
+                  </ColumnListItem>
+                </items>
+              </Table>
+            </Panel>
+
+            <MessageStrip text="{i18n>cfgSelectType}" type="Information" showIcon="true"
+              visible="{= !${cfg>/selectedType}}" class="sapUiSmallMargin" />
+
           </IconTabFilter>
 
         </items>

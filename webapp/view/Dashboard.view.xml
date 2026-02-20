@@ -16,7 +16,7 @@
 
         <GenericTile
           header="{i18n>dashTotalOrders}"
-          subheader="all time"
+          subheader="{i18n>dashAllTime}"
           press="onTilePress"
           class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
           <TileContent>
@@ -26,7 +26,7 @@
 
         <GenericTile
           header="{i18n>dashInProgress}"
-          subheader="active now"
+          subheader="{i18n>dashActiveNow}"
           press="onTilePress"
           class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
           <TileContent>
@@ -36,7 +36,7 @@
 
         <GenericTile
           header="{i18n>dashCompleted}"
-          subheader="today"
+          subheader="{i18n>dashToday}"
           press="onTilePress"
           class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
           <TileContent>
@@ -46,7 +46,7 @@
 
         <GenericTile
           header="{i18n>dashFailed}"
-          subheader="errors"
+          subheader="{i18n>dashErrors}"
           state="{= ${dashboard>/failedCount} > 0 ? 'Loaded' : 'Loaded'}"
           press="onTilePress"
           class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
@@ -63,7 +63,7 @@
 
         <GenericTile
           header="{i18n>dashTodayIngest}"
-          subheader="ingested"
+          subheader="{i18n>dashIngested}"
           class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
           <TileContent>
             <NumericContent value="{dashboard>/todayIngest}" icon="sap-icon://incoming-call" />
@@ -72,7 +72,7 @@
 
         <GenericTile
           header="{i18n>dashPendingSAP}"
-          subheader="awaiting SAP"
+          subheader="{i18n>dashAwaitingSAP}"
           class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
           <TileContent>
             <NumericContent value="{dashboard>/pendingSAP}" icon="sap-icon://time-entry-request" valueColor="Critical" />
@@ -81,7 +81,7 @@
 
         <GenericTile
           header="{i18n>dashDLQCount}"
-          subheader="dead letters"
+          subheader="{i18n>dashDeadLetters}"
           class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
           <TileContent>
             <NumericContent value="{dashboard>/dlqCount}" icon="sap-icon://warning2"
@@ -91,7 +91,7 @@
 
         <GenericTile
           header="{i18n>dashAvgLatency}"
-          subheader="milliseconds"
+          subheader="{i18n>dashMilliseconds}"
           class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
           <TileContent>
             <NumericContent value="{dashboard>/avgLatency}" scale="ms" icon="sap-icon://latency" />
@@ -101,7 +101,7 @@
       </HBox>
 
       <!-- Recent Work Orders Table -->
-      <Panel headerText="Recent Work Orders" class="sapUiSmallMarginTop sapUiSmallMargin">
+      <Panel headerText="{i18n>dashRecentOrders}" class="sapUiSmallMarginTop sapUiSmallMargin">
         <Table
           id="recentOrdersTable"
           items="{dashboard>/recentOrders}"
@@ -112,7 +112,7 @@
 
           <headerToolbar>
             <OverflowToolbar>
-              <Title text="Last 24 Hours" level="H5" />
+              <Title text="{i18n>dashLast24Hours}" level="H5" />
               <ToolbarSpacer />
               <SearchField width="250px" placeholder="{i18n>btnSearch}" liveChange="onSearchOrders" />
             </OverflowToolbar>

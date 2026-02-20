@@ -1,7 +1,8 @@
 <mvc:View
   controllerName="com.redigo.logistics.cockpit.controller.Inventory"
   xmlns:mvc="sap.ui.core.mvc"
-  xmlns="sap.m">
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
 
   <Page title="{i18n>invTitle}" showNavButton="false">
 
@@ -11,26 +12,34 @@
 
     <subHeader>
       <OverflowToolbar>
-        <SearchField width="300px" placeholder="Search by material or action..." liveChange="onSearch" />
+        <SearchField width="300px" placeholder="{i18n>invSearchPlaceholder}" liveChange="onSearch" />
         <ToolbarSpacer />
-        <Select id="warehouseFilter" change="onFilterChange">
-          <core:Item xmlns:core="sap.ui.core" key="ALL" text="All Warehouses" />
+        <Select id="warehouseFilter" change="onFilterChange"
+          items="{inv>/warehouseOptions}">
+          <core:Item key="{inv>key}" text="{inv>text}" />
         </Select>
-        <ObjectStatus text="{inv>/count} movements" state="Information" />
+        <Select id="statusFilter" change="onFilterChange">
+          <core:Item key="ALL" text="{i18n>invAllStatus}" />
+          <core:Item key="SUCCESS" text="{i18n>txSuccess}" />
+          <core:Item key="FAILED" text="{i18n>txFailed}" />
+          <core:Item key="PENDING" text="{i18n>txPending}" />
+          <core:Item key="RETRYING" text="{i18n>txRetrying}" />
+        </Select>
+        <ObjectStatus text="{inv>/countText}" state="Information" />
       </OverflowToolbar>
     </subHeader>
 
     <content>
       <!-- Movement Mappings Summary -->
-      <Panel headerText="Active Movement Mappings" class="sapUiSmallMargin">
+      <Panel headerText="{i18n>invActiveMappings}" class="sapUiSmallMargin">
         <Table items="{inv>/mappings}" mode="None">
           <columns>
             <Column><Text text="{i18n>invWarehouse}" /></Column>
             <Column><Text text="{i18n>invAction}" /></Column>
             <Column><Text text="{i18n>invSAPMvtType}" /></Column>
-            <Column><Text text="Description" /></Column>
-            <Column><Text text="Target Plant" /></Column>
-            <Column><Text text="Target SLoc" /></Column>
+            <Column><Text text="{i18n>invDescription}" /></Column>
+            <Column><Text text="{i18n>invTargetPlant}" /></Column>
+            <Column><Text text="{i18n>invTargetSLoc}" /></Column>
           </columns>
           <items>
             <ColumnListItem>
@@ -48,7 +57,7 @@
       </Panel>
 
       <!-- Recent Inventory Transactions -->
-      <Panel headerText="Recent Inventory Movements" class="sapUiSmallMargin">
+      <Panel headerText="{i18n>invRecentMovements}" class="sapUiSmallMargin">
         <Table
           id="invTxTable"
           items="{inv>/transactions}"
@@ -62,8 +71,8 @@
             <Column><Text text="{i18n>invSAPMvtType}" /></Column>
             <Column><Text text="{i18n>invWarehouse}" /></Column>
             <Column><Text text="{i18n>txStatus}" /></Column>
-            <Column><Text text="SAP Doc" /></Column>
-            <Column><Text text="Timestamp" /></Column>
+            <Column><Text text="{i18n>invSAPDoc}" /></Column>
+            <Column><Text text="{i18n>invTimestamp}" /></Column>
           </columns>
 
           <items>

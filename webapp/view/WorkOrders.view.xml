@@ -2,6 +2,7 @@
   controllerName="com.redigo.logistics.cockpit.controller.WorkOrders"
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m"
+  xmlns:core="sap.ui.core"
   xmlns:l="sap.ui.layout">
 
   <Page title="{i18n>woTitle}" showNavButton="false">
@@ -14,26 +15,35 @@
           <SegmentedButtonItem text="{i18n>woInbound}" key="INBOUND" />
         </items>
       </SegmentedButton>
+      <Button text="{i18n>woProcessBtn}" icon="sap-icon://initiative" press="onProcessSelected" type="Emphasized" />
       <Button icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
       <Button icon="sap-icon://excel-attachment" text="{i18n>btnExport}" press="onExport" type="Transparent" />
     </headerContent>
 
     <subHeader>
       <OverflowToolbar>
-        <SearchField width="300px" placeholder="Search by Delivery No..." liveChange="onSearch" />
+        <SearchField width="300px" placeholder="{i18n>woSearchPlaceholder}" liveChange="onSearch" />
         <ToolbarSpacer />
-        <Select id="statusFilter" change="onStatusFilterChange">
-          <core:Item xmlns:core="sap.ui.core" key="ALL" text="{i18n>woFilterAll}" />
-          <core:Item xmlns:core="sap.ui.core" key="RECEIVED" text="Received" />
-          <core:Item xmlns:core="sap.ui.core" key="SENT_TO_WMS" text="Sent to WMS" />
-          <core:Item xmlns:core="sap.ui.core" key="IN_PROGRESS" text="In Progress" />
-          <core:Item xmlns:core="sap.ui.core" key="PARTIALLY_DONE" text="Partially Done" />
-          <core:Item xmlns:core="sap.ui.core" key="COMPLETED" text="Completed" />
-          <core:Item xmlns:core="sap.ui.core" key="PGI_POSTED" text="PGI Posted" />
-          <core:Item xmlns:core="sap.ui.core" key="GR_POSTED" text="GR Posted" />
-          <core:Item xmlns:core="sap.ui.core" key="FAILED" text="Failed" />
+        <Select id="warehouseFilter" change="onFilterChange"
+          items="{workOrders>/warehouseOptions}">
+          <core:Item key="{workOrders>key}" text="{workOrders>text}" />
         </Select>
-        <ObjectStatus text="{workOrders>/count} orders" state="Information" />
+        <Select id="deliveryTypeFilter" change="onFilterChange"
+          items="{workOrders>/deliveryTypeOptions}">
+          <core:Item key="{workOrders>key}" text="{workOrders>text}" />
+        </Select>
+        <Select id="statusFilter" change="onFilterChange">
+          <core:Item key="ALL" text="{i18n>woFilterAll}" />
+          <core:Item key="RECEIVED" text="{i18n>woReceived}" />
+          <core:Item key="SENT_TO_WMS" text="{i18n>woSentToWMS}" />
+          <core:Item key="IN_PROGRESS" text="{i18n>woInProgress}" />
+          <core:Item key="PARTIALLY_DONE" text="{i18n>woPartiallyDone}" />
+          <core:Item key="COMPLETED" text="{i18n>woCompleted2}" />
+          <core:Item key="PGI_POSTED" text="{i18n>woPGIPosted}" />
+          <core:Item key="GR_POSTED" text="{i18n>woGRPosted}" />
+          <core:Item key="FAILED" text="{i18n>woFailed}" />
+        </Select>
+        <ObjectStatus text="{workOrders>/countText}" state="Information" />
       </OverflowToolbar>
     </subHeader>
 
@@ -44,18 +54,18 @@
         growing="true"
         growingThreshold="25"
         growingScrollToLoad="true"
-        mode="SingleSelectMaster"
-        selectionChange="onRowSelect">
+        mode="MultiSelect"
+        selectionChange="onSelectionChange">
 
         <columns>
           <Column width="140px"><Text text="{i18n>woDeliveryNo}" /></Column>
-          <Column width="80px"><Text text="Del.Type" /></Column>
+          <Column width="80px"><Text text="{i18n>woDeliveryType}" /></Column>
           <Column width="100px"><Text text="{i18n>woType}" /></Column>
           <Column width="120px"><Text text="{i18n>woStatus}" /></Column>
           <Column width="120px"><Text text="{i18n>woWarehouse}" /></Column>
-          <Column width="100px"><Text text="Ship-To" /></Column>
+          <Column width="100px"><Text text="{i18n>woShipTo}" /></Column>
           <Column width="60px" hAlign="Center"><Text text="{i18n>woLines}" /></Column>
-          <Column width="80px"><Text text="Priority" /></Column>
+          <Column width="80px"><Text text="{i18n>woPriority}" /></Column>
           <Column><Text text="{i18n>woReceivedAt}" /></Column>
           <Column><Text text="{i18n>woCompletedAt}" /></Column>
         </columns>
@@ -75,9 +85,9 @@
               <Text text="{workOrders>warehouse_code}" />
               <Text text="{workOrders>sap_ship_to}" />
               <ObjectNumber number="{workOrders>line_count}" />
-              <ObjectNumber
-                number="{workOrders>priority}"
-                state="{= ${workOrders>priority} > 5 ? 'Error' : ${workOrders>priority} > 0 ? 'Warning' : 'None'}" />
+              <ObjectStatus
+                text="{workOrders>priority}"
+                state="{= ${workOrders>priority} === 'HIGH' ? 'Error' : ${workOrders>priority} === 'MEDIUM' ? 'Warning' : 'Success'}" />
               <Text text="{workOrders>received_at_fmt}" />
               <Text text="{workOrders>completed_at_fmt}" />
             </cells>

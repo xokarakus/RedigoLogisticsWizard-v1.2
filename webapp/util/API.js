@@ -2,7 +2,7 @@ sap.ui.define([], function () {
   "use strict";
 
   var API = {
-    _baseUrl: "",
+    _baseUrl: "http://localhost:3000",
 
     _request: function (sMethod, sUrl, oBody, oParams) {
       var sFullUrl = this._baseUrl + sUrl;
@@ -46,6 +46,10 @@ sap.ui.define([], function () {
 
     patch: function (sUrl, oBody) {
       return this._request("PATCH", sUrl, oBody);
+    },
+
+    del: function (sUrl) {
+      return this._request("DELETE", sUrl);
     }
   };
 

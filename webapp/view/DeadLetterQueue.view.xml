@@ -2,14 +2,26 @@
   controllerName="com.redigo.logistics.cockpit.controller.DeadLetterQueue"
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m"
+  xmlns:core="sap.ui.core"
   xmlns:l="sap.ui.layout">
 
   <Page title="{i18n>dlqTitle}" showNavButton="false">
 
     <headerContent>
       <Button icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
-      <ObjectStatus text="{dlq>/count} items" state="Error" />
     </headerContent>
+
+    <subHeader>
+      <OverflowToolbar>
+        <SearchField width="300px" placeholder="{i18n>dlqSearchPlaceholder}" liveChange="onSearch" />
+        <ToolbarSpacer />
+        <Select id="actionFilter" change="onFilterChange"
+          items="{dlq>/actionOptions}">
+          <core:Item key="{dlq>key}" text="{dlq>text}" />
+        </Select>
+        <ObjectStatus text="{dlq>/countText}" state="Error" />
+      </OverflowToolbar>
+    </subHeader>
 
     <content>
       <Table
@@ -23,11 +35,11 @@
         <columns>
           <Column width="130px"><Text text="{i18n>txAction}" /></Column>
           <Column width="150px"><Text text="{i18n>txSAPFunction}" /></Column>
-          <Column width="120px"><Text text="Delivery" /></Column>
+          <Column width="120px"><Text text="{i18n>dlqDelivery}" /></Column>
           <Column width="60px" hAlign="Center"><Text text="{i18n>txRetryCount}" /></Column>
           <Column><Text text="{i18n>dlqErrorMessage}" /></Column>
           <Column><Text text="{i18n>txStarted}" /></Column>
-          <Column width="200px" hAlign="Center"><Text text="Actions" /></Column>
+          <Column width="200px" hAlign="Center"><Text text="{i18n>dlqActions}" /></Column>
         </columns>
 
         <items>
@@ -54,7 +66,7 @@
 
       <!-- Edit Payload Dialog (shown on Edit press) -->
       <l:VerticalLayout id="editSection" visible="{dlq>/editVisible}" class="sapUiSmallMargin" width="100%">
-        <Panel headerText="Edit Payload for Replay">
+        <Panel headerText="{i18n>dlqEditPayloadHeader}">
           <l:Grid defaultSpan="XL6 L6 M12 S12">
             <Panel headerText="{i18n>dlqOriginalPayload}">
               <TextArea value="{dlq>/selectedOriginal}" rows="15" width="100%" editable="false" />
@@ -66,7 +78,7 @@
           <OverflowToolbar>
             <ToolbarSpacer />
             <Button text="{i18n>cfgCancel}" press="onCancelEdit" />
-            <Button text="Save &amp; Replay" press="onSaveAndReplay" type="Emphasized" />
+            <Button text="{i18n>dlqSaveAndReplay}" press="onSaveAndReplay" type="Emphasized" />
           </OverflowToolbar>
         </Panel>
       </l:VerticalLayout>

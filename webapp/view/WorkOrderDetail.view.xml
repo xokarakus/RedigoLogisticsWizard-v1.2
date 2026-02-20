@@ -6,13 +6,13 @@
   xmlns:l="sap.ui.layout"
   xmlns:f="sap.ui.layout.form">
 
-  <Page title="Work Order: {detail>/sap_delivery_no}" showNavButton="true" navButtonPress="onNavBack">
+  <Page title="{i18n>wodTitle}" showNavButton="true" navButtonPress="onNavBack">
 
     <headerContent>
       <ObjectStatus
         text="{detail>/status}"
         state="{= ${detail>/status} === 'PGI_POSTED' || ${detail>/status} === 'GR_POSTED' ? 'Success' : ${detail>/status} === 'FAILED' ? 'Error' : 'Warning'}" />
-      <Button text="Send to WMS" icon="sap-icon://outbox" press="onSendToWMS" type="Emphasized"
+      <Button text="{i18n>wodSendToWMS}" icon="sap-icon://outbox" press="onSendToWMS" type="Emphasized"
         visible="{= ${detail>/status} === 'RECEIVED'}" />
     </headerContent>
 
@@ -21,7 +21,7 @@
 
         <!-- TAB 1: Overview -->
         <items>
-          <IconTabFilter text="Overview" icon="sap-icon://hint" key="overview">
+          <IconTabFilter text="{i18n>wodOverview}" icon="sap-icon://hint" key="overview">
             <l:Grid defaultSpan="XL6 L6 M12 S12" class="sapUiSmallMarginTop">
 
               <!-- SAP Info -->
@@ -29,13 +29,13 @@
                 <f:SimpleForm editable="false" layout="ResponsiveGridLayout" columnsL="2" columnsM="1">
                   <Label text="{i18n>woDeliveryNo}" />
                   <Text text="{detail>/sap_delivery_no}" />
-                  <Label text="Delivery Type" />
+                  <Label text="{i18n>woDeliveryType}" />
                   <Text text="{detail>/sap_delivery_type}" />
-                  <Label text="Document Date" />
+                  <Label text="{i18n>wodDocDate}" />
                   <Text text="{detail>/sap_doc_date}" />
-                  <Label text="Ship-To" />
+                  <Label text="{i18n>woShipTo}" />
                   <Text text="{detail>/sap_ship_to}" />
-                  <Label text="Sold-To" />
+                  <Label text="{i18n>wodSoldTo}" />
                   <Text text="{detail>/sap_sold_to}" />
                   <Label text="{i18n>woType}" />
                   <ObjectStatus text="{detail>/order_type}"
@@ -46,17 +46,17 @@
               <!-- WMS Info -->
               <Panel headerText="{i18n>wodWMSInfo}">
                 <f:SimpleForm editable="false" layout="ResponsiveGridLayout" columnsL="2" columnsM="1">
-                  <Label text="WMS Order ID" />
+                  <Label text="{i18n>wodWMSOrderID}" />
                   <Text text="{detail>/wms_order_id}" />
                   <Label text="{i18n>woWarehouse}" />
                   <Text text="{detail>/warehouse_code}" />
-                  <Label text="Received At" />
+                  <Label text="{i18n>wodReceivedAt}" />
                   <Text text="{detail>/received_at_fmt}" />
-                  <Label text="Sent to WMS At" />
+                  <Label text="{i18n>wodSentToWMSAt}" />
                   <Text text="{detail>/sent_to_wms_at_fmt}" />
-                  <Label text="Completed At" />
+                  <Label text="{i18n>wodCompletedAt}" />
                   <Text text="{detail>/completed_at_fmt}" />
-                  <Label text="SAP Posted At" />
+                  <Label text="{i18n>wodSAPPostedAt}" />
                   <Text text="{detail>/sap_posted_at_fmt}" />
                 </f:SimpleForm>
               </Panel>
@@ -69,7 +69,7 @@
             count="{detail>/lineCount}">
             <Table items="{detail>/lines}">
               <columns>
-                <Column><Text text="Item" /></Column>
+                <Column><Text text="{i18n>wodItem}" /></Column>
                 <Column><Text text="{i18n>wodMaterial}" /></Column>
                 <Column><Text text="{i18n>wodBatch}" /></Column>
                 <Column hAlign="End"><Text text="{i18n>wodRequestedQty}" /></Column>
@@ -77,7 +77,7 @@
                 <Column hAlign="End"><Text text="{i18n>wodFinalQty}" /></Column>
                 <Column><Text text="{i18n>wodUoM}" /></Column>
                 <Column hAlign="Center"><Text text="{i18n>wodClosed}" /></Column>
-                <Column><Text text="HU / Serial" /></Column>
+                <Column><Text text="{i18n>wodHUSerial}" /></Column>
               </columns>
               <items>
                 <ColumnListItem
@@ -101,8 +101,124 @@
             </Table>
           </IconTabFilter>
 
-          <!-- TAB 3: Transaction History -->
-          <IconTabFilter text="Transactions" icon="sap-icon://activity-items" key="transactions"
+          <!-- TAB 3: Islemler (Operations) - Uyarlama Tabanli -->
+          <IconTabFilter text="{i18n>wodOperations}" icon="sap-icon://action" key="operations"
+            count="{detail>/stepCount}">
+
+            <!-- Uyarlama bulunamadi mesaji -->
+            <MessageStrip
+              text="{i18n>opNoConfig}"
+              type="Warning"
+              showIcon="true"
+              class="sapUiSmallMargin"
+              visible="{= !${detail>/hasProcessConfig}}" />
+
+            <!-- Ana icerik: sol liste + sag detay -->
+            <l:Grid defaultSpan="XL5 L5 M12 S12" visible="{detail>/hasProcessConfig}">
+
+              <!-- SOL: Islem Adimlari Listesi -->
+              <Panel headerText="{i18n>opStepList}">
+                <List id="stepList" mode="MultiSelect" items="{detail>/processSteps}"
+                  selectionChange="onStepSelectionChange"
+                  itemPress="onStepPress">
+                  <items>
+                    <CustomListItem type="Active" press="onStepPress">
+                      <HBox class="sapUiTinyMargin" alignItems="Center">
+                        <VBox class="sapUiTinyMarginEnd" width="100%">
+                          <Title text="{detail>name}" level="H6" />
+                          <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://arrow-right" size="0.75rem" color="#666" class="sapUiTinyMarginEnd" />
+                            <Text text="{detail>source_system}  \u2192  {detail>target_system}" class="sapUiTinyMarginEnd" />
+                          </HBox>
+                          <ObjectStatus
+                            text="{detail>status}"
+                            state="{= ${detail>status} === 'BASARILI' ? 'Success' : ${detail>status} === 'HATALI' ? 'Error' : ${detail>status} === 'ISLENIYOR' ? 'Information' : 'Warning'}"
+                            icon="{= ${detail>status} === 'BASARILI' ? 'sap-icon://accept' : ${detail>status} === 'HATALI' ? 'sap-icon://error' : ${detail>status} === 'ISLENIYOR' ? 'sap-icon://synchronize' : 'sap-icon://pending'}" />
+                        </VBox>
+                      </HBox>
+                    </CustomListItem>
+                  </items>
+                </List>
+              </Panel>
+
+              <!-- SAG: Secili Islem Detayi -->
+              <Panel headerText="{i18n>opSelectedDetail}">
+                <layoutData>
+                  <l:GridData span="XL7 L7 M12 S12" />
+                </layoutData>
+
+                <!-- Secim yapilmadi mesaji -->
+                <MessageStrip
+                  text="{i18n>opSelectStep}"
+                  type="Information"
+                  showIcon="true"
+                  class="sapUiSmallMargin"
+                  visible="{= !${detail>/selectedStep/name}}" />
+
+                <!-- Secili adim detayi -->
+                <VBox visible="{= !!${detail>/selectedStep/name}}">
+                  <f:SimpleForm editable="false" layout="ResponsiveGridLayout" columnsL="1" columnsM="1">
+                    <Label text="{i18n>opSource}" />
+                    <Text text="{detail>/selectedStep/source_system}" />
+                    <Label text="{i18n>opTarget}" />
+                    <Text text="{detail>/selectedStep/target_system}" />
+                    <Label text="{i18n>opDirection}" />
+                    <ObjectStatus text="{detail>/selectedStep/direction}"
+                      state="{= ${detail>/selectedStep/direction} === 'OUTBOUND' ? 'Information' : 'Success'}"
+                      icon="{= ${detail>/selectedStep/direction} === 'OUTBOUND' ? 'sap-icon://outbox' : 'sap-icon://inbox'}" />
+                    <Label text="{i18n>opCompany}" />
+                    <Text text="{detail>/selectedStep/company_name}" />
+                    <Label text="{i18n>opApiUrl}" />
+                    <Text text="{detail>/selectedStep/company_api_url}" />
+                    <Label text="{i18n>opBapi}" />
+                    <Text text="{detail>/selectedStep/bapi_name}" />
+                    <Label text="{i18n>opMvtType}" />
+                    <Text text="{detail>/selectedStep/mvt_type}" />
+                    <Label text="{i18n>opGmCode}" />
+                    <Text text="{detail>/selectedStep/gm_code}" />
+                    <Label text="{i18n>opStatus}" />
+                    <ObjectStatus
+                      text="{detail>/selectedStep/status}"
+                      state="{= ${detail>/selectedStep/status} === 'BASARILI' ? 'Success' : ${detail>/selectedStep/status} === 'HATALI' ? 'Error' : ${detail>/selectedStep/status} === 'ISLENIYOR' ? 'Information' : 'Warning'}" />
+                  </f:SimpleForm>
+
+                  <!-- Isle / Tumunu Isle butonlari -->
+                  <HBox class="sapUiSmallMargin">
+                    <Button text="{i18n>opProcess}" icon="sap-icon://initiative" press="onProcessSelected" type="Emphasized"
+                      class="sapUiTinyMarginEnd" />
+                    <Button text="{i18n>opProcessAll}" icon="sap-icon://batch-payments" press="onProcessAll" type="Attention" />
+                  </HBox>
+                </VBox>
+
+                <!-- Surec ozet bilgileri -->
+                <Panel headerText="{i18n>wodMvtInfo}" class="sapUiSmallMarginTop">
+                  <f:SimpleForm editable="false" layout="ResponsiveGridLayout" columnsL="2" columnsM="1">
+                    <Label text="{i18n>wodProcessType}" />
+                    <Text text="{detail>/process_type_desc}" />
+                    <Label text="{i18n>gmMvtType}" />
+                    <Text text="{detail>/mvt_type}" />
+                    <Label text="{i18n>woWarehouse}" />
+                    <Text text="{detail>/warehouse_code}" />
+                    <Label text="{i18n>cfgCompany}" />
+                    <Text text="{detail>/logistics_company}" />
+                  </f:SimpleForm>
+                </Panel>
+              </Panel>
+
+            </l:Grid>
+
+            <!-- Bilgi mesaji -->
+            <MessageStrip
+              text="{i18n>opStepsInfo}"
+              type="Information"
+              showIcon="true"
+              class="sapUiSmallMargin"
+              visible="{detail>/hasProcessConfig}" />
+
+          </IconTabFilter>
+
+          <!-- TAB 4: Transaction History -->
+          <IconTabFilter text="{i18n>wodTransactions}" icon="sap-icon://activity-items" key="transactions"
             count="{detail>/txCount}">
             <Table items="{detail>/transactions}">
               <columns>
@@ -133,13 +249,13 @@
             </Table>
           </IconTabFilter>
 
-          <!-- TAB 4: Raw Payloads -->
-          <IconTabFilter text="Raw Data" icon="sap-icon://syntax" key="raw">
+          <!-- TAB 5: Raw Payloads -->
+          <IconTabFilter text="{i18n>wodRawData}" icon="sap-icon://syntax" key="raw">
             <l:Grid defaultSpan="XL6 L6 M12 S12">
-              <Panel headerText="SAP Raw Payload">
+              <Panel headerText="{i18n>wodSAPRawPayload}">
                 <TextArea value="{detail>/sap_raw_payload_str}" rows="20" width="100%" editable="false" growing="true" />
               </Panel>
-              <Panel headerText="WMS Raw Payload">
+              <Panel headerText="{i18n>wodWMSRawPayload}">
                 <TextArea value="{detail>/wms_raw_payload_str}" rows="20" width="100%" editable="false" growing="true" />
               </Panel>
             </l:Grid>

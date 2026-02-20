@@ -1,7 +1,8 @@
 <mvc:View
   controllerName="com.redigo.logistics.cockpit.controller.Reconciliation"
   xmlns:mvc="sap.ui.core.mvc"
-  xmlns="sap.m">
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
 
   <Page title="{i18n>recTitle}" showNavButton="false">
 
@@ -9,6 +10,23 @@
       <Button text="{i18n>recRunNow}" icon="sap-icon://synchronize" press="onRunNow" type="Emphasized" />
       <Button icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
     </headerContent>
+
+    <subHeader>
+      <OverflowToolbar>
+        <ToolbarSpacer />
+        <Select id="warehouseFilter" change="onFilterChange"
+          items="{recon>/warehouseOptions}">
+          <core:Item key="{recon>key}" text="{recon>text}" />
+        </Select>
+        <Select id="statusFilter" change="onFilterChange">
+          <core:Item key="ALL" text="{i18n>recAllStatus}" />
+          <core:Item key="OPEN" text="Open" />
+          <core:Item key="COMPLETED" text="{i18n>woCompleted2}" />
+          <core:Item key="REVIEWED" text="{i18n>recMarkReviewed}" />
+        </Select>
+        <ObjectStatus text="{recon>/countText}" state="Information" />
+      </OverflowToolbar>
+    </subHeader>
 
     <content>
       <Table
@@ -24,8 +42,8 @@
           <Column width="100px" hAlign="End"><Text text="{i18n>recWMSOpen}" /></Column>
           <Column width="120px" hAlign="End"><Text text="{i18n>recDiscrepancies}" /></Column>
           <Column width="100px"><Text text="{i18n>recStatus}" /></Column>
-          <Column><Text text="Reviewed By" /></Column>
-          <Column width="150px" hAlign="Center"><Text text="Actions" /></Column>
+          <Column><Text text="{i18n>recReviewedBy}" /></Column>
+          <Column width="150px" hAlign="Center"><Text text="{i18n>recActions}" /></Column>
         </columns>
 
         <items>
@@ -43,8 +61,8 @@
                 state="{= ${recon>status} === 'REVIEWED' ? 'Success' : ${recon>status} === 'COMPLETED' ? 'Warning' : 'None'}" />
               <Text text="{recon>reviewed_by}" />
               <HBox justifyContent="Center">
-                <Button text="Details" icon="sap-icon://detail-view" press="onViewDetails" type="Transparent" />
-                <Button text="Mark Reviewed" press="onMarkReviewed" type="Transparent"
+                <Button text="{i18n>recDetails}" icon="sap-icon://detail-view" press="onViewDetails" type="Transparent" />
+                <Button text="{i18n>recMarkReviewed}" press="onMarkReviewed" type="Transparent"
                   visible="{= ${recon>status} !== 'REVIEWED'}" />
               </HBox>
             </cells>

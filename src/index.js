@@ -21,8 +21,12 @@ app.get('/health', (req, res) => {
 
 // API Routes (will be expanded per module)
 app.use('/api/work-orders', require('./api/routes/workOrders'));
+app.use('/api/transactions', require('./api/routes/transactions'));
+app.use('/api/dashboard', require('./api/routes/dashboard'));
+app.use('/api/reconciliation', require('./api/routes/reconciliation'));
 app.use('/api/wms', require('./api/routes/wmsWebhook'));
 app.use('/api/inventory', require('./api/routes/inventory'));
+app.use('/api/config', require('./api/routes/config'));
 
 // 404
 app.use((req, res) => {

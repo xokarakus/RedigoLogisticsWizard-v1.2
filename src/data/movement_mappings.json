@@ -1,0 +1,62 @@
+[
+  {
+    "id": "mm_1",
+    "warehouse_code": "WH-IST-01",
+    "wms_action_code": "PICK_COMPLETE",
+    "sap_movement_type": "601",
+    "sap_plant": "1000",
+    "sap_stor_loc": "0001",
+    "sap_to_plant": "",
+    "sap_to_stor_loc": "",
+    "description": "Toplama Tamamland\u0131 \u2192 Mal \u00c7\u0131k\u0131\u015f",
+    "is_active": true
+  },
+  {
+    "id": "mm_2",
+    "warehouse_code": "WH-IST-01",
+    "wms_action_code": "GR_CONFIRM",
+    "sap_movement_type": "101",
+    "sap_plant": "1000",
+    "sap_stor_loc": "0001",
+    "sap_to_plant": "",
+    "sap_to_stor_loc": "",
+    "description": "Mal Giri\u015f Onay\u0131",
+    "is_active": true
+  },
+  {
+    "id": "mm_3",
+    "warehouse_code": "WH-ANK-01",
+    "wms_action_code": "TRANSFER_OUT",
+    "sap_movement_type": "301",
+    "sap_plant": "2000",
+    "sap_stor_loc": "0001",
+    "sap_to_plant": "1000",
+    "sap_to_stor_loc": "0001",
+    "description": "Transfer \u00c7\u0131k\u0131\u015f",
+    "is_active": true
+  },
+  {
+    "id": "mm_4",
+    "warehouse_code": "WH-IST-01",
+    "wms_action_code": "RETURN_IN",
+    "sap_movement_type": "161",
+    "sap_plant": "1000",
+    "sap_stor_loc": "0001",
+    "sap_to_plant": "",
+    "sap_to_stor_loc": "",
+    "description": "\u0130ade Giri\u015f",
+    "is_active": true
+  },
+  {
+    "id": "mm_5",
+    "warehouse_code": "WH-ANK-01",
+    "wms_action_code": "SUBCON_GI",
+    "sap_movement_type": "541",
+    "sap_plant": "2000",
+    "sap_stor_loc": "0001",
+    "sap_to_plant": "",
+    "sap_to_stor_loc": "",
+    "description": "Fason Mal \u00c7\u0131k\u0131\u015f",
+    "is_active": true
+  }
+]

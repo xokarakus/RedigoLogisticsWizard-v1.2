@@ -1,0 +1,202 @@
+[
+  {
+    "id": "pt_gi",
+    "code": "GI",
+    "name": "Mal Çıkış (Goods Issue)",
+    "steps": [
+      {
+        "step_no": 1,
+        "name": "SAP'den Teslimat Çek",
+        "source": "SAP",
+        "target": "KOKPIT",
+        "direction": "INBOUND",
+        "api": "/api/trigger/fetch-from-sap"
+      },
+      {
+        "step_no": 2,
+        "name": "3PL'e Sipariş Gönder",
+        "source": "KOKPIT",
+        "target": "3PL",
+        "direction": "OUTBOUND",
+        "api": "/api/trigger/send-to-3pl"
+      },
+      {
+        "step_no": 3,
+        "name": "PGI Kaydet",
+        "source": "KOKPIT",
+        "target": "SAP",
+        "direction": "OUTBOUND",
+        "api": "/api/goods-movement/post-pgi"
+      },
+      {
+        "step_no": 4,
+        "name": "Durum Sorgula",
+        "source": "3PL",
+        "target": "KOKPIT",
+        "direction": "INBOUND",
+        "api": "/api/trigger/query-status"
+      }
+    ]
+  },
+  {
+    "id": "pt_gr",
+    "code": "GR",
+    "name": "Mal Giriş (Goods Receipt)",
+    "steps": [
+      {
+        "step_no": 1,
+        "name": "SAP'den Teslimat Çek",
+        "source": "SAP",
+        "target": "KOKPIT",
+        "direction": "INBOUND",
+        "api": "/api/trigger/fetch-from-sap"
+      },
+      {
+        "step_no": 2,
+        "name": "3PL'e Bildir",
+        "source": "KOKPIT",
+        "target": "3PL",
+        "direction": "OUTBOUND",
+        "api": "/api/trigger/send-to-3pl"
+      },
+      {
+        "step_no": 3,
+        "name": "Mal Giriş Kaydet",
+        "source": "KOKPIT",
+        "target": "SAP",
+        "direction": "OUTBOUND",
+        "api": "/api/goods-movement/post-gr"
+      }
+    ]
+  },
+  {
+    "id": "pt_return",
+    "code": "RETURN",
+    "name": "İade (Returns)",
+    "steps": [
+      {
+        "step_no": 1,
+        "name": "SAP'den Teslimat Çek",
+        "source": "SAP",
+        "target": "KOKPIT",
+        "direction": "INBOUND",
+        "api": "/api/trigger/fetch-from-sap"
+      },
+      {
+        "step_no": 2,
+        "name": "3PL'e Bildir",
+        "source": "KOKPIT",
+        "target": "3PL",
+        "direction": "OUTBOUND",
+        "api": "/api/trigger/send-to-3pl"
+      },
+      {
+        "step_no": 3,
+        "name": "İade Kaydet (161)",
+        "source": "KOKPIT",
+        "target": "SAP",
+        "direction": "OUTBOUND",
+        "api": "/api/goods-movement/post-gr"
+      }
+    ]
+  },
+  {
+    "id": "pt_sub_gr",
+    "code": "SUBCONTRACT_GR",
+    "name": "Fason Mal Giriş",
+    "steps": [
+      {
+        "step_no": 1,
+        "name": "SAP'den Teslimat Çek",
+        "source": "SAP",
+        "target": "KOKPIT",
+        "direction": "INBOUND",
+        "api": "/api/trigger/fetch-from-sap"
+      },
+      {
+        "step_no": 2,
+        "name": "3PL'e Bildir",
+        "source": "KOKPIT",
+        "target": "3PL",
+        "direction": "OUTBOUND",
+        "api": "/api/trigger/send-to-3pl"
+      },
+      {
+        "step_no": 3,
+        "name": "Fason GR Kaydet",
+        "source": "KOKPIT",
+        "target": "SAP",
+        "direction": "OUTBOUND",
+        "api": "/api/goods-movement/post-gr"
+      }
+    ]
+  },
+  {
+    "id": "pt_sub_gi",
+    "code": "SUBCONTRACT_GI",
+    "name": "Fason Mal Çıkış",
+    "steps": [
+      {
+        "step_no": 1,
+        "name": "SAP'den Teslimat Çek",
+        "source": "SAP",
+        "target": "KOKPIT",
+        "direction": "INBOUND",
+        "api": "/api/trigger/fetch-from-sap"
+      },
+      {
+        "step_no": 2,
+        "name": "3PL'e Sipariş Gönder",
+        "source": "KOKPIT",
+        "target": "3PL",
+        "direction": "OUTBOUND",
+        "api": "/api/trigger/send-to-3pl"
+      },
+      {
+        "step_no": 3,
+        "name": "Fason Gİ Kaydet (541)",
+        "source": "KOKPIT",
+        "target": "SAP",
+        "direction": "OUTBOUND",
+        "api": "/api/goods-movement/post-pgi"
+      }
+    ]
+  },
+  {
+    "id": "pt_transfer",
+    "code": "TRANSFER",
+    "name": "Transfer",
+    "steps": [
+      {
+        "step_no": 1,
+        "name": "SAP'den Teslimat Çek",
+        "source": "SAP",
+        "target": "KOKPIT",
+        "direction": "INBOUND",
+        "api": "/api/trigger/fetch-from-sap"
+      },
+      {
+        "step_no": 2,
+        "name": "Hedef 3PL'e Gönder",
+        "source": "KOKPIT",
+        "target": "3PL",
+        "direction": "OUTBOUND",
+        "api": "/api/trigger/send-to-3pl"
+      },
+      {
+        "step_no": 3,
+        "name": "Transfer Kaydet (301)",
+        "source": "KOKPIT",
+        "target": "SAP",
+        "direction": "OUTBOUND",
+        "api": "/api/goods-movement/post-pgi"
+      }
+    ]
+  },
+  {
+    "code": "DA",
+    "name": "Depolar Arası Transfer",
+    "steps": [],
+    "id": "id_1771553695165_9tkr"
+  }
+]

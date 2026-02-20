@@ -1,0 +1,37 @@
+[
+  {
+    "id": "rec_1",
+    "run_date": "2026-02-20T06:00:00Z",
+    "warehouse_code": "WH-IST-01",
+    "sap_open_count": 3,
+    "wms_open_count": 4,
+    "status": "OPEN",
+    "reviewed_by": null,
+    "discrepancies": [
+      { "delivery": "8000012007", "issue": "SAP'de a\u00e7\u0131k, WMS'de FAILED - stok yetersizli\u011fi" }
+    ]
+  },
+  {
+    "id": "rec_2",
+    "run_date": "2026-02-19T06:00:00Z",
+    "warehouse_code": "WH-IST-01",
+    "sap_open_count": 5,
+    "wms_open_count": 5,
+    "status": "REVIEWED",
+    "reviewed_by": "cockpit_user",
+    "discrepancies": []
+  },
+  {
+    "id": "rec_3",
+    "run_date": "2026-02-20T06:00:00Z",
+    "warehouse_code": "WH-ANK-01",
+    "sap_open_count": 2,
+    "wms_open_count": 2,
+    "status": "OPEN",
+    "reviewed_by": null,
+    "discrepancies": [
+      { "delivery": "8000012005", "issue": "Fason GI bekliyor - toplama tamamland\u0131 ama SAP kayd\u0131 yap\u0131lmad\u0131" },
+      { "delivery": "8000012006", "issue": "Transfer belge tutars\u0131zl\u0131\u011f\u0131 - miktar fark\u0131 (SAP: 750, WMS: 748)" }
+    ]
+  }
+]

@@ -1,48 +1,110 @@
 sap.ui.define([
   "sap/ui/core/mvc/Controller",
   "sap/ui/model/json/JSONModel",
+  "sap/ui/model/Filter",
+  "sap/ui/model/FilterOperator",
+  "sap/m/MessageToast",
   "com/redigo/logistics/cockpit/util/API"
-], function (Controller, JSONModel, API) {
+], function (Controller, JSONModel, Filter, FilterOperator, MessageToast, API) {
   "use strict";
-
-  var DEMO_MAPPINGS = [
-    { warehouse_code: "WH-IST-01", wms_action_code: "SCRAP", sap_movement_type: "551", description: "Hurda cikisi", sap_to_plant: null, sap_to_stor_loc: null },
-    { warehouse_code: "WH-IST-01", wms_action_code: "DAMAGED", sap_movement_type: "344", description: "Hasarli stok blokaj", sap_to_plant: null, sap_to_stor_loc: null },
-    { warehouse_code: "WH-IST-01", wms_action_code: "TRANSFER_SLOC", sap_movement_type: "311", description: "Depo yeri transferi", sap_to_plant: null, sap_to_stor_loc: "0002" },
-    { warehouse_code: "WH-ANK-01", wms_action_code: "SCRAP", sap_movement_type: "551", description: "Hurda cikisi", sap_to_plant: null, sap_to_stor_loc: null },
-    { warehouse_code: "WH-ANK-01", wms_action_code: "TRANSFER_PLANT", sap_movement_type: "301", description: "Tesisler arasi transfer", sap_to_plant: "3000", sap_to_stor_loc: "0001" }
-  ];
-
-  var DEMO_TX = [
-    { action: "INV_SCRAP", material: "000000002002", quantity: 15, uom: "EA", sap_movement_type: "551", warehouse_code: "WH-IST-01", status: "SUCCESS", sap_doc_number: "5000001240", created_at: "2026-02-10T10:30:00Z" },
-    { action: "INV_DAMAGED", material: "000000003001", quantity: 5, uom: "EA", sap_movement_type: "344", warehouse_code: "WH-ANK-01", status: "FAILED", sap_doc_number: null, created_at: "2026-02-10T04:10:00Z" },
-    { action: "INV_TRANSFER_SLOC", material: "000000001003", quantity: 200, uom: "EA", sap_movement_type: "311", warehouse_code: "WH-IST-01", status: "SUCCESS", sap_doc_number: "5000001242", created_at: "2026-02-10T09:00:00Z" }
-  ];
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.Inventory", {
     onInit: function () {
-      this._oModel = new JSONModel({ mappings: [], transactions: [], count: 0 });
+      this._oModel = new JSONModel({
+        mappings: [], transactions: [], count: 0, countText: "",
+        warehouseOptions: []
+      });
       this.getView().setModel(this._oModel, "inv");
+      this._sSearchQuery = "";
       this._loadData();
     },
+
+    _getText: function (sKey, aArgs) {
+      var oBundle = this.getView().getModel("i18n").getResourceBundle();
+      return oBundle.getText(sKey, aArgs);
+    },
+
     _loadData: function () {
       var that = this;
-      API.get("/api/inventory/mappings").then(function (result) { that._oModel.setProperty("/mappings", (result.data && result.data.length) ? result.data : DEMO_MAPPINGS); });
+      API.get("/api/inventory/mappings").then(function (result) {
+        that._oModel.setProperty("/mappings", result.data || []);
+      });
+
       API.get("/api/transactions", { action_like: "INV_", limit: 50 }).then(function (result) {
-        var aRaw = (result.data && result.data.length) ? result.data : DEMO_TX;
-        aRaw.forEach(function (tx) { tx.created_at_fmt = tx.created_at ? new Date(tx.created_at).toLocaleString("tr-TR") : ""; });
-        that._oModel.setProperty("/transactions", aRaw);
-        that._oModel.setProperty("/count", aRaw.length);
+        var aData = (result.data || []).map(function (tx) {
+          tx.created_at_fmt = tx.created_at ? new Date(tx.created_at).toLocaleString("tr-TR") : "";
+          return tx;
+        });
+        that._oModel.setProperty("/transactions", aData);
+        that._oModel.setProperty("/count", aData.length);
+        that._oModel.setProperty("/countText", that._getText("invMovementCount", [aData.length]));
+        that._applyFilters();
+      });
+
+      // Load warehouses for filter dropdown
+      API.get("/api/config/warehouses").then(function (result) {
+        var aWarehouses = result.data || [];
+        var aOptions = [{ key: "ALL", text: that._getText("invAllWarehouses") }];
+        aWarehouses.forEach(function (w) {
+          aOptions.push({ key: w.code, text: w.code + " \u2013 " + w.name });
+        });
+        that._oModel.setProperty("/warehouseOptions", aOptions);
       });
     },
-    onRefresh: function () { this._loadData(); sap.m.MessageToast.show("Yenilendi"); },
-    onFilterChange: function () { this._loadData(); },
-    onSearch: function (oEvent) {
-      var sQuery = oEvent.getParameter("newValue");
-      var oBinding = this.byId("invTxTable").getBinding("items");
+
+    _applyFilters: function () {
+      var oTable = this.byId("invTxTable");
+      if (!oTable) { return; }
+      var oBinding = oTable.getBinding("items");
+      if (!oBinding) { return; }
+
       var aFilters = [];
-      if (sQuery) { aFilters.push(new sap.ui.model.Filter("material", sap.ui.model.FilterOperator.Contains, sQuery)); }
-      oBinding.filter(aFilters);
+
+      // Warehouse filter
+      var oWarehouseFilter = this.byId("warehouseFilter");
+      if (oWarehouseFilter) {
+        var sWarehouse = oWarehouseFilter.getSelectedKey();
+        if (sWarehouse && sWarehouse !== "ALL") {
+          aFilters.push(new Filter("warehouse_code", FilterOperator.EQ, sWarehouse));
+        }
+      }
+
+      // Status filter
+      var oStatusFilter = this.byId("statusFilter");
+      if (oStatusFilter) {
+        var sStatus = oStatusFilter.getSelectedKey();
+        if (sStatus && sStatus !== "ALL") {
+          aFilters.push(new Filter("status", FilterOperator.EQ, sStatus));
+        }
+      }
+
+      // Search filter (material or action)
+      if (this._sSearchQuery) {
+        aFilters.push(new Filter({
+          filters: [
+            new Filter("material", FilterOperator.Contains, this._sSearchQuery),
+            new Filter("action", FilterOperator.Contains, this._sSearchQuery)
+          ],
+          and: false
+        }));
+      }
+
+      oBinding.filter(aFilters.length > 0 ? new Filter({ filters: aFilters, and: true }) : []);
+
+      var iFiltered = oBinding.getLength();
+      this._oModel.setProperty("/countText", this._getText("invMovementCount", [iFiltered]));
+    },
+
+    onRefresh: function () {
+      this._loadData();
+      MessageToast.show(this._getText("msgRefreshed"));
+    },
+
+    onFilterChange: function () { this._applyFilters(); },
+
+    onSearch: function (oEvent) {
+      this._sSearchQuery = oEvent.getParameter("newValue") || "";
+      this._applyFilters();
     }
   });
 });

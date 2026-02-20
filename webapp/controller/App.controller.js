@@ -49,10 +49,13 @@ sap.ui.define([
       }).catch(function (err) {
         var sMsg = err.message || String(err);
         console.error("View load FAILED: " + sViewName, err);
+        var oBundle = that.getView().getModel("i18n").getResourceBundle();
+        var sErrTitle = oBundle.getText("msgError") + ": " + sKey;
+        var sErrText = oBundle.getText("msgViewLoadError", [sViewName, sMsg]);
         var oErrPage = new Page({
-          title: "Error: " + sKey,
+          title: sErrTitle,
           content: [
-            new Text({ text: "View yukleme hatasi:\n\n" + sViewName + "\n\n" + sMsg }).addStyleClass("sapUiSmallMargin")
+            new Text({ text: sErrText }).addStyleClass("sapUiSmallMargin")
           ]
         });
         that._viewCache[sKey] = oErrPage;

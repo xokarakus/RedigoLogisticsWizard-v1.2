@@ -2,41 +2,21 @@ sap.ui.define([
   "sap/ui/core/mvc/Controller",
   "sap/ui/model/json/JSONModel",
   "sap/m/MessageToast",
+  "sap/m/MessageBox",
   "com/redigo/logistics/cockpit/util/API"
-], function (Controller, JSONModel, MessageToast, API) {
+], function (Controller, JSONModel, MessageToast, MessageBox, API) {
   "use strict";
 
-  var DEMO_DETAIL = {
-    id: "d1",
-    sap_delivery_no: "0080001234",
-    sap_delivery_type: "LF",
-    sap_doc_date: "2026-02-10",
-    sap_ship_to: "CUST-001",
-    sap_sold_to: "SOLD-001",
-    order_type: "OUTBOUND",
-    status: "PGI_POSTED",
-    warehouse_code: "WH-IST-01",
-    wms_order_id: "WMS-991234",
-    received_at: "2026-02-10T08:30:00Z",
-    sent_to_wms_at: "2026-02-10T08:31:00Z",
-    completed_at: "2026-02-10T10:45:00Z",
-    sap_posted_at: "2026-02-10T10:46:00Z",
-    sap_raw_payload: { VBELN: "0080001234", LFART: "LF", WADAT_IST: "20260210" },
-    wms_raw_payload: { orderId: "WMS-991234", status: "COMPLETED", pickedAt: "2026-02-10T10:45:00Z" },
-    lines: [
-      { sap_item_no: "000010", sap_material: "MAT-A100", sap_batch: "B2026001", sap_requested_qty: 100, wms_picked_qty: 100, sap_final_qty: 100, sap_uom: "EA", wms_uom: "EA", is_closed: true, wms_hu_ids: ["HU-001"], wms_serial_numbers: [] },
-      { sap_item_no: "000020", sap_material: "MAT-B200", sap_batch: "B2026002", sap_requested_qty: 50, wms_picked_qty: 45, sap_final_qty: 45, sap_uom: "KG", wms_uom: "KG", is_closed: true, wms_hu_ids: ["HU-002", "HU-003"], wms_serial_numbers: [] },
-      { sap_item_no: "000030", sap_material: "MAT-C300", sap_batch: "", sap_requested_qty: 200, wms_picked_qty: 200, sap_final_qty: 200, sap_uom: "EA", wms_uom: "EA", is_closed: true, wms_hu_ids: [], wms_serial_numbers: ["SN-001", "SN-002"] }
-    ]
+  /* Surec Tipi Hesaplama Tablosu (fallback) */
+  var PROCESS_MAP = {
+    "INBOUND_NL":    { process_type: "GR",              desc: "Mal Giris (Standart)", mvt_type: "101" },
+    "INBOUND_EL":    { process_type: "GR",              desc: "Mal Giris (Tedarikci)", mvt_type: "101" },
+    "OUTBOUND_LF":   { process_type: "GI",              desc: "Mal Cikis (Teslimat)", mvt_type: "601" },
+    "OUTBOUND_NL":   { process_type: "GI",              desc: "Mal Cikis / Transfer", mvt_type: "601" },
+    "INBOUND_LR":    { process_type: "RETURN",           desc: "Iade Mal Giris", mvt_type: "161" },
+    "INBOUND_FASON": { process_type: "SUBCONTRACT_GR",   desc: "Fason Mal Giris", mvt_type: "101" },
+    "OUTBOUND_FASON":{ process_type: "SUBCONTRACT_GI",   desc: "Fason Mal Cikis", mvt_type: "541" }
   };
-
-  var DEMO_TX = [
-    { action: "INGEST_DELIVERY", direction: "SAP_TO_MW", status: "SUCCESS", sap_function: "BAPI_DELIVERY_GETLIST", duration_ms: 120, retry_count: 0, started_at: "2026-02-10T08:30:00Z", error_message: "" },
-    { action: "DISPATCH_TO_WMS", direction: "MW_TO_WMS", status: "SUCCESS", sap_function: null, duration_ms: 85, retry_count: 0, started_at: "2026-02-10T08:31:00Z", error_message: "" },
-    { action: "WMS_CONFIRMATION", direction: "WMS_TO_MW", status: "SUCCESS", sap_function: null, duration_ms: 30, retry_count: 0, started_at: "2026-02-10T10:45:00Z", error_message: "" },
-    { action: "UPDATE_DELIVERY_QTY", direction: "MW_TO_SAP", status: "SUCCESS", sap_function: "BAPI_OUTB_DELIVERY_CHANGE", duration_ms: 340, retry_count: 0, started_at: "2026-02-10T10:45:05Z", error_message: "" },
-    { action: "POST_PGI", direction: "MW_TO_SAP", status: "SUCCESS", sap_function: "WS_DELIVERY_UPDATE", duration_ms: 280, retry_count: 1, started_at: "2026-02-10T10:45:10Z", error_message: "" }
-  ];
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.WorkOrderDetail", {
 
@@ -46,42 +26,192 @@ sap.ui.define([
       this._loadDetail("d1");
     },
 
-    _loadDetail: function (sOrderId) {
-      var that = this;
-      var data = JSON.parse(JSON.stringify(DEMO_DETAIL));
+    _getText: function (sKey, aArgs) {
+      var oBundle = this.getView().getModel("i18n").getResourceBundle();
+      return oBundle.getText(sKey, aArgs);
+    },
 
+    _resolveProcessInfo: function (data) {
+      var sKey = data.order_type + "_" + data.sap_delivery_type;
+      var oInfo = PROCESS_MAP[sKey];
+      if (data.mvt_type === "301" || data.mvt_type === "311") {
+        data.process_type_desc = "Transfer (" + data.mvt_type + ")";
+        data.logistics_company = "-";
+        return;
+      }
+      if (oInfo) {
+        data.process_type_desc = oInfo.desc;
+        if (!data.mvt_type) { data.mvt_type = oInfo.mvt_type; }
+      } else {
+        data.process_type_desc = data.order_type + " / " + data.sap_delivery_type;
+      }
+      data.logistics_company = "-";
+    },
+
+    _loadProcessSteps: function (data) {
+      var that = this;
+      var sPlant = data.plant_code || "1000";
+      var sWarehouse = data.warehouse_code;
+      var sDeliveryType = data.sap_delivery_type;
+
+      if (!sWarehouse || !sDeliveryType) { return; }
+
+      API.get("/api/config/process-steps?plant_code=" + sPlant +
+              "&warehouse_code=" + encodeURIComponent(sWarehouse) +
+              "&delivery_type=" + encodeURIComponent(sDeliveryType))
+        .then(function (result) {
+          if (result && result.steps) {
+            that._oModel.setProperty("/processSteps", result.steps);
+            that._oModel.setProperty("/stepCount", result.steps.length);
+            that._oModel.setProperty("/hasProcessConfig", true);
+            that._oModel.setProperty("/selectedStep", {});
+            var pc = result.process_config;
+            if (pc) {
+              that._oModel.setProperty("/process_type_desc", pc.delivery_type_desc + " (" + pc.process_type + ")");
+              that._oModel.setProperty("/mvt_type", pc.mvt_type);
+              that._oModel.setProperty("/logistics_company", pc.company_name);
+            }
+          } else {
+            that._oModel.setProperty("/processSteps", []);
+            that._oModel.setProperty("/stepCount", 0);
+            that._oModel.setProperty("/hasProcessConfig", false);
+          }
+        })
+        .catch(function () {
+          that._oModel.setProperty("/hasProcessConfig", false);
+          that._oModel.setProperty("/processSteps", []);
+          that._oModel.setProperty("/stepCount", 0);
+        });
+    },
+
+    _formatDetail: function (data) {
       data.received_at_fmt = data.received_at ? new Date(data.received_at).toLocaleString("tr-TR") : "-";
       data.sent_to_wms_at_fmt = data.sent_to_wms_at ? new Date(data.sent_to_wms_at).toLocaleString("tr-TR") : "-";
       data.completed_at_fmt = data.completed_at ? new Date(data.completed_at).toLocaleString("tr-TR") : "-";
       data.sap_posted_at_fmt = data.sap_posted_at ? new Date(data.sap_posted_at).toLocaleString("tr-TR") : "-";
-      data.sap_raw_payload_str = JSON.stringify(data.sap_raw_payload, null, 2) || "{}";
-      data.wms_raw_payload_str = JSON.stringify(data.wms_raw_payload, null, 2) || "{}";
+      data.sap_raw_payload_str = JSON.stringify(data.sap_raw_payload || {}, null, 2);
+      data.wms_raw_payload_str = JSON.stringify(data.wms_raw_payload || {}, null, 2);
       data.lineCount = (data.lines || []).length;
-
       (data.lines || []).forEach(function (line) {
         var aInfo = [];
         if (line.wms_hu_ids && line.wms_hu_ids.length) aInfo.push("HU: " + line.wms_hu_ids.join(", "));
         if (line.wms_serial_numbers && line.wms_serial_numbers.length) aInfo.push("SN: " + line.wms_serial_numbers.join(", "));
         line.hu_serial_info = aInfo.join(" | ") || "-";
       });
+      this._resolveProcessInfo(data);
+      data.processSteps = [];
+      data.stepCount = 0;
+      data.hasProcessConfig = false;
+      data.selectedStep = {};
+      return data;
+    },
 
-      that._oModel.setData(data);
-
-      var aTx = DEMO_TX.map(function (tx) {
-        var t = JSON.parse(JSON.stringify(tx));
-        t.started_at_fmt = t.started_at ? new Date(t.started_at).toLocaleString("tr-TR") : "";
-        return t;
+    _loadDetail: function (sOrderId) {
+      var that = this;
+      API.get("/api/work-orders/" + sOrderId).then(function (result) {
+        var data = result.data || result || {};
+        data = that._formatDetail(data);
+        that._oModel.setData(data);
+        that._loadTransactions(sOrderId);
+        that._loadProcessSteps(data);
       });
-      that._oModel.setProperty("/transactions", aTx);
-      that._oModel.setProperty("/txCount", aTx.length);
     },
 
-    onNavBack: function () {
-      this.getOwnerComponent().showView("workOrders");
+    _loadTransactions: function (sOrderId) {
+      var that = this;
+      API.get("/api/transactions", { work_order_id: sOrderId, limit: 50 }).then(function (result) {
+        var aTx = (result.data || []).map(function (tx) {
+          tx.started_at_fmt = tx.started_at ? new Date(tx.started_at).toLocaleString("tr-TR") : "";
+          return tx;
+        });
+        that._oModel.setProperty("/transactions", aTx);
+        that._oModel.setProperty("/txCount", aTx.length);
+      });
     },
 
-    onSendToWMS: function () {
-      MessageToast.show("WMS'e gonderildi (demo mod)");
+    onNavBack: function () { this.getOwnerComponent().showView("workOrders"); },
+    onSendToWMS: function () { MessageToast.show(this._getText("msgSentToWMSDemo")); },
+
+    onStepSelectionChange: function () {
+      var oList = this.byId("stepList");
+      var aSelected = oList.getSelectedItems();
+      if (aSelected.length > 0) {
+        var oCtx = aSelected[aSelected.length - 1].getBindingContext("detail");
+        if (oCtx) { this._oModel.setProperty("/selectedStep", JSON.parse(JSON.stringify(oCtx.getObject()))); }
+      }
+    },
+
+    onStepPress: function (oEvent) {
+      var oItem = oEvent.getParameter("listItem") || oEvent.getSource();
+      var oCtx = oItem.getBindingContext("detail");
+      if (oCtx) { this._oModel.setProperty("/selectedStep", JSON.parse(JSON.stringify(oCtx.getObject()))); }
+    },
+
+    onProcessSelected: function () {
+      var oList = this.byId("stepList");
+      var aSelected = oList.getSelectedItems();
+      if (aSelected.length === 0) { MessageToast.show(this._getText("msgSelectStep")); return; }
+      var aSteps = [];
+      aSelected.forEach(function (oItem) {
+        var oCtx = oItem.getBindingContext("detail");
+        if (oCtx) { aSteps.push(oCtx.getObject()); }
+      });
+      this._executeSteps(aSteps);
+    },
+
+    onProcessAll: function () {
+      var aSteps = this._oModel.getProperty("/processSteps") || [];
+      var aPending = aSteps.filter(function (s) { return s.status === "BEKLIYOR" || s.status === "HATALI"; });
+      if (aPending.length === 0) { MessageToast.show(this._getText("msgAllStepsComplete")); return; }
+      this._executeSteps(aPending);
+    },
+
+    _executeSteps: function (aSteps) {
+      var that = this;
+      var sDeliveryNo = this._oModel.getProperty("/sap_delivery_no");
+      var sWarehouse = this._oModel.getProperty("/warehouse_code");
+      var sPlant = this._oModel.getProperty("/plant_code") || "1000";
+      var sDeliveryType = this._oModel.getProperty("/sap_delivery_type");
+      var sStepNames = aSteps.map(function (s) { return s.step_no + ". " + s.name; }).join("\n");
+
+      MessageBox.confirm(
+        this._getText("msgProcessConfirm", [aSteps.length, sStepNames]), {
+        title: this._getText("msgExecuteConfirmTitle"),
+        onClose: function (sAction) {
+          if (sAction === MessageBox.Action.OK) {
+            that._runStepsSequential(aSteps, 0, sDeliveryNo, sPlant, sWarehouse, sDeliveryType);
+          }
+        }
+      });
+    },
+
+    _runStepsSequential: function (aSteps, iIndex, sDeliveryNo, sPlant, sWarehouse, sDeliveryType) {
+      if (iIndex >= aSteps.length) { MessageToast.show(this._getText("msgAllStepsCompleted")); return; }
+      var that = this;
+      var oStep = aSteps[iIndex];
+      var sStepPath = that._findStepPath(oStep.step_no);
+      if (sStepPath) { that._oModel.setProperty(sStepPath + "/status", "ISLENIYOR"); }
+      var oPayload = {
+        delivery_no: sDeliveryNo, plant_code: sPlant, warehouse_code: sWarehouse,
+        delivery_type: sDeliveryType, mvt_type: oStep.mvt_type, step_no: oStep.step_no, step_name: oStep.name
+      };
+      API.post(oStep.api_endpoint, oPayload)
+        .then(function () {
+          if (sStepPath) { that._oModel.setProperty(sStepPath + "/status", "BASARILI"); }
+          that._runStepsSequential(aSteps, iIndex + 1, sDeliveryNo, sPlant, sWarehouse, sDeliveryType);
+        })
+        .catch(function (err) {
+          if (sStepPath) { that._oModel.setProperty(sStepPath + "/status", "HATALI"); }
+          MessageBox.error(that._getText("msgProcessStepError", [oStep.name, err.message || ""]));
+        });
+    },
+
+    _findStepPath: function (iStepNo) {
+      var aSteps = this._oModel.getProperty("/processSteps") || [];
+      for (var i = 0; i < aSteps.length; i++) {
+        if (aSteps[i].step_no === iStepNo) { return "/processSteps/" + i; }
+      }
+      return null;
     }
   });
 });

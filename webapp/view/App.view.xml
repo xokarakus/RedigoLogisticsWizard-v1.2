@@ -7,7 +7,7 @@
 
   <SplitApp id="splitApp">
     <masterPages>
-      <Page title="Redigo v1.2">
+      <Page title="{i18n>appTitle}">
         <List id="navList" itemPress="onNavSelect">
           <StandardListItem title="{i18n>navDashboard}" icon="sap-icon://home" type="Active">
             <customData><core:CustomData key="target" value="dashboard" /></customData>
