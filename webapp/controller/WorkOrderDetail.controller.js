@@ -23,7 +23,27 @@ sap.ui.define([
     onInit: function () {
       this._oModel = new JSONModel({});
       this.getView().setModel(this._oModel, "detail");
-      this._loadDetail("d1");
+      // Register for each time this view is shown
+      this.getView().addEventDelegate({
+        onBeforeShow: this._onBeforeShow.bind(this)
+      });
+      this._loadDefault();
+    },
+
+    _onBeforeShow: function () {
+      var oCtx = this.getOwnerComponent().getNavContext();
+      if (oCtx && oCtx.orderId) {
+        this._loadDetail(oCtx.orderId);
+      }
+    },
+
+    _loadDefault: function () {
+      var oCtx = this.getOwnerComponent().getNavContext();
+      var sId = (oCtx && oCtx.orderId) ? oCtx.orderId : null;
+      if (sId) {
+        this._loadDetail(sId);
+      }
+      // Ilk acilista context yoksa bos birak
     },
 
     _getText: function (sKey, aArgs) {

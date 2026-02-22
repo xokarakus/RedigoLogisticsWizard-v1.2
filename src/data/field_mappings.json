@@ -1,0 +1,532 @@
+[
+  {
+    "id": "fm_gi_abc",
+    "process_type": "GI",
+    "company_code": "ABC_LOG",
+    "description": "Mal Çıkışı – ABC Lojistik",
+    "sap_sample_json": {
+      "HEADER": {
+        "VBELN": "0080000456",
+        "LFART": "LF",
+        "WADAT": "20260222",
+        "KUNNR": "100045",
+        "NAME1": "ABC Makina Sanayi A.Ş.",
+        "VSTEL": "0001",
+        "WERKS": "1000",
+        "LGORT": "0002",
+        "VKORG": "1000",
+        "VTWEG": "10",
+        "SPART": "00"
+      },
+      "ITEMS": [
+        {
+          "POSNR": "000010",
+          "MATNR": "MAT-002",
+          "MAKTX": "Alüminyum Bağlantı",
+          "LGORT": "0002",
+          "LFIMG": 50,
+          "MEINS": "KG"
+        }
+      ]
+    },
+    "threepl_sample_json": {
+      "order_number": "0080000123",
+      "line_number": "000010",
+      "sku": "MAT-001",
+      "product_name": "Çelik Breket",
+      "location_code": "0001",
+      "plant": "1000",
+      "quantity": 100,
+      "unit": "PCS",
+      "customer_id": "0000012345",
+      "customer_name": "Müşteri A.Ş.",
+      "delivery_date": "2026-02-25",
+      "created_date": "2026-02-22"
+    },
+    "field_rules": [
+      {
+        "sap_field": "VBELN",
+        "threepl_field": "order_number",
+        "transform": "LOOKUP"
+      },
+      {
+        "sap_field": "POSNR",
+        "threepl_field": "line_number",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "MATNR",
+        "threepl_field": "sku",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "MAKTX",
+        "threepl_field": "product_name",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "LGORT",
+        "threepl_field": "location_code",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "WERKS",
+        "threepl_field": "plant",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "LFIMG",
+        "threepl_field": "quantity",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "MEINS",
+        "threepl_field": "unit",
+        "transform": "LOOKUP"
+      },
+      {
+        "sap_field": "KUNNR",
+        "threepl_field": "customer_id",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "KUNNA",
+        "threepl_field": "customer_name",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "WADAT",
+        "threepl_field": "delivery_date",
+        "transform": "SAP_DATE"
+      },
+      {
+        "sap_field": "HEADER.VBELN",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "HEADER.LFART",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "HEADER.WADAT",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "HEADER.KUNNR",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "HEADER.NAME1",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "HEADER.VSTEL",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "HEADER.WERKS",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "HEADER.LGORT",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "HEADER.VKORG",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "HEADER.VTWEG",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "HEADER.SPART",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "ITEMS[].POSNR",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "ITEMS[].MATNR",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "ITEMS[].MAKTX",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "ITEMS[].LGORT",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "ITEMS[].LFIMG",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "ITEMS[].MEINS",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      }
+    ],
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "Accept",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Source-System",
+        "value": "SAP-ECC"
+      }
+    ],
+    "security_profile_id": "sp_1",
+    "is_active": true
+  },
+  {
+    "id": "fm_gi_xyz",
+    "process_type": "GI",
+    "company_code": "XYZ_DEPO",
+    "description": "Mal Çıkışı – XYZ Depo",
+    "sap_sample_json": [
+      {
+        "VBELN": "0080000456",
+        "POSNR": "000010",
+        "MATNR": "MAT-002",
+        "MAKTX": "Alüminyum Bağlantı",
+        "LGORT": "0002",
+        "LFIMG": 50,
+        "MEINS": "KG"
+      },
+      {
+        "VBELN": "0080000456",
+        "POSNR": "000020",
+        "MATNR": "MAT-003",
+        "MAKTX": "Çelik Vida",
+        "LGORT": "0003",
+        "LFIMG": 120,
+        "MEINS": "ADET"
+      },
+      {
+        "VBELN": "0080000456",
+        "POSNR": "000030",
+        "MATNR": "MAT-004",
+        "MAKTX": "Plastik Conta",
+        "LGORT": "0001",
+        "LFIMG": 75,
+        "MEINS": "ADET"
+      }
+    ],
+    "threepl_sample_json": {
+      "ref_no": "",
+      "item_code": "",
+      "item_name": "",
+      "warehouse_bin": "",
+      "qty": "",
+      "UNIT": "",
+      "MT_TURU": "",
+      "0.warehouse_bin": "",
+      "0.qty": "",
+      "0.UNIT": ""
+    },
+    "field_rules": [
+      {
+        "sap_field": "VBELN",
+        "threepl_field": "ref_no",
+        "transform": "PREFIX:DLV-"
+      },
+      {
+        "sap_field": "MATNR",
+        "threepl_field": "item_code",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "MAKTX",
+        "threepl_field": "item_name",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "LGORT",
+        "threepl_field": "warehouse_bin",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "LFIMG",
+        "threepl_field": "qty",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "MEINS",
+        "threepl_field": "UNIT",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "MTART",
+        "threepl_field": "MT_TURU",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "0.LGORT",
+        "threepl_field": "0.warehouse_bin",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "0.LFIMG",
+        "threepl_field": "0.qty",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "0.MEINS",
+        "threepl_field": "0.UNIT",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "1.VBELN",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "1.POSNR",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "1.MATNR",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "1.MAKTX",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "1.LGORT",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "1.LFIMG",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "1.MEINS",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "2.VBELN",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "2.POSNR",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "2.MATNR",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "2.MAKTX",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "2.LFIMG",
+        "threepl_field": "",
+        "transform": "DIRECT"
+      }
+    ],
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-API-Version",
+        "value": "v2"
+      }
+    ],
+    "security_profile_id": "sp_3",
+    "is_active": true
+  },
+  {
+    "id": "fm_gr_abc",
+    "process_type": "GR",
+    "company_code": "ABC_LOG",
+    "description": "Mal Girişi – ABC Lojistik",
+    "sap_sample_json": {
+      "VBELN": "0080000789",
+      "MATNR": "MAT-003",
+      "MAKTX": "Pul Seti",
+      "LGORT": "0001",
+      "WERKS": "1000",
+      "LFIMG": 200,
+      "MEINS": "ST",
+      "LIFNR": "0000054321",
+      "LIFNA": "Tedarikçi B Ltd."
+    },
+    "threepl_sample_json": {
+      "inbound_ref": "0080000789",
+      "sku": "MAT-003",
+      "product_name": "Pul Seti",
+      "location_code": "0001",
+      "plant": "1000",
+      "expected_qty": 200,
+      "unit": "PCS",
+      "vendor_id": "0000054321",
+      "vendor_name": "Tedarikçi B Ltd."
+    },
+    "field_rules": [
+      {
+        "sap_field": "VBELN",
+        "threepl_field": "inbound_ref",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "MATNR",
+        "threepl_field": "sku",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "MAKTX",
+        "threepl_field": "product_name",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "LGORT",
+        "threepl_field": "location_code",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "WERKS",
+        "threepl_field": "plant",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "LFIMG",
+        "threepl_field": "expected_qty",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "MEINS",
+        "threepl_field": "unit",
+        "transform": "LOOKUP"
+      },
+      {
+        "sap_field": "LIFNR",
+        "threepl_field": "vendor_id",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "LIFNA",
+        "threepl_field": "vendor_name",
+        "transform": "DIRECT"
+      }
+    ],
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "Accept",
+        "value": "application/json"
+      }
+    ],
+    "security_profile_id": "sp_1",
+    "is_active": true
+  },
+  {
+    "id": "fm_ret_abc",
+    "process_type": "RETURN",
+    "company_code": "ABC_LOG",
+    "description": "İade – ABC Lojistik",
+    "sap_sample_json": {
+      "VBELN": "0080000999",
+      "MATNR": "MAT-001",
+      "MAKTX": "Çelik Breket",
+      "LFIMG": 10,
+      "MEINS": "ST",
+      "GRUND": "DEFECTIVE",
+      "KUNNR": "0000012345"
+    },
+    "threepl_sample_json": {
+      "return_ref": "RET-0080000999",
+      "sku": "MAT-001",
+      "product_name": "Çelik Breket",
+      "return_qty": 10,
+      "unit": "PCS",
+      "reason_code": "DEFECTIVE",
+      "customer_id": "0000012345"
+    },
+    "field_rules": [
+      {
+        "sap_field": "VBELN",
+        "threepl_field": "return_ref",
+        "transform": "PREFIX:RET-"
+      },
+      {
+        "sap_field": "MATNR",
+        "threepl_field": "sku",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "MAKTX",
+        "threepl_field": "product_name",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "LFIMG",
+        "threepl_field": "return_qty",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "MEINS",
+        "threepl_field": "unit",
+        "transform": "LOOKUP"
+      },
+      {
+        "sap_field": "GRUND",
+        "threepl_field": "reason_code",
+        "transform": "DIRECT"
+      },
+      {
+        "sap_field": "KUNNR",
+        "threepl_field": "customer_id",
+        "transform": "DIRECT"
+      }
+    ],
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "security_profile_id": "sp_1",
+    "is_active": true
+  }
+]

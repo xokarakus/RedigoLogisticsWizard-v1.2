@@ -12,11 +12,16 @@ sap.ui.define([
       UIComponent.prototype.init.apply(this, arguments);
     },
 
-    showView: function (sKey) {
+    showView: function (sKey, oContext) {
+      this._navContext = oContext || null;
       var oRootView = this.getRootControl();
       if (oRootView && oRootView.getController()) {
         oRootView.getController()._showView(sKey);
       }
+    },
+
+    getNavContext: function () {
+      return this._navContext;
     }
   });
 });

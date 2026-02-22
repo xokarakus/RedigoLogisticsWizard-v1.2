@@ -3,6 +3,12 @@ const router = express.Router();
 const JsonStore = require('../../shared/jsonStore');
 
 const store = new JsonStore('work_orders.json');
+const pcStore = new JsonStore('process_configs.json');
+
+// Build lookup key from work order fields
+function configKey(plantCode, warehouseCode, deliveryType) {
+  return plantCode + '|' + warehouseCode + '|' + deliveryType;
+}
 
 // GET /api/work-orders - List work orders
 router.get('/', (req, res) => {
@@ -15,6 +21,22 @@ router.get('/', (req, res) => {
   if (type) {
     data = data.filter(o => o.order_type === type);
   }
+
+  // Enrich with process_type from process_configs
+  const configs = pcStore.readAll();
+  const configMap = {};
+  configs.forEach(c => {
+    configMap[configKey(c.plant_code, c.warehouse_code, c.delivery_type)] = c;
+  });
+  data = data.map(o => {
+    const key = configKey(o.plant_code || '1000', o.warehouse_code, o.sap_delivery_type);
+    const cfg = configMap[key];
+    if (cfg) {
+      o.process_type = cfg.process_type;
+      o.process_type_desc = cfg.delivery_type_desc;
+    }
+    return o;
+  });
 
   // Sort by received_at desc
   data.sort((a, b) => new Date(b.received_at) - new Date(a.received_at));
@@ -29,6 +51,16 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   const item = store.findById(req.params.id);
   if (!item) return res.status(404).json({ error: 'Kayit bulunamadi' });
+
+  // Enrich single item too
+  const configs = pcStore.readAll();
+  const key = configKey(item.plant_code || '1000', item.warehouse_code, item.sap_delivery_type);
+  const cfg = configs.find(c => configKey(c.plant_code, c.warehouse_code, c.delivery_type) === key);
+  if (cfg) {
+    item.process_type = cfg.process_type;
+    item.process_type_desc = cfg.delivery_type_desc;
+  }
+
   res.json({ data: item });
 });
 

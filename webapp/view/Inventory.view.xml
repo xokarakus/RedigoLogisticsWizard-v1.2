@@ -32,14 +32,14 @@
     <content>
       <!-- Movement Mappings Summary -->
       <Panel headerText="{i18n>invActiveMappings}" class="sapUiSmallMargin">
-        <Table items="{inv>/mappings}" mode="None">
+        <Table items="{inv>/mappings}" mode="None" autoPopinMode="true">
           <columns>
-            <Column><Text text="{i18n>invWarehouse}" /></Column>
-            <Column><Text text="{i18n>invAction}" /></Column>
-            <Column><Text text="{i18n>invSAPMvtType}" /></Column>
-            <Column><Text text="{i18n>invDescription}" /></Column>
-            <Column><Text text="{i18n>invTargetPlant}" /></Column>
-            <Column><Text text="{i18n>invTargetSLoc}" /></Column>
+            <Column importance="High"><Text text="{i18n>invWarehouse}" /></Column>
+            <Column importance="High"><Text text="{i18n>invAction}" /></Column>
+            <Column importance="High"><Text text="{i18n>invSAPMvtType}" /></Column>
+            <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>invDescription}" /></Column>
+            <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>invTargetPlant}" /></Column>
+            <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>invTargetSLoc}" /></Column>
           </columns>
           <items>
             <ColumnListItem>
@@ -62,17 +62,18 @@
           id="invTxTable"
           items="{inv>/transactions}"
           growing="true"
-          growingThreshold="25">
+          growingThreshold="25"
+          autoPopinMode="true">
 
           <columns>
-            <Column><Text text="{i18n>invAction}" /></Column>
-            <Column><Text text="{i18n>invMaterial}" /></Column>
-            <Column hAlign="End"><Text text="{i18n>invQuantity}" /></Column>
-            <Column><Text text="{i18n>invSAPMvtType}" /></Column>
-            <Column><Text text="{i18n>invWarehouse}" /></Column>
-            <Column><Text text="{i18n>txStatus}" /></Column>
-            <Column><Text text="{i18n>invSAPDoc}" /></Column>
-            <Column><Text text="{i18n>invTimestamp}" /></Column>
+            <Column importance="High"><Text text="{i18n>invAction}" /></Column>
+            <Column importance="High"><Text text="{i18n>invMaterial}" /></Column>
+            <Column importance="High" hAlign="End"><Text text="{i18n>invQuantity}" /></Column>
+            <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>invSAPMvtType}" /></Column>
+            <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>invWarehouse}" /></Column>
+            <Column importance="High"><Text text="{i18n>txStatus}" /></Column>
+            <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>invSAPDoc}" /></Column>
+            <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>invTimestamp}" /></Column>
           </columns>
 
           <items>

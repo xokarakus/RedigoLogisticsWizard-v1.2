@@ -16,8 +16,8 @@
     "sap_posted_at": "2026-02-18T11:46:30Z",
     "wms_order_id": "WMS-2026-00101",
     "lines": [
-      { "sap_item_no": "10", "sap_material": "MAT-4001", "sap_batch": "B2026-001", "sap_requested_qty": 500, "wms_picked_qty": 500, "final_qty": 500, "sap_uom": "KG" },
-      { "sap_item_no": "20", "sap_material": "MAT-4002", "sap_batch": "B2026-002", "sap_requested_qty": 200, "wms_picked_qty": 200, "final_qty": 200, "sap_uom": "AD" }
+      { "sap_item_no": "10", "sap_material": "MAT-4001", "sap_material_desc": "Organik Zeytinya\u011f\u0131 5L", "sap_batch": "B2026-001", "sap_requested_qty": 500, "wms_picked_qty": 500, "final_qty": 500, "sap_uom": "KG" },
+      { "sap_item_no": "20", "sap_material": "MAT-4002", "sap_material_desc": "Do\u011fal Bal Ka\u015f\u0131k 250g", "sap_batch": "B2026-002", "sap_requested_qty": 200, "wms_picked_qty": 200, "final_qty": 200, "sap_uom": "AD" }
     ],
     "sap_raw_payload": { "DELIVERY_NO": "8000012001", "DELIVERY_TYPE": "LF", "SHIP_TO": "MIGROS", "DOC_DATE": "20260218" },
     "wms_raw_payload": { "order_id": "WMS-2026-00101", "status": "COMPLETED", "picked_at": "2026-02-18T11:40:00Z" }
@@ -39,9 +39,9 @@
     "sap_posted_at": null,
     "wms_order_id": "WMS-2026-00115",
     "lines": [
-      { "sap_item_no": "10", "sap_material": "MAT-5010", "sap_batch": "B2026-050", "sap_requested_qty": 1000, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "KG" },
-      { "sap_item_no": "20", "sap_material": "MAT-5011", "sap_batch": "B2026-051", "sap_requested_qty": 300, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "AD" },
-      { "sap_item_no": "30", "sap_material": "MAT-5012", "sap_batch": "B2026-052", "sap_requested_qty": 50, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "KG" }
+      { "sap_item_no": "10", "sap_material": "MAT-5010", "sap_material_desc": "End\u00fcstriyel Ya\u011f 20L", "sap_batch": "B2026-050", "sap_requested_qty": 1000, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "KG" },
+      { "sap_item_no": "20", "sap_material": "MAT-5011", "sap_material_desc": "Paketleme Filmi 50cm", "sap_batch": "B2026-051", "sap_requested_qty": 300, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "AD" },
+      { "sap_item_no": "30", "sap_material": "MAT-5012", "sap_material_desc": "Etiket Rulosu A4", "sap_batch": "B2026-052", "sap_requested_qty": 50, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "KG" }
     ],
     "sap_raw_payload": { "DELIVERY_NO": "8000012002", "DELIVERY_TYPE": "NL", "VENDOR": "VENDOR-100" },
     "wms_raw_payload": null
@@ -63,7 +63,7 @@
     "sap_posted_at": null,
     "wms_order_id": null,
     "lines": [
-      { "sap_item_no": "10", "sap_material": "MAT-4001", "sap_batch": "B2026-001", "sap_requested_qty": 25, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "KG" }
+      { "sap_item_no": "10", "sap_material": "MAT-4001", "sap_material_desc": "Organik Zeytinya\u011f\u0131 5L", "sap_batch": "B2026-001", "sap_requested_qty": 25, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "KG" }
     ],
     "sap_raw_payload": { "DELIVERY_NO": "8000012003", "DELIVERY_TYPE": "LR", "RETURN_REASON": "DEFECTIVE" },
     "wms_raw_payload": null
@@ -85,7 +85,8 @@
     "sap_posted_at": null,
     "wms_order_id": "WMS-2026-00110",
     "lines": [
-      { "sap_item_no": "10", "sap_material": "FASON-3001", "sap_batch": "FB2026-010", "sap_requested_qty": 2000, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "AD" }
+      { "sap_item_no": "10", "sap_material": "FASON-3001", "sap_material_desc": "Pamuklu Kuma\u015f 150cm", "sap_batch": "FB2026-010", "sap_requested_qty": 2000, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "AD" },
+      { "sap_item_no": "20", "sap_material": "FASON-3002", "sap_material_desc": "Polyester \u0130plik 500m", "sap_batch": "FB2026-011", "sap_requested_qty": 100, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "KG" }
     ],
     "sap_raw_payload": { "DELIVERY_NO": "8000012004", "DELIVERY_TYPE": "FASON", "SUBCONTRACTOR": "TEKSTIL-AS" },
     "wms_raw_payload": null
@@ -107,8 +108,8 @@
     "sap_posted_at": null,
     "wms_order_id": "WMS-2026-00111",
     "lines": [
-      { "sap_item_no": "10", "sap_material": "RAW-7001", "sap_batch": "RB2026-020", "sap_requested_qty": 500, "wms_picked_qty": 500, "final_qty": 500, "sap_uom": "KG" },
-      { "sap_item_no": "20", "sap_material": "RAW-7002", "sap_batch": "RB2026-021", "sap_requested_qty": 150, "wms_picked_qty": 150, "final_qty": 150, "sap_uom": "KG" }
+      { "sap_item_no": "10", "sap_material": "RAW-7001", "sap_material_desc": "\u00c7elik Levha 2mm", "sap_batch": "RB2026-020", "sap_requested_qty": 500, "wms_picked_qty": 500, "final_qty": 500, "sap_uom": "KG" },
+      { "sap_item_no": "20", "sap_material": "RAW-7002", "sap_material_desc": "Bak\u0131r Boru 25mm", "sap_batch": "RB2026-021", "sap_requested_qty": 150, "wms_picked_qty": 150, "final_qty": 150, "sap_uom": "KG" }
     ],
     "sap_raw_payload": { "DELIVERY_NO": "8000012005", "DELIVERY_TYPE": "FASON", "SUBCONTRACTOR": "METAL-SAN" },
     "wms_raw_payload": { "order_id": "WMS-2026-00111", "status": "PICKING_COMPLETE" }
@@ -130,7 +131,7 @@
     "sap_posted_at": "2026-02-17T16:31:00Z",
     "wms_order_id": "WMS-2026-00098",
     "lines": [
-      { "sap_item_no": "10", "sap_material": "MAT-6001", "sap_batch": "B2026-030", "sap_requested_qty": 750, "wms_picked_qty": 750, "final_qty": 750, "sap_uom": "AD" }
+      { "sap_item_no": "10", "sap_material": "MAT-6001", "sap_material_desc": "Elektronik Kart PCB-A1", "sap_batch": "B2026-030", "sap_requested_qty": 750, "wms_picked_qty": 750, "final_qty": 750, "sap_uom": "AD" }
     ],
     "sap_raw_payload": { "DELIVERY_NO": "8000012006", "DELIVERY_TYPE": "NL", "MVT_TYPE": "301" },
     "wms_raw_payload": { "order_id": "WMS-2026-00098", "status": "SHIPPED" }
@@ -152,7 +153,8 @@
     "sap_posted_at": null,
     "wms_order_id": "WMS-2026-00118",
     "lines": [
-      { "sap_item_no": "10", "sap_material": "MAT-4003", "sap_batch": "B2026-060", "sap_requested_qty": 1200, "wms_picked_qty": 800, "final_qty": 0, "sap_uom": "KG" }
+      { "sap_item_no": "10", "sap_material": "MAT-4003", "sap_material_desc": "Ay\u00e7i\u00e7ek Ya\u011f\u0131 2L", "sap_batch": "B2026-060", "sap_requested_qty": 1200, "wms_picked_qty": 800, "final_qty": 0, "sap_uom": "KG" },
+      { "sap_item_no": "20", "sap_material": "MAT-4004", "sap_material_desc": "M\u0131s\u0131r\u00f6z\u00fc Ya\u011f\u0131 1L", "sap_batch": "B2026-061", "sap_requested_qty": 600, "wms_picked_qty": 400, "final_qty": 0, "sap_uom": "AD" }
     ],
     "sap_raw_payload": { "DELIVERY_NO": "8000012007", "DELIVERY_TYPE": "LF", "SHIP_TO": "BIM" },
     "wms_raw_payload": { "order_id": "WMS-2026-00118", "error": "INSUFFICIENT_STOCK" }
@@ -174,8 +176,8 @@
     "sap_posted_at": null,
     "wms_order_id": null,
     "lines": [
-      { "sap_item_no": "10", "sap_material": "MAT-8001", "sap_batch": "B2026-080", "sap_requested_qty": 400, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "KG" },
-      { "sap_item_no": "20", "sap_material": "MAT-8002", "sap_batch": "B2026-081", "sap_requested_qty": 600, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "AD" }
+      { "sap_item_no": "10", "sap_material": "MAT-8001", "sap_material_desc": "Hidro Motor HM-200", "sap_batch": "B2026-080", "sap_requested_qty": 400, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "KG" },
+      { "sap_item_no": "20", "sap_material": "MAT-8002", "sap_material_desc": "Pn\u00f6matik Valf PV-50", "sap_batch": "B2026-081", "sap_requested_qty": 600, "wms_picked_qty": 0, "final_qty": 0, "sap_uom": "AD" }
     ],
     "sap_raw_payload": { "DELIVERY_NO": "8000012008", "DELIVERY_TYPE": "NL", "VENDOR": "XYZ-VENDOR" },
     "wms_raw_payload": null
@@ -197,8 +199,8 @@
     "sap_posted_at": null,
     "wms_order_id": "WMS-2026-00116",
     "lines": [
-      { "sap_item_no": "10", "sap_material": "MAT-4001", "sap_batch": "B2026-090", "sap_requested_qty": 800, "wms_picked_qty": 400, "final_qty": 0, "sap_uom": "KG" },
-      { "sap_item_no": "20", "sap_material": "MAT-4005", "sap_batch": "B2026-091", "sap_requested_qty": 120, "wms_picked_qty": 60, "final_qty": 0, "sap_uom": "AD" }
+      { "sap_item_no": "10", "sap_material": "MAT-4001", "sap_material_desc": "Organik Zeytinya\u011f\u0131 5L", "sap_batch": "B2026-090", "sap_requested_qty": 800, "wms_picked_qty": 400, "final_qty": 0, "sap_uom": "KG" },
+      { "sap_item_no": "20", "sap_material": "MAT-4005", "sap_material_desc": "Tereya\u011f 500g Blok", "sap_batch": "B2026-091", "sap_requested_qty": 120, "wms_picked_qty": 60, "final_qty": 0, "sap_uom": "AD" }
     ],
     "sap_raw_payload": { "DELIVERY_NO": "8000012009", "DELIVERY_TYPE": "LF", "SHIP_TO": "CARREFOUR" },
     "wms_raw_payload": { "order_id": "WMS-2026-00116", "status": "PICKING" }
@@ -220,7 +222,8 @@
     "sap_posted_at": "2026-02-19T12:31:00Z",
     "wms_order_id": "WMS-2026-00108",
     "lines": [
-      { "sap_item_no": "10", "sap_material": "MAT-4002", "sap_batch": "B2026-070", "sap_requested_qty": 350, "wms_picked_qty": 350, "final_qty": 350, "sap_uom": "AD" }
+      { "sap_item_no": "10", "sap_material": "MAT-4002", "sap_material_desc": "Do\u011fal Bal Ka\u015f\u0131k 250g", "sap_batch": "B2026-070", "sap_requested_qty": 350, "wms_picked_qty": 350, "final_qty": 350, "sap_uom": "AD" },
+      { "sap_item_no": "20", "sap_material": "MAT-4006", "sap_material_desc": "Pekmez \u015ei\u015fe 700ml", "sap_batch": "B2026-071", "sap_requested_qty": 200, "wms_picked_qty": 200, "final_qty": 200, "sap_uom": "AD" }
     ],
     "sap_raw_payload": { "DELIVERY_NO": "8000012010", "DELIVERY_TYPE": "LF", "SHIP_TO": "A101" },
     "wms_raw_payload": { "order_id": "WMS-2026-00108", "status": "COMPLETED" }

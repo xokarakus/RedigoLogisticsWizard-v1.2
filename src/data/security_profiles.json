@@ -1,0 +1,39 @@
+[
+  {
+    "id": "sp_1",
+    "company_code": "ABC_LOG",
+    "auth_type": "OAUTH2",
+    "environment": "PROD",
+    "config": {
+      "client_id": "abc_client_prod",
+      "client_secret": "***",
+      "token_url": "https://auth.abclojistik.com/token",
+      "scope": "wms.read wms.write"
+    },
+    "is_active": true
+  },
+  {
+    "id": "sp_2",
+    "company_code": "ABC_LOG",
+    "auth_type": "OAUTH2",
+    "environment": "QAS",
+    "config": {
+      "client_id": "abc_client_test",
+      "client_secret": "***",
+      "token_url": "https://auth-test.abclojistik.com/token",
+      "scope": "wms.read wms.write"
+    },
+    "is_active": true
+  },
+  {
+    "id": "sp_3",
+    "company_code": "XYZ_DEPO",
+    "auth_type": "API_KEY",
+    "environment": "PROD",
+    "config": {
+      "api_key": "***",
+      "header_name": "X-API-Key"
+    },
+    "is_active": true
+  }
+]

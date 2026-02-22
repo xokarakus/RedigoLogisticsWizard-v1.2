@@ -37,6 +37,8 @@
                   <Text text="{detail>/sap_ship_to}" />
                   <Label text="{i18n>wodSoldTo}" />
                   <Text text="{detail>/sap_sold_to}" />
+                  <Label text="{i18n>woPlant}" />
+                  <Text text="{detail>/plant_code}" />
                   <Label text="{i18n>woType}" />
                   <ObjectStatus text="{detail>/order_type}"
                     state="{= ${detail>/order_type} === 'OUTBOUND' ? 'Information' : 'Success'}" />
@@ -67,24 +69,24 @@
           <!-- TAB 2: Lines -->
           <IconTabFilter text="{i18n>wodLines}" icon="sap-icon://list" key="lines"
             count="{detail>/lineCount}">
-            <Table items="{detail>/lines}">
+            <Table items="{detail>/lines}" autoPopinMode="true">
               <columns>
-                <Column><Text text="{i18n>wodItem}" /></Column>
-                <Column><Text text="{i18n>wodMaterial}" /></Column>
-                <Column><Text text="{i18n>wodBatch}" /></Column>
-                <Column hAlign="End"><Text text="{i18n>wodRequestedQty}" /></Column>
-                <Column hAlign="End"><Text text="{i18n>wodPickedQty}" /></Column>
-                <Column hAlign="End"><Text text="{i18n>wodFinalQty}" /></Column>
-                <Column><Text text="{i18n>wodUoM}" /></Column>
-                <Column hAlign="Center"><Text text="{i18n>wodClosed}" /></Column>
-                <Column><Text text="{i18n>wodHUSerial}" /></Column>
+                <Column importance="High"><Text text="{i18n>wodItem}" /></Column>
+                <Column importance="High"><Text text="{i18n>wodMaterial}" /></Column>
+                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>wodBatch}" /></Column>
+                <Column importance="High" hAlign="End"><Text text="{i18n>wodRequestedQty}" /></Column>
+                <Column importance="High" hAlign="End"><Text text="{i18n>wodPickedQty}" /></Column>
+                <Column importance="Low" hAlign="End" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>wodFinalQty}" /></Column>
+                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>wodUoM}" /></Column>
+                <Column importance="Low" hAlign="Center" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>wodClosed}" /></Column>
+                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>wodHUSerial}" /></Column>
               </columns>
               <items>
                 <ColumnListItem
                   highlight="{= ${detail>wms_picked_qty} &lt; ${detail>sap_requested_qty} ? 'Warning' : 'Success'}">
                   <cells>
                     <Text text="{detail>sap_item_no}" />
-                    <ObjectIdentifier title="{detail>sap_material}" />
+                    <ObjectIdentifier title="{detail>sap_material}" text="{detail>sap_material_desc}" />
                     <Text text="{detail>sap_batch}" />
                     <ObjectNumber number="{detail>sap_requested_qty}" unit="{detail>sap_uom}" />
                     <ObjectNumber
@@ -220,16 +222,16 @@
           <!-- TAB 4: Transaction History -->
           <IconTabFilter text="{i18n>wodTransactions}" icon="sap-icon://activity-items" key="transactions"
             count="{detail>/txCount}">
-            <Table items="{detail>/transactions}">
+            <Table items="{detail>/transactions}" autoPopinMode="true">
               <columns>
-                <Column><Text text="{i18n>txAction}" /></Column>
-                <Column><Text text="{i18n>txDirection}" /></Column>
-                <Column><Text text="{i18n>txStatus}" /></Column>
-                <Column><Text text="{i18n>txSAPFunction}" /></Column>
-                <Column><Text text="{i18n>txDuration}" /></Column>
-                <Column><Text text="{i18n>txRetryCount}" /></Column>
-                <Column><Text text="{i18n>txStarted}" /></Column>
-                <Column><Text text="{i18n>txError}" /></Column>
+                <Column importance="High"><Text text="{i18n>txAction}" /></Column>
+                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>txDirection}" /></Column>
+                <Column importance="High"><Text text="{i18n>txStatus}" /></Column>
+                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>txSAPFunction}" /></Column>
+                <Column importance="Medium" hAlign="End" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>txDuration}" /></Column>
+                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>txRetryCount}" /></Column>
+                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>txStarted}" /></Column>
+                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>txError}" /></Column>
               </columns>
               <items>
                 <ColumnListItem>

@@ -30,7 +30,12 @@ sap.ui.define([
       var that = this;
 
       if (this._viewCache[sKey]) {
-        oSplitApp.toDetail(this._viewCache[sKey].getId());
+        var oCached = this._viewCache[sKey];
+        oSplitApp.toDetail(oCached.getId());
+        // Notify cached view about navigation (e.g. WorkOrderDetail needs new order ID)
+        if (oCached.getController && oCached.getController() && oCached.getController()._onBeforeShow) {
+          oCached.getController()._onBeforeShow();
+        }
         return;
       }
 

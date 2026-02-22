@@ -3,98 +3,197 @@
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m"
   xmlns:core="sap.ui.core"
-  xmlns:l="sap.ui.layout">
+  xmlns:t="sap.ui.table"
+  xmlns:unified="sap.ui.unified">
 
-  <Page title="{i18n>woTitle}" showNavButton="false">
-
-    <headerContent>
-      <SegmentedButton id="typeFilter" selectionChange="onTypeFilterChange">
-        <items>
-          <SegmentedButtonItem text="{i18n>woFilterAll}" key="ALL" />
-          <SegmentedButtonItem text="{i18n>woOutbound}" key="OUTBOUND" />
-          <SegmentedButtonItem text="{i18n>woInbound}" key="INBOUND" />
-        </items>
-      </SegmentedButton>
-      <Button text="{i18n>woProcessBtn}" icon="sap-icon://initiative" press="onProcessSelected" type="Emphasized" />
-      <Button icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
-      <Button icon="sap-icon://excel-attachment" text="{i18n>btnExport}" press="onExport" type="Transparent" />
-    </headerContent>
-
-    <subHeader>
-      <OverflowToolbar>
-        <SearchField width="300px" placeholder="{i18n>woSearchPlaceholder}" liveChange="onSearch" />
-        <ToolbarSpacer />
-        <Select id="warehouseFilter" change="onFilterChange"
-          items="{workOrders>/warehouseOptions}">
-          <core:Item key="{workOrders>key}" text="{workOrders>text}" />
-        </Select>
-        <Select id="deliveryTypeFilter" change="onFilterChange"
-          items="{workOrders>/deliveryTypeOptions}">
-          <core:Item key="{workOrders>key}" text="{workOrders>text}" />
-        </Select>
-        <Select id="statusFilter" change="onFilterChange">
-          <core:Item key="ALL" text="{i18n>woFilterAll}" />
-          <core:Item key="RECEIVED" text="{i18n>woReceived}" />
-          <core:Item key="SENT_TO_WMS" text="{i18n>woSentToWMS}" />
-          <core:Item key="IN_PROGRESS" text="{i18n>woInProgress}" />
-          <core:Item key="PARTIALLY_DONE" text="{i18n>woPartiallyDone}" />
-          <core:Item key="COMPLETED" text="{i18n>woCompleted2}" />
-          <core:Item key="PGI_POSTED" text="{i18n>woPGIPosted}" />
-          <core:Item key="GR_POSTED" text="{i18n>woGRPosted}" />
-          <core:Item key="FAILED" text="{i18n>woFailed}" />
-        </Select>
-        <ObjectStatus text="{workOrders>/countText}" state="Information" />
-      </OverflowToolbar>
-    </subHeader>
+  <Page title="{i18n>woTitle}" showNavButton="false" enableScrolling="false">
 
     <content>
-      <Table
+      <t:Table
         id="workOrdersTable"
-        items="{workOrders>/data}"
-        growing="true"
-        growingThreshold="25"
-        growingScrollToLoad="true"
-        mode="MultiSelect"
-        selectionChange="onSelectionChange">
+        rows="{workOrders>/data}"
+        selectionMode="MultiToggle"
+        selectionBehavior="RowSelector"
+        visibleRowCountMode="Auto"
+        minAutoRowCount="5"
+        enableColumnReordering="true"
+        enableCellFilter="true"
+        enableColumnFreeze="true"
+        enableBusyIndicator="true"
+        alternateRowColors="true"
+        fixedColumnCount="1"
+        cellClick="onCellClick">
 
-        <columns>
-          <Column width="140px"><Text text="{i18n>woDeliveryNo}" /></Column>
-          <Column width="80px"><Text text="{i18n>woDeliveryType}" /></Column>
-          <Column width="100px"><Text text="{i18n>woType}" /></Column>
-          <Column width="120px"><Text text="{i18n>woStatus}" /></Column>
-          <Column width="120px"><Text text="{i18n>woWarehouse}" /></Column>
-          <Column width="100px"><Text text="{i18n>woShipTo}" /></Column>
-          <Column width="60px" hAlign="Center"><Text text="{i18n>woLines}" /></Column>
-          <Column width="80px"><Text text="{i18n>woPriority}" /></Column>
-          <Column><Text text="{i18n>woReceivedAt}" /></Column>
-          <Column><Text text="{i18n>woCompletedAt}" /></Column>
-        </columns>
+        <t:rowSettingsTemplate>
+          <t:RowSettings highlight="{= ${workOrders>status} === 'PGI_POSTED' || ${workOrders>status} === 'GR_POSTED' || ${workOrders>status} === 'COMPLETED' ? 'Success' : ${workOrders>status} === 'FAILED' || ${workOrders>status} === 'CANCELLED' ? 'Error' : ${workOrders>status} === 'IN_PROGRESS' || ${workOrders>status} === 'PARTIALLY_DONE' || ${workOrders>status} === 'LOADING' ? 'Warning' : 'None'}" />
+        </t:rowSettingsTemplate>
 
-        <items>
-          <ColumnListItem type="Navigation" press="onRowPress">
-            <cells>
-              <ObjectIdentifier title="{workOrders>sap_delivery_no}" />
-              <Text text="{workOrders>sap_delivery_type}" />
+        <t:extension>
+          <OverflowToolbar>
+            <SegmentedButton id="typeFilter" selectionChange="onTypeFilterChange">
+              <items>
+                <SegmentedButtonItem text="{i18n>woFilterAll}" key="ALL" />
+                <SegmentedButtonItem text="{i18n>woOutbound}" key="OUTBOUND" />
+                <SegmentedButtonItem text="{i18n>woInbound}" key="INBOUND" />
+              </items>
+            </SegmentedButton>
+            <SearchField width="250px" placeholder="{i18n>woSearchPlaceholder}" liveChange="onSearch" />
+            <ToolbarSpacer />
+            <Select id="statusFilter" change="onFilterChange">
+              <core:Item key="ALL" text="{i18n>woFilterAll}" />
+              <core:Item key="RECEIVED" text="{i18n>woReceived}" />
+              <core:Item key="SENT_TO_WMS" text="{i18n>woSentToWMS}" />
+              <core:Item key="IN_PROGRESS" text="{i18n>woInProgress}" />
+              <core:Item key="PARTIALLY_DONE" text="{i18n>woPartiallyDone}" />
+              <core:Item key="COMPLETED" text="{i18n>woCompleted2}" />
+              <core:Item key="PGI_POSTED" text="{i18n>woPGIPosted}" />
+              <core:Item key="GR_POSTED" text="{i18n>woGRPosted}" />
+              <core:Item key="FAILED" text="{i18n>woFailed}" />
+            </Select>
+            <Select id="warehouseFilter" change="onFilterChange"
+              items="{workOrders>/warehouseOptions}">
+              <core:Item key="{workOrders>key}" text="{workOrders>text}" />
+            </Select>
+            <Select id="processTypeFilter" change="onFilterChange"
+              items="{workOrders>/processTypeOptions}">
+              <core:Item key="{workOrders>key}" text="{workOrders>text}" />
+            </Select>
+            <ToolbarSeparator />
+            <Button text="{i18n>woProcessBtn}" icon="sap-icon://initiative" press="onProcessSelected" type="Emphasized" />
+            <ToolbarSeparator />
+            <Button icon="sap-icon://sort" tooltip="{i18n>alvSort}" press="onSortDialog" type="Transparent" />
+            <Button icon="sap-icon://excel-attachment" tooltip="{i18n>btnExport}" press="onExport" type="Transparent" />
+            <Button icon="sap-icon://refresh" tooltip="{i18n>btnRefresh}" press="onRefresh" type="Transparent" />
+            <ToolbarSeparator />
+            <ObjectStatus text="{workOrders>/countText}" state="Information" />
+          </OverflowToolbar>
+        </t:extension>
+
+        <t:columns>
+          <!-- 1. Teslimat No (frozen first column) -->
+          <t:Column sortProperty="sap_delivery_no" filterProperty="sap_delivery_no" autoResizable="true" width="140px">
+            <Label text="{i18n>woDeliveryNo}" />
+            <t:template>
+              <Link text="{workOrders>sap_delivery_no}" press="onDeliveryPress" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- 2. Teslimat Tipi -->
+          <t:Column sortProperty="sap_delivery_type" filterProperty="sap_delivery_type" autoResizable="true" width="80px">
+            <Label text="{i18n>woDeliveryType}" />
+            <t:template>
+              <ObjectStatus text="{workOrders>sap_delivery_type}" state="Information" />
+            </t:template>
+          </t:Column>
+
+          <!-- 3. Yon (INBOUND/OUTBOUND) -->
+          <t:Column sortProperty="order_type" filterProperty="order_type" autoResizable="true" width="110px">
+            <Label text="{i18n>woType}" />
+            <t:template>
               <ObjectStatus
                 text="{workOrders>order_type}"
                 state="{= ${workOrders>order_type} === 'OUTBOUND' ? 'Information' : 'Success'}"
                 icon="{= ${workOrders>order_type} === 'OUTBOUND' ? 'sap-icon://outbox' : 'sap-icon://inbox'}" />
+            </t:template>
+          </t:Column>
+
+          <!-- 4. Surec Tipi -->
+          <t:Column sortProperty="process_type" filterProperty="process_type" autoResizable="true" width="130px">
+            <Label text="{i18n>woProcessType}" />
+            <t:template>
+              <ObjectStatus
+                text="{= ${workOrders>process_type} + ' \u2013 ' + (${workOrders>process_type_desc} || '')}"
+                state="{= ${workOrders>process_type} === 'GI' || ${workOrders>process_type} === 'SUBCONTRACT_GI' ? 'Warning' : ${workOrders>process_type} === 'GR' || ${workOrders>process_type} === 'SUBCONTRACT_GR' ? 'Success' : ${workOrders>process_type} === 'RETURN' ? 'Error' : 'Information'}" />
+            </t:template>
+          </t:Column>
+
+          <!-- 5. Durum -->
+          <t:Column sortProperty="status" filterProperty="status" autoResizable="true" width="130px">
+            <Label text="{i18n>woStatus}" />
+            <t:template>
               <ObjectStatus
                 text="{workOrders>status}"
                 state="{= ${workOrders>status} === 'PGI_POSTED' || ${workOrders>status} === 'GR_POSTED' || ${workOrders>status} === 'COMPLETED' ? 'Success' : ${workOrders>status} === 'FAILED' || ${workOrders>status} === 'CANCELLED' ? 'Error' : ${workOrders>status} === 'IN_PROGRESS' || ${workOrders>status} === 'PARTIALLY_DONE' ? 'Warning' : 'None'}" />
-              <Text text="{workOrders>warehouse_code}" />
-              <Text text="{workOrders>sap_ship_to}" />
+            </t:template>
+          </t:Column>
+
+          <!-- 6. SAP Tesis -->
+          <t:Column sortProperty="plant_code" filterProperty="plant_code" autoResizable="true" width="90px">
+            <Label text="{i18n>woPlant}" />
+            <t:template>
+              <ObjectNumber number="{workOrders>plant_code}" emphasized="true" />
+            </t:template>
+          </t:Column>
+
+          <!-- 7. Depo -->
+          <t:Column sortProperty="warehouse_code" filterProperty="warehouse_code" autoResizable="true" width="110px">
+            <Label text="{i18n>woWarehouse}" />
+            <t:template>
+              <Text text="{workOrders>warehouse_code}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- 8. Hareket Tipi -->
+          <t:Column sortProperty="mvt_type" filterProperty="mvt_type" autoResizable="true" width="90px" hAlign="Center">
+            <Label text="{i18n>cfgMvtType}" />
+            <t:template>
+              <ObjectNumber number="{workOrders>mvt_type}" emphasized="true" />
+            </t:template>
+          </t:Column>
+
+          <!-- 9. Sevk Yeri -->
+          <t:Column sortProperty="sap_ship_to" filterProperty="sap_ship_to" autoResizable="true" width="120px">
+            <Label text="{i18n>woShipTo}" />
+            <t:template>
+              <Text text="{workOrders>sap_ship_to}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- 10. Kalem Sayisi -->
+          <t:Column sortProperty="line_count" autoResizable="true" width="70px" hAlign="Center">
+            <Label text="{i18n>woLines}" />
+            <t:template>
               <ObjectNumber number="{workOrders>line_count}" />
+            </t:template>
+          </t:Column>
+
+          <!-- 11. Oncelik -->
+          <t:Column sortProperty="priority" filterProperty="priority" autoResizable="true" width="90px" hAlign="Center">
+            <Label text="{i18n>woPriority}" />
+            <t:template>
               <ObjectStatus
                 text="{workOrders>priority}"
                 state="{= ${workOrders>priority} === 'HIGH' ? 'Error' : ${workOrders>priority} === 'MEDIUM' ? 'Warning' : 'Success'}" />
-              <Text text="{workOrders>received_at_fmt}" />
-              <Text text="{workOrders>completed_at_fmt}" />
-            </cells>
-          </ColumnListItem>
-        </items>
+            </t:template>
+          </t:Column>
 
-      </Table>
+          <!-- 12. Alinma Tarihi -->
+          <t:Column sortProperty="received_at" autoResizable="true" width="150px">
+            <Label text="{i18n>woReceivedAt}" />
+            <t:template>
+              <Text text="{workOrders>received_at_fmt}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- 13. Tamamlanma Tarihi -->
+          <t:Column sortProperty="completed_at" autoResizable="true" width="150px">
+            <Label text="{i18n>woCompletedAt}" />
+            <t:template>
+              <Text text="{workOrders>completed_at_fmt}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- 14. Islemler -->
+          <t:Column width="120px" hAlign="Center" resizable="false">
+            <Label text="{i18n>alvActions}" />
+            <t:template>
+              <Button text="{i18n>gmTriggerSAP}" icon="sap-icon://initiative" press="onTriggerFetchSAP" type="Attention"
+                visible="{= ${workOrders>status} === 'RECEIVED' || ${workOrders>status} === 'SENT_TO_WMS' || ${workOrders>status} === 'IN_PROGRESS' || ${workOrders>status} === 'PARTIALLY_DONE'}" />
+            </t:template>
+          </t:Column>
+        </t:columns>
+
+      </t:Table>
     </content>
 
   </Page>

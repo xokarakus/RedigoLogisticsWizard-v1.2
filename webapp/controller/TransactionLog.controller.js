@@ -113,7 +113,7 @@ sap.ui.define([
     onTxPress: function (oEvent) {
       var oCtx = oEvent.getSource().getBindingContext("txLog");
       var sId = oCtx.getProperty("work_order_id");
-      if (sId) { this.getOwnerComponent().showView("workOrderDetail"); }
+      if (sId) { this.getOwnerComponent().showView("workOrderDetail", { orderId: sId }); }
     }
   });
 });

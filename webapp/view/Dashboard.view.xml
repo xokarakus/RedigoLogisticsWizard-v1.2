@@ -64,6 +64,7 @@
         <GenericTile
           header="{i18n>dashTodayIngest}"
           subheader="{i18n>dashIngested}"
+          press="onTilePress"
           class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
           <TileContent>
             <NumericContent value="{dashboard>/todayIngest}" icon="sap-icon://incoming-call" />
@@ -73,6 +74,7 @@
         <GenericTile
           header="{i18n>dashPendingSAP}"
           subheader="{i18n>dashAwaitingSAP}"
+          press="onTilePress"
           class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
           <TileContent>
             <NumericContent value="{dashboard>/pendingSAP}" icon="sap-icon://time-entry-request" valueColor="Critical" />
@@ -82,6 +84,7 @@
         <GenericTile
           header="{i18n>dashDLQCount}"
           subheader="{i18n>dashDeadLetters}"
+          press="onDLQTilePress"
           class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
           <TileContent>
             <NumericContent value="{dashboard>/dlqCount}" icon="sap-icon://warning2"
@@ -92,6 +95,7 @@
         <GenericTile
           header="{i18n>dashAvgLatency}"
           subheader="{i18n>dashMilliseconds}"
+          press="onTxTilePress"
           class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
           <TileContent>
             <NumericContent value="{dashboard>/avgLatency}" scale="ms" icon="sap-icon://latency" />

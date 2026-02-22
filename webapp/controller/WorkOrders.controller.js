@@ -3,11 +3,32 @@ sap.ui.define([
   "sap/ui/model/json/JSONModel",
   "sap/ui/model/Filter",
   "sap/ui/model/FilterOperator",
+  "sap/ui/model/Sorter",
   "sap/m/MessageToast",
   "sap/m/MessageBox",
+  "sap/m/ViewSettingsDialog",
+  "sap/m/ViewSettingsItem",
   "com/redigo/logistics/cockpit/util/API"
-], function (Controller, JSONModel, Filter, FilterOperator, MessageToast, MessageBox, API) {
+], function (Controller, JSONModel, Filter, FilterOperator, Sorter, MessageToast, MessageBox,
+             ViewSettingsDialog, ViewSettingsItem, API) {
   "use strict";
+
+  /* Excel export column definitions */
+  var EXPORT_COLS = [
+    { label: "Teslimat No",     property: "sap_delivery_no",    type: "String" },
+    { label: "Teslimat Tipi",   property: "sap_delivery_type",  type: "String" },
+    { label: "Y\u00f6n",        property: "order_type",         type: "String" },
+    { label: "S\u00fcre\u00e7", property: "process_type",       type: "String" },
+    { label: "Durum",           property: "status",             type: "String" },
+    { label: "SAP Tesis",       property: "plant_code",         type: "String" },
+    { label: "Depo",            property: "warehouse_code",     type: "String" },
+    { label: "Hareket Tipi",    property: "mvt_type",           type: "String" },
+    { label: "Sevk Yeri",       property: "sap_ship_to",        type: "String" },
+    { label: "Kalemler",        property: "line_count",         type: "Number" },
+    { label: "\u00d6ncelik",    property: "priority",           type: "String" },
+    { label: "Al\u0131nma",     property: "received_at_fmt",    type: "String" },
+    { label: "Tamamlanma",      property: "completed_at_fmt",   type: "String" }
+  ];
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.WorkOrders", {
     onInit: function () {
@@ -16,7 +37,8 @@ sap.ui.define([
         count: 0,
         countText: "",
         warehouseOptions: [],
-        deliveryTypeOptions: []
+        deliveryTypeOptions: [],
+        processTypeOptions: []
       });
       this.getView().setModel(this._oModel, "workOrders");
       this._sSearchQuery = "";
@@ -27,6 +49,10 @@ sap.ui.define([
       var oBundle = this.getView().getModel("i18n").getResourceBundle();
       return oBundle.getText(sKey, aArgs);
     },
+
+    /* ═══════════════════════════════════════════
+       Data Loading
+       ═══════════════════════════════════════════ */
 
     _loadData: function () {
       var that = this;
@@ -41,6 +67,7 @@ sap.ui.define([
         that._oModel.setProperty("/count", aData.length);
         that._oModel.setProperty("/countText", that._getText("woOrderCount", [aData.length]));
         that._buildDeliveryTypeOptions(aData);
+        that._buildProcessTypeOptions(aData);
         that._applyFilters();
       });
 
@@ -69,10 +96,28 @@ sap.ui.define([
       this._oModel.setProperty("/deliveryTypeOptions", aOptions);
     },
 
+    _buildProcessTypeOptions: function (aData) {
+      var oTypes = {};
+      aData.forEach(function (o) {
+        if (o.process_type && !oTypes[o.process_type]) {
+          oTypes[o.process_type] = o.process_type_desc || o.process_type;
+        }
+      });
+      var aOptions = [{ key: "ALL", text: this._getText("woAllProcessTypes") }];
+      Object.keys(oTypes).sort().forEach(function (sType) {
+        aOptions.push({ key: sType, text: sType + " \u2013 " + oTypes[sType] });
+      });
+      this._oModel.setProperty("/processTypeOptions", aOptions);
+    },
+
+    /* ═══════════════════════════════════════════
+       Filtering (sap.ui.table.Table uses "rows" binding)
+       ═══════════════════════════════════════════ */
+
     _applyFilters: function () {
       var oTable = this.byId("workOrdersTable");
       if (!oTable) { return; }
-      var oBinding = oTable.getBinding("items");
+      var oBinding = oTable.getBinding("rows");
       if (!oBinding) { return; }
 
       var aFilters = [];
@@ -104,18 +149,28 @@ sap.ui.define([
         }
       }
 
-      // Delivery type filter
-      var oDeliveryTypeFilter = this.byId("deliveryTypeFilter");
-      if (oDeliveryTypeFilter) {
-        var sDeliveryType = oDeliveryTypeFilter.getSelectedKey();
-        if (sDeliveryType && sDeliveryType !== "ALL") {
-          aFilters.push(new Filter("sap_delivery_type", FilterOperator.EQ, sDeliveryType));
+      // Process type filter
+      var oProcessTypeFilter = this.byId("processTypeFilter");
+      if (oProcessTypeFilter) {
+        var sProcessType = oProcessTypeFilter.getSelectedKey();
+        if (sProcessType && sProcessType !== "ALL") {
+          aFilters.push(new Filter("process_type", FilterOperator.EQ, sProcessType));
         }
       }
 
-      // Search filter
+      // Search filter (multi-field OR)
       if (this._sSearchQuery) {
-        aFilters.push(new Filter("sap_delivery_no", FilterOperator.Contains, this._sSearchQuery));
+        var sQ = this._sSearchQuery;
+        aFilters.push(new Filter({
+          filters: [
+            new Filter("sap_delivery_no", FilterOperator.Contains, sQ),
+            new Filter("warehouse_code", FilterOperator.Contains, sQ),
+            new Filter("sap_ship_to", FilterOperator.Contains, sQ),
+            new Filter("process_type", FilterOperator.Contains, sQ),
+            new Filter("process_type_desc", FilterOperator.Contains, sQ)
+          ],
+          and: false
+        }));
       }
 
       // Apply combined AND filter
@@ -139,28 +194,133 @@ sap.ui.define([
       MessageToast.show(this._getText("msgRefreshed"));
     },
 
-    onSelectionChange: function () { },
+    /* ═══════════════════════════════════════════
+       Navigation (Grid Table uses cellClick + Link press)
+       ═══════════════════════════════════════════ */
 
-    onRowPress: function () {
-      this.getOwnerComponent().showView("workOrderDetail");
+    onDeliveryPress: function (oEvent) {
+      var oCtx = oEvent.getSource().getBindingContext("workOrders");
+      if (oCtx) {
+        var sId = oCtx.getProperty("id");
+        this.getOwnerComponent().showView("workOrderDetail", { orderId: sId });
+      }
     },
+
+    onCellClick: function (oEvent) {
+      var iColIdx = oEvent.getParameter("columnIndex");
+      var oCtx = oEvent.getParameter("rowBindingContext");
+      // Skip if clicking first column (Link handles it) or last column (action button)
+      var oTable = this.byId("workOrdersTable");
+      var iLastCol = oTable.getColumns().length - 1;
+      if (!oCtx || iColIdx === 0 || iColIdx === iLastCol) { return; }
+      var sId = oCtx.getProperty("id");
+      this.getOwnerComponent().showView("workOrderDetail", { orderId: sId });
+    },
+
+    /* ═══════════════════════════════════════════
+       Sort Dialog (ALV-style)
+       ═══════════════════════════════════════════ */
+
+    onSortDialog: function () {
+      var that = this;
+      if (!this._oSortDialog) {
+        this._oSortDialog = new ViewSettingsDialog({
+          confirm: function (oEvent) { that._onSortConfirm(oEvent); }
+        });
+        var aSortItems = [
+          { key: "sap_delivery_no", text: this._getText("woDeliveryNo") },
+          { key: "sap_delivery_type", text: this._getText("woDeliveryType") },
+          { key: "order_type", text: this._getText("woType") },
+          { key: "process_type", text: this._getText("woProcessType") },
+          { key: "status", text: this._getText("woStatus") },
+          { key: "plant_code", text: this._getText("woPlant") },
+          { key: "warehouse_code", text: this._getText("woWarehouse") },
+          { key: "mvt_type", text: this._getText("cfgMvtType") },
+          { key: "sap_ship_to", text: this._getText("woShipTo") },
+          { key: "priority", text: this._getText("woPriority") },
+          { key: "received_at", text: this._getText("woReceivedAt") }
+        ];
+        aSortItems.forEach(function (o) {
+          that._oSortDialog.addSortItem(new ViewSettingsItem({ key: o.key, text: o.text }));
+        });
+        this.getView().addDependent(this._oSortDialog);
+      }
+      this._oSortDialog.open();
+    },
+
+    _onSortConfirm: function (oEvent) {
+      var oTable = this.byId("workOrdersTable");
+      var oBinding = oTable.getBinding("rows");
+      var sSortKey = oEvent.getParameter("sortItem").getKey();
+      var bDesc = oEvent.getParameter("sortDescending");
+      oBinding.sort(new Sorter(sSortKey, bDesc));
+    },
+
+    /* ═══════════════════════════════════════════
+       Excel Export (ALV-style)
+       ═══════════════════════════════════════════ */
 
     onExport: function () {
-      MessageToast.show(this._getText("msgExportComingSoon"));
+      var oTable = this.byId("workOrdersTable");
+      var oBinding = oTable.getBinding("rows");
+      if (!oBinding) { return; }
+
+      sap.ui.require(["sap/ui/export/Spreadsheet"], function (Spreadsheet) {
+        var oSettings = {
+          workbook: { columns: EXPORT_COLS },
+          dataSource: oBinding,
+          fileName: "IsEmirleri_" + new Date().toISOString().slice(0, 10) + ".xlsx"
+        };
+        var oSheet = new Spreadsheet(oSettings);
+        oSheet.build().finally(function () { oSheet.destroy(); });
+      });
     },
+
+    /* ═══════════════════════════════════════════
+       SAP Trigger (per-row action button)
+       ═══════════════════════════════════════════ */
+
+    onTriggerFetchSAP: function (oEvent) {
+      var oCtx = oEvent.getSource().getBindingContext("workOrders");
+      if (!oCtx) { return; }
+      var oOrder = oCtx.getObject();
+      var that = this;
+
+      MessageBox.confirm(
+        oOrder.sap_delivery_no + " teslimat\u0131 SAP'den \u00e7ekilecek. Devam edilsin mi?", {
+        title: "SAP Senkronizasyon",
+        onClose: function (sAction) {
+          if (sAction === MessageBox.Action.OK) {
+            API.post("/api/trigger/fetch-from-sap", {
+              delivery_no: oOrder.sap_delivery_no,
+              plant_code: oOrder.plant_code || "1000",
+              warehouse_code: oOrder.warehouse_code,
+              delivery_type: oOrder.sap_delivery_type
+            }).then(function () {
+              MessageToast.show(that._getText("msgSuccess"));
+              that._loadData();
+            });
+          }
+        }
+      });
+    },
+
+    /* ═══════════════════════════════════════════
+       Batch Processing (MultiToggle selection)
+       ═══════════════════════════════════════════ */
 
     onProcessSelected: function () {
       var oTable = this.byId("workOrdersTable");
-      var aSelectedItems = oTable.getSelectedItems();
+      var aIndices = oTable.getSelectedIndices();
 
-      if (aSelectedItems.length === 0) {
+      if (aIndices.length === 0) {
         MessageToast.show(this._getText("msgProcessNoSelection"));
         return;
       }
 
       var aOrders = [];
-      aSelectedItems.forEach(function (oItem) {
-        var oCtx = oItem.getBindingContext("workOrders");
+      aIndices.forEach(function (iIdx) {
+        var oCtx = oTable.getContextByIndex(iIdx);
         if (oCtx) { aOrders.push(oCtx.getObject()); }
       });
 

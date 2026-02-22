@@ -33,17 +33,18 @@
         id="recTable"
         items="{recon>/data}"
         growing="true"
-        growingThreshold="20">
+        growingThreshold="20"
+        autoPopinMode="true">
 
         <columns>
-          <Column width="120px"><Text text="{i18n>recRunDate}" /></Column>
-          <Column width="120px"><Text text="{i18n>recWarehouse}" /></Column>
-          <Column width="100px" hAlign="End"><Text text="{i18n>recSAPOpen}" /></Column>
-          <Column width="100px" hAlign="End"><Text text="{i18n>recWMSOpen}" /></Column>
-          <Column width="120px" hAlign="End"><Text text="{i18n>recDiscrepancies}" /></Column>
-          <Column width="100px"><Text text="{i18n>recStatus}" /></Column>
-          <Column><Text text="{i18n>recReviewedBy}" /></Column>
-          <Column width="150px" hAlign="Center"><Text text="{i18n>recActions}" /></Column>
+          <Column importance="High"><Text text="{i18n>recRunDate}" /></Column>
+          <Column importance="High"><Text text="{i18n>recWarehouse}" /></Column>
+          <Column importance="Medium" hAlign="End" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>recSAPOpen}" /></Column>
+          <Column importance="Medium" hAlign="End" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>recWMSOpen}" /></Column>
+          <Column importance="High" hAlign="End"><Text text="{i18n>recDiscrepancies}" /></Column>
+          <Column importance="High"><Text text="{i18n>recStatus}" /></Column>
+          <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>recReviewedBy}" /></Column>
+          <Column importance="High" hAlign="Center"><Text text="{i18n>recActions}" /></Column>
         </columns>
 
         <items>

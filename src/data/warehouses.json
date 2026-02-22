@@ -2,7 +2,7 @@
   {
     "id": "wh_1",
     "code": "WH-IST-01",
-    "name": "\u0130stanbul Ana Depo",
+    "name": "İstanbul Ana Depo",
     "sap_plant": "1000",
     "sap_stor_loc": "0001",
     "wms_code": "IST01",
@@ -12,7 +12,7 @@
   {
     "id": "wh_2",
     "code": "WH-ANK-01",
-    "name": "Ankara Da\u011f\u0131t\u0131m Merkezi",
+    "name": "Ankara Dağıtım Merkezi",
     "sap_plant": "2000",
     "sap_stor_loc": "0001",
     "wms_code": "ANK01",
@@ -22,7 +22,7 @@
   {
     "id": "wh_3",
     "code": "WH-IZM-01",
-    "name": "\u0130zmir Liman Deposu",
+    "name": "İzmir Liman Deposu",
     "sap_plant": "3000",
     "sap_stor_loc": "0001",
     "wms_code": "IZM01",

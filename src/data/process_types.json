@@ -10,7 +10,11 @@
         "source": "SAP",
         "target": "KOKPIT",
         "direction": "INBOUND",
-        "api": "/api/trigger/fetch-from-sap"
+        "api": "/api/trigger/fetch-from-sap",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 30000,
+        "retry_count": 3
       },
       {
         "step_no": 2,
@@ -18,7 +22,11 @@
         "source": "KOKPIT",
         "target": "3PL",
         "direction": "OUTBOUND",
-        "api": "/api/trigger/send-to-3pl"
+        "api": "/api/trigger/send-to-3pl",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 60000,
+        "retry_count": 3
       },
       {
         "step_no": 3,
@@ -26,7 +34,11 @@
         "source": "KOKPIT",
         "target": "SAP",
         "direction": "OUTBOUND",
-        "api": "/api/goods-movement/post-pgi"
+        "api": "/api/goods-movement/post-pgi",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 30000,
+        "retry_count": 2
       },
       {
         "step_no": 4,
@@ -34,7 +46,11 @@
         "source": "3PL",
         "target": "KOKPIT",
         "direction": "INBOUND",
-        "api": "/api/trigger/query-status"
+        "api": "/api/trigger/query-status",
+        "method": "GET",
+        "content_type": "application/json",
+        "timeout_ms": 15000,
+        "retry_count": 5
       }
     ]
   },
@@ -49,7 +65,11 @@
         "source": "SAP",
         "target": "KOKPIT",
         "direction": "INBOUND",
-        "api": "/api/trigger/fetch-from-sap"
+        "api": "/api/trigger/fetch-from-sap",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 30000,
+        "retry_count": 3
       },
       {
         "step_no": 2,
@@ -57,7 +77,11 @@
         "source": "KOKPIT",
         "target": "3PL",
         "direction": "OUTBOUND",
-        "api": "/api/trigger/send-to-3pl"
+        "api": "/api/trigger/send-to-3pl",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 60000,
+        "retry_count": 3
       },
       {
         "step_no": 3,
@@ -65,7 +89,11 @@
         "source": "KOKPIT",
         "target": "SAP",
         "direction": "OUTBOUND",
-        "api": "/api/goods-movement/post-gr"
+        "api": "/api/goods-movement/post-gr",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 30000,
+        "retry_count": 2
       }
     ]
   },
@@ -80,7 +108,11 @@
         "source": "SAP",
         "target": "KOKPIT",
         "direction": "INBOUND",
-        "api": "/api/trigger/fetch-from-sap"
+        "api": "/api/trigger/fetch-from-sap",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 30000,
+        "retry_count": 3
       },
       {
         "step_no": 2,
@@ -88,7 +120,11 @@
         "source": "KOKPIT",
         "target": "3PL",
         "direction": "OUTBOUND",
-        "api": "/api/trigger/send-to-3pl"
+        "api": "/api/trigger/send-to-3pl",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 60000,
+        "retry_count": 3
       },
       {
         "step_no": 3,
@@ -96,7 +132,11 @@
         "source": "KOKPIT",
         "target": "SAP",
         "direction": "OUTBOUND",
-        "api": "/api/goods-movement/post-gr"
+        "api": "/api/goods-movement/post-gr",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 30000,
+        "retry_count": 2
       }
     ]
   },
@@ -111,7 +151,11 @@
         "source": "SAP",
         "target": "KOKPIT",
         "direction": "INBOUND",
-        "api": "/api/trigger/fetch-from-sap"
+        "api": "/api/trigger/fetch-from-sap",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 30000,
+        "retry_count": 3
       },
       {
         "step_no": 2,
@@ -119,7 +163,11 @@
         "source": "KOKPIT",
         "target": "3PL",
         "direction": "OUTBOUND",
-        "api": "/api/trigger/send-to-3pl"
+        "api": "/api/trigger/send-to-3pl",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 60000,
+        "retry_count": 3
       },
       {
         "step_no": 3,
@@ -127,7 +175,11 @@
         "source": "KOKPIT",
         "target": "SAP",
         "direction": "OUTBOUND",
-        "api": "/api/goods-movement/post-gr"
+        "api": "/api/goods-movement/post-gr",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 30000,
+        "retry_count": 2
       }
     ]
   },
@@ -142,7 +194,11 @@
         "source": "SAP",
         "target": "KOKPIT",
         "direction": "INBOUND",
-        "api": "/api/trigger/fetch-from-sap"
+        "api": "/api/trigger/fetch-from-sap",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 30000,
+        "retry_count": 3
       },
       {
         "step_no": 2,
@@ -150,7 +206,11 @@
         "source": "KOKPIT",
         "target": "3PL",
         "direction": "OUTBOUND",
-        "api": "/api/trigger/send-to-3pl"
+        "api": "/api/trigger/send-to-3pl",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 60000,
+        "retry_count": 3
       },
       {
         "step_no": 3,
@@ -158,7 +218,11 @@
         "source": "KOKPIT",
         "target": "SAP",
         "direction": "OUTBOUND",
-        "api": "/api/goods-movement/post-pgi"
+        "api": "/api/goods-movement/post-pgi",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 30000,
+        "retry_count": 2
       }
     ]
   },
@@ -173,7 +237,11 @@
         "source": "SAP",
         "target": "KOKPIT",
         "direction": "INBOUND",
-        "api": "/api/trigger/fetch-from-sap"
+        "api": "/api/trigger/fetch-from-sap",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 30000,
+        "retry_count": 3
       },
       {
         "step_no": 2,
@@ -181,7 +249,11 @@
         "source": "KOKPIT",
         "target": "3PL",
         "direction": "OUTBOUND",
-        "api": "/api/trigger/send-to-3pl"
+        "api": "/api/trigger/send-to-3pl",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 60000,
+        "retry_count": 3
       },
       {
         "step_no": 3,
@@ -189,14 +261,18 @@
         "source": "KOKPIT",
         "target": "SAP",
         "direction": "OUTBOUND",
-        "api": "/api/goods-movement/post-pgi"
+        "api": "/api/goods-movement/post-pgi",
+        "method": "POST",
+        "content_type": "application/json",
+        "timeout_ms": 30000,
+        "retry_count": 2
       }
     ]
   },
   {
-    "code": "DA",
-    "name": "Depolar Arası Transfer",
+    "code": "TSL",
+    "name": "Teslimat",
     "steps": [],
-    "id": "id_1771553695165_9tkr"
+    "id": "id_1771766871263_00av"
   }
 ]

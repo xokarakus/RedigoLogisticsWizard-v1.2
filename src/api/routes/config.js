@@ -5,13 +5,58 @@ const JsonStore = require('../../shared/jsonStore');
 const configStore = new JsonStore('process_configs.json');
 const typeStore = new JsonStore('process_types.json');
 const warehouseStore = new JsonStore('warehouses.json');
+const mappingStore = new JsonStore('movement_mappings.json');
+const fieldMappingStore = new JsonStore('field_mappings.json');
+const securityStore = new JsonStore('security_profiles.json');
 
 /* ═══════════════════════════════════════════
-   Depolar (Warehouses) READ
+   Depolar (Warehouses) CRUD
    ═══════════════════════════════════════════ */
 
 router.get('/warehouses', (req, res) => {
   res.json({ data: warehouseStore.readAll() });
+});
+
+router.post('/warehouses', (req, res) => {
+  const item = warehouseStore.create(req.body);
+  res.status(201).json({ data: item });
+});
+
+router.put('/warehouses/:id', (req, res) => {
+  const updated = warehouseStore.update(req.params.id, req.body);
+  if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+  res.json({ data: updated });
+});
+
+router.delete('/warehouses/:id', (req, res) => {
+  const ok = warehouseStore.remove(req.params.id);
+  if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+  res.json({ success: true });
+});
+
+/* ═══════════════════════════════════════════
+   Hareket Eslemeleri (Mappings) CRUD
+   ═══════════════════════════════════════════ */
+
+router.get('/mappings', (req, res) => {
+  res.json({ data: mappingStore.readAll() });
+});
+
+router.post('/mappings', (req, res) => {
+  const item = mappingStore.create(req.body);
+  res.status(201).json({ data: item });
+});
+
+router.put('/mappings/:id', (req, res) => {
+  const updated = mappingStore.update(req.params.id, req.body);
+  if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+  res.json({ data: updated });
+});
+
+router.delete('/mappings/:id', (req, res) => {
+  const ok = mappingStore.remove(req.params.id);
+  if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+  res.json({ success: true });
 });
 
 /* ═══════════════════════════════════════════
@@ -60,6 +105,64 @@ router.put('/process-types/:id', (req, res) => {
 
 router.delete('/process-types/:id', (req, res) => {
   const ok = typeStore.remove(req.params.id);
+  if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+  res.json({ success: true });
+});
+
+/* ═══════════════════════════════════════════
+   Alan Eşleştirmeleri (Field Mappings) CRUD
+   ═══════════════════════════════════════════ */
+
+router.get('/field-mappings', (req, res) => {
+  let data = fieldMappingStore.readAll();
+  if (req.query.company_code) {
+    data = data.filter(fm => fm.company_code === req.query.company_code);
+  }
+  res.json({ data });
+});
+
+router.post('/field-mappings', (req, res) => {
+  const item = fieldMappingStore.create(req.body);
+  res.status(201).json({ data: item });
+});
+
+router.put('/field-mappings/:id', (req, res) => {
+  const updated = fieldMappingStore.update(req.params.id, req.body);
+  if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+  res.json({ data: updated });
+});
+
+router.delete('/field-mappings/:id', (req, res) => {
+  const ok = fieldMappingStore.remove(req.params.id);
+  if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+  res.json({ success: true });
+});
+
+/* ═══════════════════════════════════════════
+   Güvenlik Profilleri (Security Profiles) CRUD
+   ═══════════════════════════════════════════ */
+
+router.get('/security-profiles', (req, res) => {
+  let data = securityStore.readAll();
+  if (req.query.company_code) {
+    data = data.filter(sp => sp.company_code === req.query.company_code);
+  }
+  res.json({ data });
+});
+
+router.post('/security-profiles', (req, res) => {
+  const item = securityStore.create(req.body);
+  res.status(201).json({ data: item });
+});
+
+router.put('/security-profiles/:id', (req, res) => {
+  const updated = securityStore.update(req.params.id, req.body);
+  if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+  res.json({ data: updated });
+});
+
+router.delete('/security-profiles/:id', (req, res) => {
+  const ok = securityStore.remove(req.params.id);
   if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
   res.json({ success: true });
 });

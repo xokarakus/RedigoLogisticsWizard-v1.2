@@ -50,8 +50,26 @@ sap.ui.define([
     },
 
     onTilePress: function () { this.getOwnerComponent().showView("workOrders"); },
-    onOrderSelect: function () { this.getOwnerComponent().showView("workOrderDetail"); },
-    onOrderPress: function () { this.getOwnerComponent().showView("workOrderDetail"); },
+    onDLQTilePress: function () { this.getOwnerComponent().showView("dlq"); },
+    onTxTilePress: function () { this.getOwnerComponent().showView("transactionLog"); },
+
+    onOrderSelect: function (oEvent) {
+      var oItem = oEvent.getParameter("listItem");
+      if (!oItem) { return; }
+      var oCtx = oItem.getBindingContext("dashboard");
+      if (oCtx) {
+        var sId = oCtx.getProperty("id");
+        this.getOwnerComponent().showView("workOrderDetail", { orderId: sId });
+      }
+    },
+
+    onOrderPress: function (oEvent) {
+      var oCtx = oEvent.getSource().getBindingContext("dashboard");
+      if (oCtx) {
+        var sId = oCtx.getProperty("id");
+        this.getOwnerComponent().showView("workOrderDetail", { orderId: sId });
+      }
+    },
 
     onSearchOrders: function (oEvent) {
       var sQuery = oEvent.getParameter("newValue");

@@ -30,16 +30,17 @@
         growing="true"
         growingThreshold="25"
         mode="SingleSelectMaster"
+        autoPopinMode="true"
         selectionChange="onItemSelect">
 
         <columns>
-          <Column width="130px"><Text text="{i18n>txAction}" /></Column>
-          <Column width="150px"><Text text="{i18n>txSAPFunction}" /></Column>
-          <Column width="120px"><Text text="{i18n>dlqDelivery}" /></Column>
-          <Column width="60px" hAlign="Center"><Text text="{i18n>txRetryCount}" /></Column>
-          <Column><Text text="{i18n>dlqErrorMessage}" /></Column>
-          <Column><Text text="{i18n>txStarted}" /></Column>
-          <Column width="200px" hAlign="Center"><Text text="{i18n>dlqActions}" /></Column>
+          <Column importance="High"><Text text="{i18n>txAction}" /></Column>
+          <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>txSAPFunction}" /></Column>
+          <Column importance="High"><Text text="{i18n>dlqDelivery}" /></Column>
+          <Column importance="Low" hAlign="Center" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>txRetryCount}" /></Column>
+          <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>dlqErrorMessage}" /></Column>
+          <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>txStarted}" /></Column>
+          <Column importance="High" hAlign="Center"><Text text="{i18n>dlqActions}" /></Column>
         </columns>
 
         <items>
