@@ -1022,28 +1022,93 @@ sap.ui.define([
     },
 
     /**
+     * Donusum kuralini tek bir degere uygular.
+     * DIRECT, LOOKUP, PREFIX:xxx, SAP_DATE destekler.
+     */
+    _applyTransform: function (sapVal, transform) {
+      if (sapVal === undefined || sapVal === null) return "";
+      if (transform === "SAP_DATE" && typeof sapVal === "string" && sapVal.length === 8) {
+        return sapVal.substr(0, 4) + "-" + sapVal.substr(4, 2) + "-" + sapVal.substr(6, 2);
+      }
+      if (typeof transform === "string" && transform.indexOf("PREFIX:") === 0) {
+        return transform.split(":")[1] + String(sapVal);
+      }
+      return sapVal;
+    },
+
+    /**
      * Mevcut kurallara gore 3PL JSON'u yeniden olusturur.
-     * SAP ornek verilerinden donusum uygulayarak 3PL ciktisini hesaplar.
-     * Nested path'leri (_resolveJsonPath ile) cozer.
+     * Array yapilari destekler:
+     *   1) Root array SAP JSON → cikti da array (her satir donusturulur)
+     *   2) Nested array (ITEMS[].xxx) → header alanlari + items dizisi
+     *   3) Duz obje → duz cikti (eskisi gibi)
      */
     _rebuildThreeplJson: function (aRules, sapJson) {
-      var result = {};
       var self = this;
-      aRules.forEach(function (rule) {
-        if (!rule.threepl_field) return;
-        var sapVal = self._resolveJsonPath(sapJson, rule.sap_field);
-        if (sapVal === undefined) {
-          result[rule.threepl_field] = "";
-          return;
-        }
-        if (rule.transform === "SAP_DATE" && typeof sapVal === "string" && sapVal.length === 8) {
-          result[rule.threepl_field] = sapVal.substr(0, 4) + "-" + sapVal.substr(4, 2) + "-" + sapVal.substr(6, 2);
-        } else if (typeof rule.transform === "string" && rule.transform.indexOf("PREFIX:") === 0) {
-          result[rule.threepl_field] = rule.transform.split(":")[1] + String(sapVal);
+
+      // Sadece threepl_field dolu kurallari isle
+      var activeRules = aRules.filter(function (r) { return !!r.threepl_field; });
+
+      // ── Durum 1: Root-level array ──
+      if (Array.isArray(sapJson)) {
+        return sapJson.map(function (item) {
+          var row = {};
+          activeRules.forEach(function (rule) {
+            var sapVal = self._resolveJsonPath(item, rule.sap_field);
+            row[rule.threepl_field] = self._applyTransform(sapVal, rule.transform);
+          });
+          return row;
+        });
+      }
+
+      // ── Durum 2 & 3: Object – header ve item kurallarini ayir ──
+      var headerRules = [];
+      var itemRulesMap = {}; // arrayPath → [{sapSubField, threepl_field, transform}]
+
+      activeRules.forEach(function (rule) {
+        var sapField = rule.sap_field || "";
+        // "ITEMS[].MATNR" → arrPath="ITEMS", subField="MATNR"
+        var arrayMatch = sapField.match(/^(.+?)\[\]\.(.+)$/);
+        if (arrayMatch) {
+          var arrPath = arrayMatch[1];
+          if (!itemRulesMap[arrPath]) itemRulesMap[arrPath] = [];
+          itemRulesMap[arrPath].push({
+            sapSubField: arrayMatch[2],
+            threepl_field: rule.threepl_field,
+            transform: rule.transform
+          });
         } else {
-          result[rule.threepl_field] = sapVal;
+          headerRules.push(rule);
         }
       });
+
+      var result = {};
+
+      // Header alanlari (tek deger)
+      headerRules.forEach(function (rule) {
+        var sapVal = self._resolveJsonPath(sapJson, rule.sap_field);
+        result[rule.threepl_field] = self._applyTransform(sapVal, rule.transform);
+      });
+
+      // Item dizileri (her array path icin)
+      var arrPaths = Object.keys(itemRulesMap);
+      arrPaths.forEach(function (arrPath) {
+        var sapArray = self._resolveJsonPath(sapJson, arrPath);
+        if (!Array.isArray(sapArray)) return;
+
+        var rules = itemRulesMap[arrPath];
+        var outputKey = arrPath.toLowerCase(); // ITEMS → items
+
+        result[outputKey] = sapArray.map(function (sapItem) {
+          var row = {};
+          rules.forEach(function (ir) {
+            var sapVal = self._resolveJsonPath(sapItem, ir.sapSubField);
+            row[ir.threepl_field] = self._applyTransform(sapVal, ir.transform);
+          });
+          return row;
+        });
+      });
+
       return result;
     },
 

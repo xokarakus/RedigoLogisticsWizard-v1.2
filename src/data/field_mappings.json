@@ -30,159 +30,77 @@
       ]
     },
     "threepl_sample_json": {
-      "order_number": "0080000123",
-      "line_number": "000010",
-      "sku": "MAT-001",
-      "product_name": "Çelik Breket",
-      "location_code": "0001",
+      "order_number": "0080000456",
+      "delivery_date": "2026-02-22",
+      "customer_id": "100045",
+      "customer_name": "ABC Makina Sanayi A.Ş.",
       "plant": "1000",
-      "quantity": 100,
-      "unit": "PCS",
-      "customer_id": "0000012345",
-      "customer_name": "Müşteri A.Ş.",
-      "delivery_date": "2026-02-25",
-      "created_date": "2026-02-22"
+      "items": [
+        {
+          "line_number": "000010",
+          "sku": "MAT-002",
+          "product_name": "Alüminyum Bağlantı",
+          "location_code": "0002",
+          "quantity": 50,
+          "unit": "KG"
+        }
+      ]
     },
     "field_rules": [
       {
-        "sap_field": "VBELN",
-        "threepl_field": "order_number",
-        "transform": "LOOKUP"
-      },
-      {
-        "sap_field": "POSNR",
-        "threepl_field": "line_number",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "MATNR",
-        "threepl_field": "sku",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "MAKTX",
-        "threepl_field": "product_name",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "LGORT",
-        "threepl_field": "location_code",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "WERKS",
-        "threepl_field": "plant",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "LFIMG",
-        "threepl_field": "quantity",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "MEINS",
-        "threepl_field": "unit",
-        "transform": "LOOKUP"
-      },
-      {
-        "sap_field": "KUNNR",
-        "threepl_field": "customer_id",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "KUNNA",
-        "threepl_field": "customer_name",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "WADAT",
-        "threepl_field": "delivery_date",
-        "transform": "SAP_DATE"
-      },
-      {
         "sap_field": "HEADER.VBELN",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "HEADER.LFART",
-        "threepl_field": "",
+        "threepl_field": "order_number",
         "transform": "DIRECT"
       },
       {
         "sap_field": "HEADER.WADAT",
-        "threepl_field": "",
-        "transform": "DIRECT"
+        "threepl_field": "delivery_date",
+        "transform": "SAP_DATE"
       },
       {
         "sap_field": "HEADER.KUNNR",
-        "threepl_field": "",
+        "threepl_field": "customer_id",
         "transform": "DIRECT"
       },
       {
         "sap_field": "HEADER.NAME1",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "HEADER.VSTEL",
-        "threepl_field": "",
+        "threepl_field": "customer_name",
         "transform": "DIRECT"
       },
       {
         "sap_field": "HEADER.WERKS",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "HEADER.LGORT",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "HEADER.VKORG",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "HEADER.VTWEG",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "HEADER.SPART",
-        "threepl_field": "",
+        "threepl_field": "plant",
         "transform": "DIRECT"
       },
       {
         "sap_field": "ITEMS[].POSNR",
-        "threepl_field": "",
+        "threepl_field": "line_number",
         "transform": "DIRECT"
       },
       {
         "sap_field": "ITEMS[].MATNR",
-        "threepl_field": "",
+        "threepl_field": "sku",
         "transform": "DIRECT"
       },
       {
         "sap_field": "ITEMS[].MAKTX",
-        "threepl_field": "",
+        "threepl_field": "product_name",
         "transform": "DIRECT"
       },
       {
         "sap_field": "ITEMS[].LGORT",
-        "threepl_field": "",
+        "threepl_field": "location_code",
         "transform": "DIRECT"
       },
       {
         "sap_field": "ITEMS[].LFIMG",
-        "threepl_field": "",
+        "threepl_field": "quantity",
         "transform": "DIRECT"
       },
       {
         "sap_field": "ITEMS[].MEINS",
-        "threepl_field": "",
-        "transform": "DIRECT"
+        "threepl_field": "unit",
+        "transform": "LOOKUP"
       }
     ],
     "headers": [
@@ -236,23 +154,48 @@
         "MEINS": "ADET"
       }
     ],
-    "threepl_sample_json": {
-      "ref_no": "",
-      "item_code": "",
-      "item_name": "",
-      "warehouse_bin": "",
-      "qty": "",
-      "UNIT": "",
-      "MT_TURU": "",
-      "0.warehouse_bin": "",
-      "0.qty": "",
-      "0.UNIT": ""
-    },
+    "threepl_sample_json": [
+      {
+        "ref_no": "DLV-0080000456",
+        "line_no": "000010",
+        "item_code": "MAT-002",
+        "item_name": "Alüminyum Bağlantı",
+        "warehouse_bin": "0002",
+        "qty": 50,
+        "UNIT": "KG",
+        "ITEM": ""
+      },
+      {
+        "ref_no": "DLV-0080000456",
+        "line_no": "000020",
+        "item_code": "MAT-003",
+        "item_name": "Çelik Vida",
+        "warehouse_bin": "0003",
+        "qty": 120,
+        "UNIT": "ADET",
+        "ITEM": ""
+      },
+      {
+        "ref_no": "DLV-0080000456",
+        "line_no": "000030",
+        "item_code": "MAT-004",
+        "item_name": "Plastik Conta",
+        "warehouse_bin": "0001",
+        "qty": 75,
+        "UNIT": "ADET",
+        "ITEM": ""
+      }
+    ],
     "field_rules": [
       {
         "sap_field": "VBELN",
         "threepl_field": "ref_no",
         "transform": "PREFIX:DLV-"
+      },
+      {
+        "sap_field": "POSNR",
+        "threepl_field": "line_no",
+        "transform": "DIRECT"
       },
       {
         "sap_field": "MATNR",
@@ -280,84 +223,9 @@
         "transform": "DIRECT"
       },
       {
-        "sap_field": "MTART",
-        "threepl_field": "MT_TURU",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "0.LGORT",
-        "threepl_field": "0.warehouse_bin",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "0.LFIMG",
-        "threepl_field": "0.qty",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "0.MEINS",
-        "threepl_field": "0.UNIT",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "1.VBELN",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "1.POSNR",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "1.MATNR",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "1.MAKTX",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "1.LGORT",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "1.LFIMG",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "1.MEINS",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "2.VBELN",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "2.POSNR",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "2.MATNR",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "2.MAKTX",
-        "threepl_field": "",
-        "transform": "DIRECT"
-      },
-      {
-        "sap_field": "2.LFIMG",
-        "threepl_field": "",
-        "transform": "DIRECT"
+        "sap_field": "ITEM",
+        "threepl_field": "ITEM",
+        "transform": "LOOKUP"
       }
     ],
     "headers": [
