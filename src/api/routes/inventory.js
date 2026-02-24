@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const JsonStore = require('../../shared/jsonStore');
+const DbStore = require('../../shared/database/dbStore');
 
-const mappingStore = new JsonStore('movement_mappings.json');
+const mappingStore = new DbStore('movement_mappings');
 
 // GET /api/inventory/mappings - List movement mappings
-router.get('/mappings', (req, res) => {
-  const data = mappingStore.readAll().filter(m => m.is_active);
+router.get('/mappings', async (req, res) => {
+  const data = (await mappingStore.readAll()).filter(m => m.is_active);
   res.json({ data });
 });
 

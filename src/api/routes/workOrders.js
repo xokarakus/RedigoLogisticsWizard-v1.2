@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const JsonStore = require('../../shared/jsonStore');
+const DbStore = require('../../shared/database/dbStore');
 
-const store = new JsonStore('work_orders.json');
-const pcStore = new JsonStore('process_configs.json');
+const store = new DbStore('work_orders');
+const pcStore = new DbStore('process_configs');
 
 // Build lookup key from work order fields
 function configKey(plantCode, warehouseCode, deliveryType) {
@@ -11,9 +11,9 @@ function configKey(plantCode, warehouseCode, deliveryType) {
 }
 
 // GET /api/work-orders - List work orders
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { status, type, limit = 50, offset = 0 } = req.query;
-  let data = store.readAll();
+  let data = await store.readAll();
 
   if (status) {
     data = data.filter(o => o.status === status);
@@ -23,7 +23,7 @@ router.get('/', (req, res) => {
   }
 
   // Enrich with process_type from process_configs
-  const configs = pcStore.readAll();
+  const configs = await pcStore.readAll();
   const configMap = {};
   configs.forEach(c => {
     configMap[configKey(c.plant_code, c.warehouse_code, c.delivery_type)] = c;
@@ -48,12 +48,12 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/work-orders/:id - Single work order
-router.get('/:id', (req, res) => {
-  const item = store.findById(req.params.id);
+router.get('/:id', async (req, res) => {
+  const item = await store.findById(req.params.id);
   if (!item) return res.status(404).json({ error: 'Kayit bulunamadi' });
 
   // Enrich single item too
-  const configs = pcStore.readAll();
+  const configs = await pcStore.readAll();
   const key = configKey(item.plant_code || '1000', item.warehouse_code, item.sap_delivery_type);
   const cfg = configs.find(c => configKey(c.plant_code, c.warehouse_code, c.delivery_type) === key);
   if (cfg) {
@@ -65,9 +65,9 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /api/work-orders/ingest - Ingest delivery
-router.post('/ingest', (req, res) => {
+router.post('/ingest', async (req, res) => {
   const payload = req.body;
-  const item = store.create({
+  const item = await store.create({
     sap_delivery_no: payload.sap_delivery_no,
     sap_delivery_type: payload.sap_delivery_type,
     sap_doc_date: payload.sap_doc_date,

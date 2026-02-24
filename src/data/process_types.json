@@ -270,9 +270,15 @@
     ]
   },
   {
-    "code": "TSL",
-    "name": "Teslimat",
+    "code": "KITAP",
+    "name": "Kitap Getir",
     "steps": [],
-    "id": "id_1771766871263_00av"
+    "id": "id_1771801693491_1clf"
+  },
+  {
+    "code": "LGN",
+    "name": "Login_Test",
+    "steps": [],
+    "id": "id_1771886300084_80pp"
   }
 ]

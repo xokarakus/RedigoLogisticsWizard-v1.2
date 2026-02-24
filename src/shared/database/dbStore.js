@@ -1,0 +1,159 @@
+/**
+ * DbStore — PostgreSQL adapter with JsonStore-compatible API
+ *
+ * Drop-in replacement for JsonStore. Same method names (readAll, findById,
+ * create, update, remove) but backed by PostgreSQL instead of JSON files.
+ *
+ * Key difference: All methods are async (return Promises).
+ * Route handlers must use `await` when calling DbStore methods.
+ */
+
+const { query } = require('./pool');
+
+// Columns that should be stored as JSONB (not as text)
+const JSONB_COLUMNS = new Set([
+  'steps', 'config', 'headers', 'sap_sample_json', 'threepl_sample_json',
+  'threepl_response_sample_json', 'field_rules', 'response_rules',
+  'sap_raw_payload', 'wms_raw_payload', 'sap_request', 'sap_response',
+  'edited_payload', 'unit_conversions', 'kit_components', 'wms_serial_numbers',
+  'wms_hu_ids', 'discrepancies', 'aliases', 'lines'
+]);
+
+// System columns managed by PostgreSQL — never include in INSERT/UPDATE
+const SYSTEM_COLUMNS = new Set(['id', 'created_at', 'updated_at']);
+
+class DbStore {
+  /**
+   * @param {string} tableName — PostgreSQL table name
+   */
+  constructor(tableName) {
+    this.table = tableName;
+  }
+
+  /**
+   * Read all rows from the table.
+   * For sap_field_aliases: returns the aliases JSONB object (not array of rows).
+   */
+  async readAll() {
+    if (this.table === 'sap_field_aliases') {
+      const { rows } = await query('SELECT aliases FROM sap_field_aliases WHERE id = 1');
+      return rows.length > 0 ? rows[0].aliases : {};
+    }
+    const { rows } = await query(
+      `SELECT * FROM "${this.table}" ORDER BY created_at DESC`
+    );
+    return rows;
+  }
+
+  /**
+   * Find a single row by id.
+   */
+  async findById(id) {
+    const { rows } = await query(
+      `SELECT * FROM "${this.table}" WHERE id = $1`,
+      [id]
+    );
+    return rows[0] || null;
+  }
+
+  /**
+   * Insert a new row. Returns the created row with generated UUID.
+   * Does NOT generate its own id — PostgreSQL gen_random_uuid() handles it.
+   */
+  async create(item) {
+    const data = { ...item };
+
+    // Remove system columns — let PostgreSQL handle them
+    for (const col of SYSTEM_COLUMNS) {
+      delete data[col];
+    }
+
+    const keys = Object.keys(data);
+    if (keys.length === 0) {
+      // Insert with only defaults
+      const { rows } = await query(
+        `INSERT INTO "${this.table}" DEFAULT VALUES RETURNING *`
+      );
+      return rows[0];
+    }
+
+    const columns = keys.map(k => `"${k}"`).join(', ');
+    const placeholders = keys.map((k, i) => {
+      if (JSONB_COLUMNS.has(k) && typeof data[k] === 'object') {
+        return `$${i + 1}::jsonb`;
+      }
+      return `$${i + 1}`;
+    }).join(', ');
+    const values = keys.map(k => {
+      if (JSONB_COLUMNS.has(k) && typeof data[k] === 'object') {
+        return JSON.stringify(data[k]);
+      }
+      return data[k];
+    });
+
+    const { rows } = await query(
+      `INSERT INTO "${this.table}" (${columns}) VALUES (${placeholders}) RETURNING *`,
+      values
+    );
+    return rows[0];
+  }
+
+  /**
+   * Update a row by id. Returns the updated row or null if not found.
+   */
+  async update(id, updates) {
+    const data = { ...updates };
+
+    // Remove system columns
+    for (const col of SYSTEM_COLUMNS) {
+      delete data[col];
+    }
+
+    const keys = Object.keys(data);
+    if (keys.length === 0) return this.findById(id);
+
+    const setClauses = keys.map((k, i) => {
+      if (JSONB_COLUMNS.has(k) && typeof data[k] === 'object') {
+        return `"${k}" = $${i + 1}::jsonb`;
+      }
+      return `"${k}" = $${i + 1}`;
+    }).join(', ');
+
+    const values = keys.map(k => {
+      if (JSONB_COLUMNS.has(k) && typeof data[k] === 'object') {
+        return JSON.stringify(data[k]);
+      }
+      return data[k];
+    });
+
+    values.push(id);
+
+    const { rows } = await query(
+      `UPDATE "${this.table}" SET ${setClauses} WHERE id = $${values.length} RETURNING *`,
+      values
+    );
+    return rows[0] || null;
+  }
+
+  /**
+   * Delete a row by id. Returns true if deleted, false if not found.
+   * Note: Iron Rule triggers will throw on config tables — caller should catch.
+   */
+  async remove(id) {
+    try {
+      const { rowCount } = await query(
+        `DELETE FROM "${this.table}" WHERE id = $1`,
+        [id]
+      );
+      return rowCount > 0;
+    } catch (err) {
+      // Iron Rule trigger: "DELETE not allowed on %. Use is_active = false to archive."
+      if (err.message && err.message.includes('DELETE not allowed')) {
+        throw new Error('Bu kayıt silinemez. is_active = false ile arşivleyin.');
+      }
+      throw err;
+    }
+  }
+}
+
+module.exports = DbStore;

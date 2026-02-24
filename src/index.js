@@ -5,28 +5,47 @@ const compression = require('compression');
 const config = require('./shared/config');
 const logger = require('./shared/utils/logger');
 const sapClient = require('./shared/sap/client');
+const { setupAuth, authenticate, requireScope } = require('./shared/middleware/auth');
 
 const app = express();
 
+// Redis/BullMQ bağlantı hatalarının process'i çökertmesini engelle
+process.on('unhandledRejection', (reason) => {
+  if (reason && reason.code === 'ECONNREFUSED') {
+    // Redis bağlantı hatası — dev modda normal, sessizce geç
+    return;
+  }
+  logger.error('Unhandled rejection', { error: reason && reason.message || String(reason) });
+});
+
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 app.use(cors());
 app.use(compression());
 app.use(express.json({ limit: '5mb' }));
 
-// Health check
+// XSUAA JWT Authentication (BTP'de aktif, local dev'de skip)
+setupAuth(app);
+
+// Health check (auth gerekmez)
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', version: '1.2.0', uptime: process.uptime() });
 });
 
-// API Routes (will be expanded per module)
-app.use('/api/work-orders', require('./api/routes/workOrders'));
-app.use('/api/transactions', require('./api/routes/transactions'));
-app.use('/api/dashboard', require('./api/routes/dashboard'));
-app.use('/api/reconciliation', require('./api/routes/reconciliation'));
+// ── Webhook route'ları (auth yok — harici sistemler çağırır) ──
 app.use('/api/wms', require('./api/routes/wmsWebhook'));
-app.use('/api/inventory', require('./api/routes/inventory'));
-app.use('/api/config', require('./api/routes/config'));
+app.use('/api/inbound', require('./api/routes/inbound'));
+
+// ── Korumalı API route'ları (JWT + scope) ──
+app.use('/api/work-orders', authenticate, require('./api/routes/workOrders'));
+app.use('/api/transactions', authenticate, require('./api/routes/transactions'));
+app.use('/api/dashboard', authenticate, require('./api/routes/dashboard'));
+app.use('/api/reconciliation', authenticate, require('./api/routes/reconciliation'));
+app.use('/api/inventory', authenticate, require('./api/routes/inventory'));
+app.use('/api/config', authenticate, require('./api/routes/config'));
 
 // 404
 app.use((req, res) => {

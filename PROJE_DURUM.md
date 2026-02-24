@@ -237,4 +237,5 @@ RedigoLogisticsWizard-v1.2/
 - Çalışan işleri bozma: Mevcut işlevi koru
 - Kavramsal bütünlük: Yarim bırakma
 - BTP olduğunu atama tüm süreçlerde ve kodlarda bunu unutma
-- örnek dataları ben vermediğim sürece siölme
+- örnek dataları ben vermediğim sürece silme
+- Backend restart için benden onay alman gerek yok.

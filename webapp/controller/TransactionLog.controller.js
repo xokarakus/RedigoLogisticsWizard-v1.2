@@ -3,9 +3,24 @@ sap.ui.define([
   "sap/ui/model/json/JSONModel",
   "sap/ui/model/Filter",
   "sap/ui/model/FilterOperator",
+  "sap/m/Dialog",
+  "sap/m/Button",
+  "sap/m/IconTabBar",
+  "sap/m/IconTabFilter",
+  "sap/m/VBox",
+  "sap/m/HBox",
+  "sap/m/Label",
+  "sap/m/Text",
+  "sap/m/TextArea",
+  "sap/m/ObjectStatus",
+  "sap/m/MessageStrip",
+  "sap/m/BusyIndicator",
+  "sap/m/MessageBox",
   "com/redigo/logistics/cockpit/util/API"
-], function (Controller, JSONModel, Filter, FilterOperator, API) {
+], function (Controller, JSONModel, Filter, FilterOperator, Dialog, Button, IconTabBar, IconTabFilter, VBox, HBox, Label, Text, TextArea, ObjectStatus, MessageStrip, BusyIndicator, MessageBox, API) {
   "use strict";
+
+  var MAX_JSON_DISPLAY = 50000; // 50KB limit for JSON display
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.TransactionLog", {
     onInit: function () {
@@ -20,11 +35,33 @@ sap.ui.define([
       return oBundle.getText(sKey, aArgs);
     },
 
+    /**
+     * JSON'u guvenli stringify: buyuk veri icin truncate
+     */
+    _safeStringify: function (obj) {
+      if (!obj) return null;
+      if (typeof obj === "string") return obj;
+      if (typeof obj !== "object") return String(obj);
+      if (Array.isArray(obj) && obj.length === 0) return null;
+      if (Object.keys(obj).length === 0) return null;
+      try {
+        var s = JSON.stringify(obj, null, 2);
+        if (s.length > MAX_JSON_DISPLAY) {
+          return s.substring(0, MAX_JSON_DISPLAY) + "\n\n... (" + Math.round(s.length / 1024) + " KB - truncated)";
+        }
+        return s;
+      } catch (e) {
+        return "[JSON stringify error: " + e.message + "]";
+      }
+    },
+
     _loadData: function () {
       var that = this;
       API.get("/api/transactions", { limit: 200 }).then(function (result) {
         var aData = (result.data || []).map(function (tx) {
           tx.started_at_fmt = tx.started_at ? new Date(tx.started_at).toLocaleString("tr-TR") : "";
+          // Kisa correlation ref: ilk 8 karakter
+          tx.correlation_ref = tx.correlation_id ? tx.correlation_id.substring(0, 8).toUpperCase() : "";
           return tx;
         });
         that._oModel.setProperty("/data", aData);
@@ -57,7 +94,6 @@ sap.ui.define([
 
       var aFilters = [];
 
-      // Action filter
       var oActionFilter = this.byId("actionFilter");
       if (oActionFilter) {
         var sAction = oActionFilter.getSelectedKey();
@@ -66,7 +102,6 @@ sap.ui.define([
         }
       }
 
-      // Direction filter
       var oDirectionFilter = this.byId("directionFilter");
       if (oDirectionFilter) {
         var sDirection = oDirectionFilter.getSelectedKey();
@@ -75,7 +110,6 @@ sap.ui.define([
         }
       }
 
-      // Status filter
       var oStatusFilter = this.byId("statusFilter");
       if (oStatusFilter) {
         var sStatus = oStatusFilter.getSelectedKey();
@@ -84,13 +118,13 @@ sap.ui.define([
         }
       }
 
-      // Search filter (action or sap_function)
       if (this._sSearchQuery) {
         aFilters.push(new Filter({
           filters: [
             new Filter("action", FilterOperator.Contains, this._sSearchQuery),
             new Filter("sap_function", FilterOperator.Contains, this._sSearchQuery),
-            new Filter("delivery_no", FilterOperator.Contains, this._sSearchQuery)
+            new Filter("delivery_no", FilterOperator.Contains, this._sSearchQuery),
+            new Filter("correlation_ref", FilterOperator.Contains, this._sSearchQuery)
           ],
           and: false
         }));
@@ -112,8 +146,204 @@ sap.ui.define([
 
     onTxPress: function (oEvent) {
       var oCtx = oEvent.getSource().getBindingContext("txLog");
-      var sId = oCtx.getProperty("work_order_id");
-      if (sId) { this.getOwnerComponent().showView("workOrderDetail", { orderId: sId }); }
+      if (!oCtx) { return; }
+      var oTx = this._oModel.getProperty(oCtx.getPath());
+      if (!oTx) { return; }
+      this._showDetailDialog(oTx);
+    },
+
+    _showDetailDialog: function (oTx) {
+      var that = this;
+      var _step = "init";
+      try {
+        _step = "stringify";
+        var sRequestJson = this._safeStringify(oTx.sap_request) || "\u2014 Bo\u015f \u2014";
+        var sResponseJson = this._safeStringify(oTx.sap_response) || "\u2014 Bo\u015f \u2014";
+
+        var sDirection = String(oTx.direction || "");
+        var sStatus = String(oTx.status || "");
+        var sDirectionState = sDirection === "INBOUND" ? "Information" : "Warning";
+        var sStatusState = sStatus === "SUCCESS" ? "Success" : (sStatus === "FAILED" || sStatus === "DEAD") ? "Error" : sStatus === "RETRYING" ? "Warning" : "None";
+        var sDirectionIcon = sDirection === "INBOUND" ? "sap-icon://incoming-call" : "sap-icon://outgoing-call";
+        var sStatusIcon = sStatusState === "Success" ? "sap-icon://message-success" : sStatusState === "Error" ? "sap-icon://message-error" : sStatusState === "Warning" ? "sap-icon://message-warning" : "";
+
+        _step = "general-items";
+        var aItems = [
+          new HBox({ items: [new Label({ text: that._getText("txAction") + ":", width: "140px" }), new Text({ text: String(oTx.action || "\u2014") })] }),
+          new HBox({ items: [new Label({ text: that._getText("txDirection") + ":", width: "140px" }), new ObjectStatus({ text: sDirection || "\u2014", state: sDirectionState, icon: sDirectionIcon })] }),
+          new HBox({ items: [new Label({ text: that._getText("txStatus") + ":", width: "140px" }), new ObjectStatus({ text: sStatus || "\u2014", state: sStatusState, icon: sStatusIcon })] }),
+          new HBox({ items: [new Label({ text: that._getText("txSAPFunction") + ":", width: "140px" }), new Text({ text: String(oTx.sap_function || "\u2014") })] }),
+          new HBox({ items: [new Label({ text: that._getText("txSAPDoc") + ":", width: "140px" }), new Text({ text: String(oTx.sap_doc_number || "\u2014") })] }),
+          new HBox({ items: [new Label({ text: that._getText("txDuration") + ":", width: "140px" }), new Text({ text: (oTx.duration_ms || 0) + " ms" })] }),
+          new HBox({ items: [new Label({ text: that._getText("txStarted") + ":", width: "140px" }), new Text({ text: oTx.started_at ? new Date(oTx.started_at).toLocaleString("tr-TR") : "\u2014" })] }),
+          new HBox({ items: [new Label({ text: that._getText("txCompletedAt") + ":", width: "140px" }), new Text({ text: oTx.completed_at ? new Date(oTx.completed_at).toLocaleString("tr-TR") : "\u2014" })] }),
+          new HBox({ items: [new Label({ text: that._getText("txError") + ":", width: "140px" }), new Text({ text: String(oTx.error_message || "\u2014") })] })
+        ];
+
+        _step = "correlation";
+        if (oTx.correlation_ref) {
+          aItems.splice(1, 0, new HBox({ items: [
+            new Label({ text: that._getText("txCorrelationRef") + ":", width: "140px" }),
+            new ObjectStatus({ text: String(oTx.correlation_ref), state: "Information", icon: "sap-icon://chain-link" })
+          ]}));
+        }
+
+        _step = "general-vbox";
+        var oGeneralContent = new VBox({ items: aItems });
+        oGeneralContent.addStyleClass("sapUiSmallMargin");
+
+        _step = "request-editor";
+        var oRequestEditor = new TextArea({ rows: 16, width: "100%", editable: false, growing: true, growingMaxLines: 30 });
+        oRequestEditor.setValue(sRequestJson);
+        oRequestEditor.addStyleClass("sapUiTinyMargin");
+
+        _step = "response-editor";
+        var oResponseEditor = new TextArea({ rows: 16, width: "100%", editable: false, growing: true, growingMaxLines: 30 });
+        oResponseEditor.setValue(sResponseJson);
+        oResponseEditor.addStyleClass("sapUiTinyMargin");
+
+        _step = "chain-container";
+        var oChainContainer = new VBox({});
+        oChainContainer.addStyleClass("sapUiSmallMargin");
+        var bChainLoaded = false;
+
+        _step = "tabbar";
+        var oTabBar = new IconTabBar({
+          stretchContentHeight: true,
+          select: function (oEvt) {
+            if (oEvt.getParameter("key") === "chain" && !bChainLoaded) {
+              bChainLoaded = true;
+              that._loadChainTab(oTx, oChainContainer);
+            }
+          },
+          items: [
+            new IconTabFilter({ key: "general", text: that._getText("txGeneral"), icon: "sap-icon://detail-view", content: [oGeneralContent] }),
+            new IconTabFilter({ key: "request", text: that._getText("txRequest"), icon: "sap-icon://incoming-call", content: [oRequestEditor] }),
+            new IconTabFilter({ key: "response", text: that._getText("txResponse"), icon: "sap-icon://outgoing-call", content: [oResponseEditor] }),
+            new IconTabFilter({ key: "chain", text: that._getText("txChain"), icon: "sap-icon://process", content: [oChainContainer] })
+          ]
+        });
+
+        _step = "dialog-create";
+        var oDialog = new Dialog({
+          title: that._getText("txDetailTitle") + " \u2014 " + String(oTx.action || ""),
+          icon: "",
+          contentWidth: "760px",
+          contentHeight: "500px",
+          resizable: true,
+          draggable: true,
+          content: [oTabBar],
+          endButton: new Button({ text: "Kapat", press: function () { oDialog.close(); } }),
+          afterClose: function () { oDialog.destroy(); }
+        });
+
+        _step = "dialog-open";
+        oDialog.open();
+      } catch (e) {
+        MessageBox.error("Dialog hatas\u0131 [" + _step + "]: " + e.message);
+      }
+    },
+
+    _loadChainTab: function (oTx, oContainer) {
+      var that = this;
+
+      if (!oTx.correlation_id) {
+        oContainer.addItem(new MessageStrip({
+          text: that._getText("txChainNoChain"),
+          type: "Information",
+          showIcon: true
+        }));
+        return;
+      }
+
+      var oBusy = new BusyIndicator({ size: "32px" });
+      oContainer.addItem(oBusy);
+
+      API.get("/api/transactions/" + oTx.id + "/chain").then(function (result) {
+        oContainer.removeItem(oBusy);
+        oBusy.destroy();
+
+        var aChain = result.data || [];
+        if (aChain.length === 0) {
+          oContainer.addItem(new MessageStrip({
+            text: that._getText("txChainNoChain"),
+            type: "Information",
+            showIcon: true
+          }));
+          return;
+        }
+
+        var sRef = oTx.correlation_id.substring(0, 8).toUpperCase();
+        var oRefBox = new HBox({ items: [
+          new Label({ text: that._getText("txCorrelationRef") + ":", width: "140px", design: "Bold" }),
+          new ObjectStatus({ text: sRef, state: "Information", icon: "sap-icon://chain-link" })
+        ]});
+        oRefBox.addStyleClass("sapUiTinyMarginBottom");
+        oContainer.addItem(oRefBox);
+
+        aChain.forEach(function (step, idx) {
+          var sStepStatus = String(step.status || "");
+          var sStepState = sStepStatus === "SUCCESS" ? "Success" : sStepStatus === "FAILED" ? "Error" : "Warning";
+          var sStepDirection = String(step.direction || "");
+          var sStepDirIcon = sStepDirection === "INBOUND" ? "sap-icon://incoming-call" : "sap-icon://outgoing-call";
+          var sStepDirLabel = sStepDirection === "INBOUND"
+            ? that._getText("txChainSAPtoCockpit")
+            : that._getText("txChainCockpitto3PL");
+          var sStepStatusIcon = sStepState === "Success" ? "sap-icon://message-success" : sStepState === "Error" ? "sap-icon://message-error" : "sap-icon://message-warning";
+
+          var oStepBox = new VBox({});
+          oStepBox.addStyleClass("sapUiSmallMarginBottom sapUiSmallMarginTop");
+
+          var oStepHeader = new HBox({ alignItems: "Center", items: [
+            new ObjectStatus({
+              text: that._getText("txChainStep") + " " + (idx + 1) + ": " + sStepDirLabel,
+              state: sStepState,
+              icon: sStepDirIcon
+            })
+          ]});
+          oStepHeader.addStyleClass("sapUiTinyMarginBottom");
+          oStepBox.addItem(oStepHeader);
+
+          var oDetails = new VBox({});
+          oDetails.addStyleClass("sapUiSmallMarginBegin");
+          oDetails.addItem(new HBox({ items: [
+            new Label({ text: that._getText("txAction") + ":", width: "120px" }),
+            new Text({ text: String(step.action || "\u2014") })
+          ]}));
+          oDetails.addItem(new HBox({ items: [
+            new Label({ text: that._getText("txChainTarget") + ":", width: "120px" }),
+            new Text({ text: String(step.sap_function || "\u2014") })
+          ]}));
+          oDetails.addItem(new HBox({ items: [
+            new Label({ text: that._getText("txStatus") + ":", width: "120px" }),
+            new ObjectStatus({ text: sStepStatus || "\u2014", state: sStepState, icon: sStepStatusIcon })
+          ]}));
+          oDetails.addItem(new HBox({ items: [
+            new Label({ text: that._getText("txChainDuration") + ":", width: "120px" }),
+            new Text({ text: (step.duration_ms || 0) + " ms" })
+          ]}));
+          oDetails.addItem(new HBox({ items: [
+            new Label({ text: that._getText("txChainTimestamp") + ":", width: "120px" }),
+            new Text({ text: step.started_at ? new Date(step.started_at).toLocaleString("tr-TR") : "\u2014" })
+          ]}));
+          if (step.error_message) {
+            oDetails.addItem(new HBox({ items: [
+              new Label({ text: that._getText("txError") + ":", width: "120px" }),
+              new Text({ text: String(step.error_message) })
+            ]}));
+          }
+
+          oStepBox.addItem(oDetails);
+
+          if (idx < aChain.length - 1) {
+            var oArrow = new VBox({ items: [new Text({ text: "\u2502" }), new Text({ text: "\u25BC" })] });
+            oArrow.addStyleClass("sapUiTinyMarginTop");
+            oStepBox.addItem(oArrow);
+          }
+
+          oContainer.addItem(oStepBox);
+        });
+      });
     }
   });
 });

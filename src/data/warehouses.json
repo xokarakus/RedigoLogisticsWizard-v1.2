@@ -6,7 +6,8 @@
     "sap_plant": "1000",
     "sap_stor_loc": "0001",
     "wms_code": "IST01",
-    "wms_provider": "Redigo WMS",
+    "company_code": "ABC_LOG",
+    "sap_partner_no": "0000100001",
     "is_active": true
   },
   {
@@ -16,7 +17,8 @@
     "sap_plant": "2000",
     "sap_stor_loc": "0001",
     "wms_code": "ANK01",
-    "wms_provider": "Redigo WMS",
+    "company_code": "ABC_LOG",
+    "sap_partner_no": "0000100001",
     "is_active": true
   },
   {
@@ -26,7 +28,19 @@
     "sap_plant": "3000",
     "sap_stor_loc": "0001",
     "wms_code": "IZM01",
-    "wms_provider": "Modula WMS",
+    "company_code": "XYZ_DEPO",
+    "sap_partner_no": "0000200001",
     "is_active": false
+  },
+  {
+    "code": "TEMEL",
+    "name": "TEMEL",
+    "sap_plant": "0000",
+    "sap_stor_loc": "0000",
+    "wms_code": "",
+    "company_code": "REDIGO",
+    "sap_partner_no": "",
+    "is_active": true,
+    "id": "id_1771879138959_ivbt"
   }
 ]

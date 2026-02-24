@@ -7,31 +7,37 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "migrate": "node src/shared/database/migrate.js",
+    "seed": "node src/shared/database/seed.js",
     "traffic": "node tools/traffic-agent/index.js",
     "test": "jest",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration"
   },
   "dependencies": {
-    "express": "^4.21.0",
-    "pg": "^8.13.0",
+    "@sap-cloud-sdk/connectivity": "^4.4.0",
+    "@sap-cloud-sdk/http-client": "^4.4.0",
+    "@sap/xsenv": "^6.1.0",
+    "@sap/xssec": "^4.12.2",
     "bullmq": "^5.12.0",
+    "compression": "^1.7.0",
+    "cors": "^2.8.0",
+    "cron": "^3.1.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0",
+    "helmet": "^7.1.0",
     "ioredis": "^5.4.0",
     "node-rfc": "^3.3.0",
-    "zod": "^3.23.0",
-    "winston": "^3.14.0",
-    "dotenv": "^16.4.0",
+    "passport": "^0.7.0",
+    "pg": "^8.13.0",
     "uuid": "^10.0.0",
-    "cron": "^3.1.0",
-    "helmet": "^7.1.0",
-    "cors": "^2.8.0",
-    "compression": "^1.7.0"
+    "winston": "^3.14.0",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0",
-    "jest": "^29.7.0",
+    "chalk": "^4.1.2",
     "cli-table3": "^0.6.5",
-    "chalk": "^4.1.2"
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.0"
   },
   "engines": {
     "node": ">=18.0.0"

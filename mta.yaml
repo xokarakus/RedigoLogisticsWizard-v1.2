@@ -25,6 +25,12 @@ modules:
           name: redigo-api
           url: ~{url}
           forwardAuthToken: true
+    build-parameters:
+      requires:
+        - name: redigo-ui
+          artifacts:
+            - "./*"
+          target-path: resources/webapp
 
   # ─────────────────────────────────
   # SAPUI5 Frontend (Static Content)
@@ -58,6 +64,7 @@ modules:
     requires:
       - name: redigo-db
       - name: redigo-uaa
+      - name: redigo-redis
     build-parameters:
       ignore:
         - webapp/
@@ -74,6 +81,15 @@ resources:
     parameters:
       service: postgresql-db
       service-plan: standard
+
+  # ─────────────────────────────────
+  # Redis (BullMQ Queues)
+  # ─────────────────────────────────
+  - name: redigo-redis
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: redis-cache
+      service-plan: development
 
   # ─────────────────────────────────
   # XSUAA (Authentication)

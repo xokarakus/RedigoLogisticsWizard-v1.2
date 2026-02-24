@@ -22,8 +22,13 @@ sap.ui.define([
         selectedType: null, selectedTypeName: "", selectedTypeSteps: [],
         fieldMappings: [], fieldMappingCount: 0,
         selectedFM: null, selectedFMTitle: "", selectedFMSapJson: "", selectedFM3plJson: "", selectedFMRules: [],
-        selectedFMHeaders: [], selectedFMSecurityId: "", securityForCompany: [],
+        selectedFMHeaders: [], selectedFMSecurityId: "", selectedFMDirection: "SAP_TO_3PL",
+        securityForCompany: [], fmTreeNodes: [],
         outputHeaders: "", outputJson: "", outputSecurity: "",
+        selectedFMMethod: "POST", selectedFMApiEndpoint: "",
+        selectedFMSourceApi: "", selectedFMSourceSecurityId: "",
+        sourceSecurityProfiles: [],
+        testInputJson: "", testResponseJson: "", testStatus: "", testStatusState: "None",
         securityProfiles: [], securityCount: 0
       });
       this.getView().setModel(this._oModel, "cfg");
@@ -37,38 +42,39 @@ sap.ui.define([
 
     _loadData: function () {
       var that = this;
+      var fnErr = function (err) { console.error("Config API error", err); };
       API.get("/api/config/warehouses").then(function (result) {
         var aData = result.data || [];
         that._oModel.setProperty("/warehouses", aData);
         that._oModel.setProperty("/warehouseCount", aData.length);
-      });
-      API.get("/api/config/mappings").then(function (result) {
-        var aData = result.data || [];
-        that._oModel.setProperty("/mappings", aData);
-        that._oModel.setProperty("/mappingCount", aData.length);
-      });
+      }).catch(fnErr);
       API.get("/api/config/process-configs").then(function (result) {
         var aData = result.data || [];
         that._oModel.setProperty("/processConfigs", aData);
         that._oModel.setProperty("/processConfigCount", aData.length);
-      });
+      }).catch(fnErr);
       API.get("/api/config/process-types").then(function (result) {
         var aData = result.data || [];
         aData.forEach(function (t) { t.stepCount = (t.steps || []).length; });
         that._oModel.setProperty("/processTypes", aData);
         that._oModel.setProperty("/processTypeCount", aData.length);
-      });
+      }).catch(fnErr);
       API.get("/api/config/field-mappings").then(function (result) {
         var aData = result.data || [];
         aData.forEach(function (fm) { fm.ruleCount = (fm.field_rules || []).length; });
         that._oModel.setProperty("/fieldMappings", aData);
         that._oModel.setProperty("/fieldMappingCount", aData.length);
-      });
+      }).catch(fnErr);
       API.get("/api/config/security-profiles").then(function (result) {
         var aData = result.data || [];
         that._oModel.setProperty("/securityProfiles", aData);
         that._oModel.setProperty("/securityCount", aData.length);
-      });
+      }).catch(fnErr);
+    },
+
+    onRefresh: function () {
+      this._loadData();
+      MessageToast.show(this._getText("msgRefreshed"));
     },
 
     /* ═══════════════════════════════════════════
@@ -85,7 +91,8 @@ sap.ui.define([
       var oPlant = new Input({ value: bEdit ? oExisting.sap_plant : "", placeholder: "1000" });
       var oSLoc = new Input({ value: bEdit ? oExisting.sap_stor_loc : "", placeholder: "0001" });
       var oWmsCode = new Input({ value: bEdit ? oExisting.wms_code : "" });
-      var oProvider = new Input({ value: bEdit ? oExisting.wms_provider : "", placeholder: "Redigo WMS" });
+      var oCompanyCode = new Input({ value: bEdit ? oExisting.company_code : "", placeholder: "ABC_LOG" });
+      var oSapPartner = new Input({ value: bEdit ? oExisting.sap_partner_no : "", placeholder: "0000100001" });
       var oActive = new Select({ selectedKey: bEdit ? String(oExisting.is_active) : "true" });
       oActive.addItem(new Item({ key: "true", text: this._getText("cfgActiveYes") }));
       oActive.addItem(new Item({ key: "false", text: this._getText("cfgActiveNo") }));
@@ -102,7 +109,8 @@ sap.ui.define([
           new Label({ text: this._getText("cfgPlant"), required: true }), oPlant,
           new Label({ text: this._getText("cfgStorLoc") }), oSLoc,
           new Label({ text: this._getText("cfgWMSCode") }), oWmsCode,
-          new Label({ text: this._getText("cfgProvider") }), oProvider,
+          new Label({ text: this._getText("cfgCompany"), required: true }), oCompanyCode,
+          new Label({ text: this._getText("cfgSapPartner") }), oSapPartner,
           new Label({ text: this._getText("cfgActive") }), oActive
         ]
       });
@@ -121,7 +129,8 @@ sap.ui.define([
               sap_plant: oPlant.getValue().trim(),
               sap_stor_loc: oSLoc.getValue().trim(),
               wms_code: oWmsCode.getValue().trim(),
-              wms_provider: oProvider.getValue().trim(),
+              company_code: oCompanyCode.getValue().trim(),
+              sap_partner_no: oSapPartner.getValue().trim(),
               is_active: oActive.getSelectedKey() === "true"
             };
             if (!oPayload.code || !oPayload.name || !oPayload.sap_plant) {
@@ -161,106 +170,6 @@ sap.ui.define([
     },
 
     /* ═══════════════════════════════════════════
-       Hareket Eslemeleri (Mappings) CRUD
-       ═══════════════════════════════════════════ */
-
-    _openMappingDialog: function (oExisting) {
-      var that = this;
-      var bEdit = !!oExisting;
-      var sTitle = bEdit ? this._getText("cfgEditMapping") : this._getText("cfgAddMapping");
-
-      var oWarehouse = new Select({ selectedKey: bEdit ? oExisting.warehouse_code : "" });
-      var aWarehouses = this._oModel.getProperty("/warehouses") || [];
-      aWarehouses.forEach(function (w) {
-        oWarehouse.addItem(new Item({ key: w.code, text: w.code + " \u2013 " + w.name }));
-      });
-
-      var oAction = new Input({ value: bEdit ? oExisting.wms_action_code : "", placeholder: "PICK_COMPLETE" });
-      var oMvtType = new Input({ value: bEdit ? oExisting.sap_movement_type : "", placeholder: "601" });
-      var oPlant = new Input({ value: bEdit ? oExisting.sap_plant : "", placeholder: "1000" });
-      var oSLoc = new Input({ value: bEdit ? oExisting.sap_stor_loc : "", placeholder: "0001" });
-      var oToPlant = new Input({ value: bEdit ? oExisting.sap_to_plant : "" });
-      var oToSLoc = new Input({ value: bEdit ? oExisting.sap_to_stor_loc : "" });
-      var oDesc = new Input({ value: bEdit ? oExisting.description : "" });
-      var oActive = new Select({ selectedKey: bEdit ? String(oExisting.is_active) : "true" });
-      oActive.addItem(new Item({ key: "true", text: this._getText("cfgActiveYes") }));
-      oActive.addItem(new Item({ key: "false", text: this._getText("cfgActiveNo") }));
-
-      var oForm = new SimpleForm({
-        editable: true,
-        layout: "ResponsiveGridLayout",
-        labelSpanXL: 4, labelSpanL: 4, labelSpanM: 4,
-        emptySpanXL: 0, emptySpanL: 0, emptySpanM: 0,
-        columnsXL: 1, columnsL: 1, columnsM: 1,
-        content: [
-          new Label({ text: this._getText("invWarehouse"), required: true }), oWarehouse,
-          new Label({ text: this._getText("cfgWMSAction"), required: true }), oAction,
-          new Label({ text: this._getText("cfgSAPMvtType"), required: true }), oMvtType,
-          new Label({ text: this._getText("cfgPlant") }), oPlant,
-          new Label({ text: this._getText("cfgStorLoc") }), oSLoc,
-          new Label({ text: this._getText("cfgToPlant") }), oToPlant,
-          new Label({ text: this._getText("cfgToSLoc") }), oToSLoc,
-          new Label({ text: this._getText("cfgDescription") }), oDesc,
-          new Label({ text: this._getText("cfgActive") }), oActive
-        ]
-      });
-
-      var oDialog = new Dialog({
-        title: sTitle,
-        contentWidth: "550px",
-        content: [oForm],
-        beginButton: new Button({
-          text: this._getText("cfgSave"),
-          type: "Emphasized",
-          press: function () {
-            var oPayload = {
-              warehouse_code: oWarehouse.getSelectedKey(),
-              wms_action_code: oAction.getValue().trim(),
-              sap_movement_type: oMvtType.getValue().trim(),
-              sap_plant: oPlant.getValue().trim(),
-              sap_stor_loc: oSLoc.getValue().trim(),
-              sap_to_plant: oToPlant.getValue().trim(),
-              sap_to_stor_loc: oToSLoc.getValue().trim(),
-              description: oDesc.getValue().trim(),
-              is_active: oActive.getSelectedKey() === "true"
-            };
-            if (!oPayload.warehouse_code || !oPayload.wms_action_code || !oPayload.sap_movement_type) {
-              MessageBox.error(that._getText("msgRequiredFields"));
-              return;
-            }
-            var pReq = bEdit
-              ? API.put("/api/config/mappings/" + oExisting.id, oPayload)
-              : API.post("/api/config/mappings", oPayload);
-            pReq.then(function (result) {
-              if (result.data && !Array.isArray(result.data)) {
-                MessageToast.show(that._getText("msgSaved"));
-                that._loadData();
-                oDialog.close();
-              } else {
-                MessageBox.error(that._getText("msgError"));
-              }
-            });
-          }
-        }),
-        endButton: new Button({
-          text: this._getText("cfgCancel"),
-          press: function () { oDialog.close(); }
-        }),
-        afterClose: function () { oDialog.destroy(); }
-      });
-
-      this.getView().addDependent(oDialog);
-      oDialog.open();
-    },
-
-    onAddMapping: function () { this._openMappingDialog(null); },
-
-    onEditMapping: function (oEvent) {
-      var oItem = oEvent.getSource().getBindingContext("cfg").getObject();
-      this._openMappingDialog(oItem);
-    },
-
-    /* ═══════════════════════════════════════════
        Süreç Uyarlamaları (Process Configs) CRUD
        ═══════════════════════════════════════════ */
 
@@ -270,10 +179,20 @@ sap.ui.define([
       var sTitle = bEdit ? this._getText("cfgEditProcessConfig") : this._getText("cfgAddProcessConfig");
 
       var oPlant = new Input({ value: bEdit ? oExisting.plant_code : "", placeholder: "1000" });
-      var oWarehouse = new Input({ value: bEdit ? oExisting.warehouse_code : "", placeholder: "WH-IST-01" });
+
+      // Depo: Select (warehouses listesinden)
+      var oWarehouse = new Select({ selectedKey: bEdit ? oExisting.warehouse_code : "" });
+      var aWarehouses = this._oModel.getProperty("/warehouses") || [];
+      aWarehouses.forEach(function (w) {
+        if (w.is_active) {
+          oWarehouse.addItem(new Item({ key: w.code, text: w.code + " \u2013 " + w.name }));
+        }
+      });
+
       var oDelType = new Input({ value: bEdit ? oExisting.delivery_type : "", placeholder: "LF" });
       var oDelTypeDesc = new Input({ value: bEdit ? oExisting.delivery_type_desc : "" });
 
+      // Surec Tipi: Select (process_types listesinden)
       var aTypes = this._oModel.getProperty("/processTypes") || [];
       var oProcessType = new Select({ selectedKey: bEdit ? oExisting.process_type : "" });
       aTypes.forEach(function (t) {
@@ -281,8 +200,22 @@ sap.ui.define([
       });
 
       var oMvtType = new Input({ value: bEdit ? oExisting.mvt_type : "", placeholder: "601" });
+
+      // Lojistik Saglayici: Select (warehouses'dan unique company_code'lar)
+      var oProvider = new Select({ selectedKey: bEdit ? oExisting.company_code : "" });
+      var aWhForProvider = this._oModel.getProperty("/warehouses") || [];
+      var providerMap = {};
+      aWhForProvider.forEach(function (w) {
+        if (w.company_code && !providerMap[w.company_code]) {
+          oProvider.addItem(new Item({ key: w.company_code, text: w.company_code }));
+          providerMap[w.company_code] = true;
+        }
+      });
+      if (bEdit && oExisting.company_code && !providerMap[oExisting.company_code]) {
+        oProvider.insertItem(new Item({ key: oExisting.company_code, text: oExisting.company_code }), 0);
+      }
       var oCompanyName = new Input({ value: bEdit ? oExisting.company_name : "" });
-      var oCompanyCode = new Input({ value: bEdit ? oExisting.company_code : "" });
+
       var oApiUrl = new Input({ value: bEdit ? oExisting.api_base_url : "", placeholder: "https://api.example.com/v1" });
       var oBapi = new Input({ value: bEdit ? oExisting.bapi_name : "BAPI_GOODSMVT_CREATE" });
       var oGmCode = new Input({ value: bEdit ? oExisting.gm_code : "", placeholder: "03" });
@@ -300,8 +233,8 @@ sap.ui.define([
           new Label({ text: this._getText("cfgDeliveryTypeDesc") }), oDelTypeDesc,
           new Label({ text: this._getText("cfgProcessType"), required: true }), oProcessType,
           new Label({ text: this._getText("cfgMvtType"), required: true }), oMvtType,
-          new Label({ text: this._getText("cfgCompany") }), oCompanyName,
-          new Label({ text: this._getText("cfgCompanyCode") }), oCompanyCode,
+          new Label({ text: this._getText("cfgCompany"), required: true }), oProvider,
+          new Label({ text: this._getText("cfgCompanyCode") }), oCompanyName,
           new Label({ text: this._getText("cfgApiBaseUrl") }), oApiUrl,
           new Label({ text: this._getText("cfgBapiName") }), oBapi,
           new Label({ text: this._getText("cfgGmCode") }), oGmCode
@@ -318,13 +251,13 @@ sap.ui.define([
           press: function () {
             var oPayload = {
               plant_code: oPlant.getValue().trim(),
-              warehouse_code: oWarehouse.getValue().trim(),
+              warehouse_code: oWarehouse.getSelectedKey(),
               delivery_type: oDelType.getValue().trim(),
               delivery_type_desc: oDelTypeDesc.getValue().trim(),
               process_type: oProcessType.getSelectedKey(),
               mvt_type: oMvtType.getValue().trim(),
+              company_code: oProvider.getSelectedKey(),
               company_name: oCompanyName.getValue().trim(),
-              company_code: oCompanyCode.getValue().trim(),
               api_base_url: oApiUrl.getValue().trim(),
               bapi_name: oBapi.getValue().trim(),
               gm_code: oGmCode.getValue().trim()
@@ -376,6 +309,8 @@ sap.ui.define([
               if (result.success) {
                 MessageToast.show(that._getText("msgDeleted"));
                 that._loadData();
+              } else {
+                MessageBox.error(that._getText("msgError"));
               }
             });
           }
@@ -474,6 +409,8 @@ sap.ui.define([
                 that._oModel.setProperty("/selectedType", null);
                 that._oModel.setProperty("/selectedTypeSteps", []);
                 that._loadData();
+              } else {
+                MessageBox.error(that._getText("msgError"));
               }
             });
           }
@@ -654,15 +591,43 @@ sap.ui.define([
       this._oModel.setProperty("/selectedFM", oProfile.id);
       this._oModel.setProperty("/selectedFMTitle", oProfile.process_type + " \u2013 " + oProfile.company_code + " \u2013 " + oProfile.description);
       this._oModel.setProperty("/selectedFMSapJson", JSON.stringify(oProfile.sap_sample_json || {}, null, 2));
-      this._oModel.setProperty("/selectedFM3plJson", JSON.stringify(oProfile.threepl_sample_json || {}, null, 2));
-      this._oModel.setProperty("/selectedFMRules", oProfile.field_rules || []);
+      this._setFMRules(oProfile.field_rules || []);
+      // 3PL JSON'u SAP verisi + kurallardan dinamik hesapla
+      var computed3pl = this._rebuildThreeplJson(oProfile.field_rules || [], oProfile.sap_sample_json || {});
+      this._oModel.setProperty("/selectedFM3plJson", JSON.stringify(computed3pl, null, 2));
+      this._oModel.setProperty("/selectedFMDirection", oProfile.direction || "SAP_TO_3PL");
       this._oModel.setProperty("/selectedFMHeaders", oProfile.headers || []);
       this._oModel.setProperty("/selectedFMSecurityId", oProfile.security_profile_id || "");
+      this._oModel.setProperty("/selectedFMMethod", oProfile.http_method || "POST");
+      this._oModel.setProperty("/selectedFMApiEndpoint", oProfile.api_endpoint || "");
+      // Kaynak API: varsa kullan, yoksa otomatik olustur
+      var sSourceApi = oProfile.source_api_endpoint;
+      if (!sSourceApi) {
+        sSourceApi = this._generateSourceApiPath(oProfile);
+        // Backend'e kaydet
+        var that2 = this;
+        var iIdx = this._oModel.getProperty("/fieldMappings").indexOf(oProfile);
+        API.put("/api/config/field-mappings/" + oProfile.id, { source_api_endpoint: sSourceApi }).then(function () {
+          if (iIdx >= 0) that2._oModel.setProperty("/fieldMappings/" + iIdx + "/source_api_endpoint", sSourceApi);
+        });
+      }
+      this._oModel.setProperty("/selectedFMSourceApi", sSourceApi);
+      this._oModel.setProperty("/selectedFMSourceSecurityId", oProfile.source_security_profile_id || "");
+      // Response rules yükle
+      this._oModel.setProperty("/selectedFMResponseSampleJson",
+        JSON.stringify(oProfile.threepl_response_sample_json || {}, null, 2));
+      this._oModel.setProperty("/selectedFMResponseRules", oProfile.response_rules || []);
+      this._oModel.setProperty("/responsePreviewJson", "");
+      // Reset test area
+      this._oModel.setProperty("/testInputJson", "");
+      this._oModel.setProperty("/testResponseJson", "");
+      this._oModel.setProperty("/testStatus", "");
+      this._oModel.setProperty("/testStatusState", "None");
       // Reset output preview
       this._oModel.setProperty("/outputHeaders", "");
       this._oModel.setProperty("/outputJson", "");
       this._oModel.setProperty("/outputSecurity", "");
-      // Filter security profiles for this company
+      // Filter security profiles for target (Hedef: Kokpit → 3PL)
       var aSec = this._oModel.getProperty("/securityProfiles") || [];
       var sCompany = oProfile.company_code;
       var aFiltered = [{ id: "", displayText: this._getText("fmNoSecurity") }];
@@ -672,6 +637,12 @@ sap.ui.define([
         }
       });
       this._oModel.setProperty("/securityForCompany", aFiltered);
+      // Kaynak guvenlik profilleri (tum profiller — SAP tarafı)
+      var aSourceSec = [{ id: "", displayText: this._getText("fmNoSecurity") }];
+      aSec.forEach(function (sp) {
+        aSourceSec.push({ id: sp.id, displayText: sp.company_code + " \u2013 " + sp.auth_type + " \u2013 " + sp.environment });
+      });
+      this._oModel.setProperty("/sourceSecurityProfiles", aSourceSec);
     },
 
     _openFieldMappingDialog: function (oExisting) {
@@ -684,13 +655,43 @@ sap.ui.define([
       aTypes.forEach(function (t) {
         oProcessType.addItem(new Item({ key: t.code, text: t.code + " \u2013 " + t.name }));
       });
-      var oCompany = new Input({ value: bEdit ? oExisting.company_code : "", placeholder: "ABC_LOG" });
+      var oCompany = new Select({ selectedKey: bEdit ? oExisting.company_code : "" });
+      var aWhFM = this._oModel.getProperty("/warehouses") || [];
+      var seenFM = {};
+      aWhFM.forEach(function (w) {
+        if (w.company_code && !seenFM[w.company_code]) {
+          oCompany.addItem(new Item({ key: w.company_code, text: w.company_code }));
+          seenFM[w.company_code] = true;
+        }
+      });
+      if (bEdit && oExisting.company_code && !seenFM[oExisting.company_code]) {
+        oCompany.insertItem(new Item({ key: oExisting.company_code, text: oExisting.company_code }), 0);
+      }
       var oDesc = new Input({ value: bEdit ? oExisting.description : "" });
       var oSapJson = new sap.m.TextArea({ value: bEdit ? JSON.stringify(oExisting.sap_sample_json || {}, null, 2) : "{}", rows: 10, width: "100%" });
       var o3plJson = new sap.m.TextArea({ value: bEdit ? JSON.stringify(oExisting.threepl_sample_json || {}, null, 2) : "{}", rows: 10, width: "100%" });
+      var oDirection = new Select({ selectedKey: bEdit ? (oExisting.direction || "SAP_TO_3PL") : "SAP_TO_3PL" });
+      oDirection.addItem(new Item({ key: "SAP_TO_3PL", text: "SAP \u2192 3PL" }));
+      oDirection.addItem(new Item({ key: "3PL_TO_SAP", text: "3PL \u2192 SAP" }));
+      var oHttpMethod = new Select({ selectedKey: bEdit ? (oExisting.http_method || "POST") : "POST" });
+      oHttpMethod.addItem(new Item({ key: "POST", text: "POST" }));
+      oHttpMethod.addItem(new Item({ key: "GET", text: "GET" }));
+      oHttpMethod.addItem(new Item({ key: "PUT", text: "PUT" }));
+      oHttpMethod.addItem(new Item({ key: "PATCH", text: "PATCH" }));
+      var oApiEndpoint = new Input({ value: bEdit ? (oExisting.api_endpoint || "") : "", placeholder: "https://api.example.com/orders" });
       var oActive = new Select({ selectedKey: bEdit ? String(oExisting.is_active) : "true" });
       oActive.addItem(new Item({ key: "true", text: this._getText("cfgActiveYes") }));
       oActive.addItem(new Item({ key: "false", text: this._getText("cfgActiveNo") }));
+
+      // Yone gore dinamik label'lar
+      var sInitDir = oDirection.getSelectedKey();
+      var oLblSapJson = new Label({ text: sInitDir === "3PL_TO_SAP" ? "3PL JSON (Kaynak)" : "SAP JSON (Kaynak)" });
+      var oLbl3plJson = new Label({ text: sInitDir === "3PL_TO_SAP" ? "SAP JSON (Hedef)" : "3PL JSON (Hedef)" });
+      oDirection.attachChange(function () {
+        var sDir = oDirection.getSelectedKey();
+        oLblSapJson.setText(sDir === "3PL_TO_SAP" ? "3PL JSON (Kaynak)" : "SAP JSON (Kaynak)");
+        oLbl3plJson.setText(sDir === "3PL_TO_SAP" ? "SAP JSON (Hedef)" : "3PL JSON (Hedef)");
+      });
 
       var oForm = new SimpleForm({
         editable: true,
@@ -702,8 +703,11 @@ sap.ui.define([
           new Label({ text: this._getText("cfgProcessType"), required: true }), oProcessType,
           new Label({ text: this._getText("fmCompanyCode"), required: true }), oCompany,
           new Label({ text: this._getText("cfgDescription") }), oDesc,
-          new Label({ text: this._getText("fmSAPJson") }), oSapJson,
-          new Label({ text: this._getText("fm3PLJson") }), o3plJson,
+          new Label({ text: this._getText("fmDirection") }), oDirection,
+          new Label({ text: this._getText("fmHttpMethod") }), oHttpMethod,
+          new Label({ text: this._getText("fmApiEndpoint") }), oApiEndpoint,
+          oLblSapJson, oSapJson,
+          oLbl3plJson, o3plJson,
           new Label({ text: this._getText("cfgActive") }), oActive
         ]
       });
@@ -716,8 +720,8 @@ sap.ui.define([
           text: this._getText("cfgSave"),
           type: "Emphasized",
           press: function () {
-            var sSapRaw = oSapJson.getValue().trim();
-            var s3plRaw = o3plJson.getValue().trim();
+            var sSapRaw = oSapJson.getValue().trim() || "{}";
+            var s3plRaw = o3plJson.getValue().trim() || "{}";
             var oSapObj, o3plObj;
             try { oSapObj = JSON.parse(sSapRaw); } catch (e) {
               MessageBox.error(that._getText("fmInvalidSAPJson")); return;
@@ -727,8 +731,11 @@ sap.ui.define([
             }
             var oPayload = {
               process_type: oProcessType.getSelectedKey(),
-              company_code: oCompany.getValue().trim(),
+              company_code: oCompany.getSelectedKey(),
               description: oDesc.getValue().trim(),
+              direction: oDirection.getSelectedKey(),
+              http_method: oHttpMethod.getSelectedKey(),
+              api_endpoint: oApiEndpoint.getValue().trim(),
               sap_sample_json: oSapObj,
               threepl_sample_json: o3plObj,
               is_active: oActive.getSelectedKey() === "true"
@@ -788,6 +795,8 @@ sap.ui.define([
                 that._oModel.setProperty("/selectedFM", null);
                 that._oModel.setProperty("/selectedFMRules", []);
                 that._loadData();
+              } else {
+                MessageBox.error(that._getText("msgError"));
               }
             });
           }
@@ -809,12 +818,134 @@ sap.ui.define([
       return null;
     },
 
-    _openFieldRuleDialog: function (oExisting, iIndex) {
+    /**
+     * Kurallari duz array olarak saklar ve SAP JSON agacini gunceller.
+     */
+    _setFMRules: function (aRules) {
+      // Dahili property'leri temizle (API'ye bulasmamasi icin)
+      var rules = (aRules || []).map(function (r) {
+        return { sap_field: r.sap_field, threepl_field: r.threepl_field, transform: r.transform };
+      });
+      this._oModel.setProperty("/selectedFMRules", rules);
+      this._buildSourceTree();
+    },
+
+    /**
+     * Kaynak JSON yapisindan agac modeli uretir.
+     * Yon SAP_TO_3PL ise: kaynak = SAP JSON, hedef = threepl_field
+     * Yon 3PL_TO_SAP ise: kaynak = 3PL JSON, hedef = sap_field
+     */
+    _buildSourceTree: function () {
+      var sDirection = this._oModel.getProperty("/selectedFMDirection") || "SAP_TO_3PL";
+      var bSapSource = (sDirection === "SAP_TO_3PL");
+      var sSourceRaw = this._oModel.getProperty(bSapSource ? "/selectedFMSapJson" : "/selectedFM3plJson");
+      var aRules = this._oModel.getProperty("/selectedFMRules") || [];
+
+      // Kural lookup: sourceField → { targetField, transform, ruleIndex }
+      var ruleMap = {};
+      aRules.forEach(function (r, idx) {
+        var sourceKey = bSapSource ? r.sap_field : r.threepl_field;
+        var targetVal = bSapSource ? r.threepl_field : r.sap_field;
+        if (sourceKey) ruleMap[sourceKey] = { targetField: targetVal || "", transform: r.transform || "DIRECT", _ruleIndex: idx };
+      });
+
+      var treeNodes = [];
+      if (!sSourceRaw) { this._oModel.setProperty("/fmTreeNodes", treeNodes); return; }
+
+      var data;
+      try { data = JSON.parse(sSourceRaw); } catch (e) { this._oModel.setProperty("/fmTreeNodes", treeNodes); return; }
+      if (Array.isArray(data) && data.length === 1) data = data[0];
+
+      function fmtSample(val) {
+        if (val === null || val === undefined) return "";
+        if (typeof val === "object") return JSON.stringify(val).substring(0, 30);
+        return String(val).length > 30 ? String(val).substring(0, 27) + "..." : String(val);
+      }
+
+      function buildFieldNode(fieldPath, sampleVal) {
+        var rule = ruleMap[fieldPath];
+        var shortName = fieldPath;
+        var lastDot = fieldPath.lastIndexOf(".");
+        if (lastDot >= 0) shortName = fieldPath.substring(lastDot + 1);
+        return {
+          _nodeType: "field",
+          _sapField: fieldPath,
+          _sapFieldShort: shortName,
+          _sample: fmtSample(sampleVal),
+          _mapped: !!rule && !!rule.targetField,
+          _threepl: rule ? rule.targetField : "",
+          _transform: rule ? rule.transform : "DIRECT",
+          _ruleIndex: rule ? rule._ruleIndex : -1
+        };
+      }
+
+      function buildGroupNode(label, childNodes) {
+        var mapped = 0;
+        var total = 0;
+        // Sadece field cocuklari say (grup cocuklari haric)
+        function countFields(nodes) {
+          nodes.forEach(function (n) {
+            if (n._nodeType === "field") { total++; if (n._mapped) mapped++; }
+            if (n.children) countFields(n.children);
+          });
+        }
+        countFields(childNodes);
+        return {
+          _nodeType: "group",
+          _label: label + " (" + mapped + "/" + total + ")",
+          _sapField: "", _sapFieldShort: "", _sample: "",
+          _mapped: false, _threepl: "", _transform: "DIRECT", _ruleIndex: -1,
+          children: childNodes
+        };
+      }
+
+      /**
+       * Rekursif: bir JSON objesinin key'lerini tree node'larina donusturur.
+       * prefix: alan yolu prefix'i (ust seviyelerden gelen), ornegin "ITEMS[]."
+       * label: grup etiketi (ornegin "ITEMS[]")
+       */
+      function processObject(obj, prefix) {
+        var nodes = [];
+        Object.keys(obj).forEach(function (key) {
+          var val = obj[key];
+          var fieldPath = prefix ? prefix + key : key;
+
+          if (Array.isArray(val) && val.length > 0 && typeof val[0] === "object") {
+            // Array of objects → grup node, icerideki objeyi rekursif isle
+            var groupLabel = prefix ? prefix + key + "[]" : key + "[]";
+            var childNodes = processObject(val[0], groupLabel + ".");
+            nodes.push(buildGroupNode(key + "[]", childNodes));
+          } else if (val !== null && typeof val === "object" && !Array.isArray(val)) {
+            // Nested object → grup node, rekursif isle
+            var childNodes2 = processObject(val, fieldPath + ".");
+            nodes.push(buildGroupNode(key, childNodes2));
+          } else {
+            // Skaler alan → field node
+            nodes.push(buildFieldNode(fieldPath, val));
+          }
+        });
+        return nodes;
+      }
+
+      if (Array.isArray(data)) {
+        // Root array — ilk elemanin key'lerini isle
+        var sample = data[0];
+        if (sample && typeof sample === "object") {
+          treeNodes = processObject(sample, "");
+        }
+      } else if (typeof data === "object") {
+        treeNodes = processObject(data, "");
+      }
+
+      this._oModel.setProperty("/fmTreeNodes", treeNodes);
+    },
+
+    _openFieldRuleDialog: function (oExisting, iIndex, sPreFillSapField) {
       var that = this;
       var bEdit = !!oExisting;
       var sTitle = bEdit ? this._getText("fmEditRule") : this._getText("fmAddRule");
 
-      var oSapField = new Input({ value: bEdit ? oExisting.sap_field : "", placeholder: "VBELN" });
+      var oSapField = new Input({ value: bEdit ? oExisting.sap_field : (sPreFillSapField || ""), placeholder: "VBELN" });
       var o3plField = new Input({ value: bEdit ? oExisting.threepl_field : "", placeholder: "order_number" });
       var oTransform = new Select({ selectedKey: bEdit ? (oExisting.transform || "DIRECT") : "DIRECT" });
       oTransform.addItem(new Item({ key: "DIRECT", text: this._getText("fmDirectRule") }));
@@ -863,7 +994,7 @@ sap.ui.define([
             API.put("/api/config/field-mappings/" + oFound.profile.id, { field_rules: aRules, threepl_sample_json: new3plJson }).then(function (result) {
               if (result.data && !Array.isArray(result.data)) {
                 MessageToast.show(that._getText("msgSaved"));
-                that._oModel.setProperty("/selectedFMRules", aRules);
+                that._setFMRules(aRules);
                 that._oModel.setProperty("/selectedFM3plJson", JSON.stringify(new3plJson, null, 2));
                 that._oModel.setProperty("/fieldMappings/" + oFound.index + "/field_rules", aRules);
                 that._oModel.setProperty("/fieldMappings/" + oFound.index + "/ruleCount", aRules.length);
@@ -891,19 +1022,26 @@ sap.ui.define([
       this._openFieldRuleDialog(null, -1);
     },
 
+    /**
+     * Tree grup dugumundeki "+" butonundan eslesmemis alanlari popover ile gosterir.
+     */
     onEditFieldRule: function (oEvent) {
       var oCtx = oEvent.getSource().getBindingContext("cfg");
-      var oRule = oCtx.getObject();
-      var sPath = oCtx.getPath();
-      var iIndex = parseInt(sPath.split("/").pop(), 10);
+      var oNode = oCtx.getObject();
+      var iIndex = oNode._ruleIndex;
+      if (iIndex < 0) return;
+      var aRules = this._oModel.getProperty("/selectedFMRules") || [];
+      var oRule = aRules[iIndex];
+      if (!oRule) return;
       this._openFieldRuleDialog(oRule, iIndex);
     },
 
     onDeleteFieldRule: function (oEvent) {
       var that = this;
       var oCtx = oEvent.getSource().getBindingContext("cfg");
-      var sPath = oCtx.getPath();
-      var iIndex = parseInt(sPath.split("/").pop(), 10);
+      var oNode = oCtx.getObject();
+      var iIndex = oNode._ruleIndex;
+      if (iIndex < 0) return;
 
       MessageBox.confirm(this._getText("msgConfirmDelete"), {
         title: this._getText("msgConfirmDeleteTitle"),
@@ -918,7 +1056,7 @@ sap.ui.define([
             API.put("/api/config/field-mappings/" + oFound.profile.id, { field_rules: aRules, threepl_sample_json: new3plJson }).then(function (result) {
               if (result.data && !Array.isArray(result.data)) {
                 MessageToast.show(that._getText("msgDeleted"));
-                that._oModel.setProperty("/selectedFMRules", aRules);
+                that._setFMRules(aRules);
                 that._oModel.setProperty("/selectedFM3plJson", JSON.stringify(new3plJson, null, 2));
                 that._oModel.setProperty("/fieldMappings/" + oFound.index + "/field_rules", aRules);
                 that._oModel.setProperty("/fieldMappings/" + oFound.index + "/ruleCount", aRules.length);
@@ -926,6 +1064,167 @@ sap.ui.define([
               }
             });
           }
+        }
+      });
+    },
+
+    /* ═══════════════════════════════════════════
+       Inline PO-Tarzi Degisiklik Handler'lari
+       ═══════════════════════════════════════════ */
+
+    /**
+     * Hedef alan (threepl_field) inline degistiginde.
+     * Kural yoksa yeni olusturur, varsa gunceller.
+     */
+    onTargetFieldChange: function (oEvent) {
+      var oCtx = oEvent.getSource().getBindingContext("cfg");
+      var oNode = oCtx.getObject();
+      if (!oNode || oNode._nodeType !== "field") return;
+
+      var sNewTarget = oEvent.getParameter("value").trim();
+      var sSourceField = oNode._sapField;
+      var sDirection = this._oModel.getProperty("/selectedFMDirection") || "SAP_TO_3PL";
+      var bSapSource = (sDirection === "SAP_TO_3PL");
+      var aRules = (this._oModel.getProperty("/selectedFMRules") || []).slice();
+
+      if (oNode._ruleIndex >= 0) {
+        // Mevcut kurali guncelle — yone gore dogru tarafi yaz
+        if (bSapSource) {
+          aRules[oNode._ruleIndex].threepl_field = sNewTarget;
+        } else {
+          aRules[oNode._ruleIndex].sap_field = sNewTarget;
+        }
+      } else {
+        // Yeni kural olustur
+        var newRule = { transform: oNode._transform || "DIRECT" };
+        if (bSapSource) {
+          newRule.sap_field = sSourceField;
+          newRule.threepl_field = sNewTarget;
+        } else {
+          newRule.threepl_field = sSourceField;
+          newRule.sap_field = sNewTarget;
+        }
+        aRules.push(newRule);
+      }
+      this._saveRulesAndRefresh(aRules);
+    },
+
+    /**
+     * Donusum (transform) inline degistiginde.
+     */
+    onTransformChange: function (oEvent) {
+      var oCtx = oEvent.getSource().getBindingContext("cfg");
+      var oNode = oCtx.getObject();
+      if (!oNode || oNode._nodeType !== "field") return;
+
+      var sNewTransform = oEvent.getParameter("selectedItem").getKey();
+      var sSourceField = oNode._sapField;
+      var sDirection = this._oModel.getProperty("/selectedFMDirection") || "SAP_TO_3PL";
+      var bSapSource = (sDirection === "SAP_TO_3PL");
+      var aRules = (this._oModel.getProperty("/selectedFMRules") || []).slice();
+
+      if (oNode._ruleIndex >= 0) {
+        aRules[oNode._ruleIndex].transform = sNewTransform;
+      } else {
+        var newRule = { transform: sNewTransform };
+        if (bSapSource) {
+          newRule.sap_field = sSourceField;
+          newRule.threepl_field = "";
+        } else {
+          newRule.threepl_field = sSourceField;
+          newRule.sap_field = "";
+        }
+        aRules.push(newRule);
+      }
+      this._saveRulesAndRefresh(aRules);
+    },
+
+    /**
+     * Ornek deger inline degistiginde — SAP JSON'u gunceller.
+     */
+    onSampleValueChange: function (oEvent) {
+      var oCtx = oEvent.getSource().getBindingContext("cfg");
+      var oNode = oCtx.getObject();
+      if (!oNode || oNode._nodeType !== "field") return;
+
+      var sNewValue = oEvent.getParameter("value");
+      var sDirection = this._oModel.getProperty("/selectedFMDirection") || "SAP_TO_3PL";
+      var bSapSource = (sDirection === "SAP_TO_3PL");
+      var sSourceProp = bSapSource ? "/selectedFMSapJson" : "/selectedFM3plJson";
+      var sSourceRaw = this._oModel.getProperty(sSourceProp);
+      try {
+        var oSourceJson = JSON.parse(sSourceRaw);
+        this._setJsonPath(oSourceJson, oNode._sapField, sNewValue);
+        this._oModel.setProperty(sSourceProp, JSON.stringify(oSourceJson, null, 2));
+        // Hedef JSON'u da guncelle
+        if (bSapSource) {
+          var aRules = this._oModel.getProperty("/selectedFMRules") || [];
+          var new3plJson = this._rebuildThreeplJson(aRules, oSourceJson);
+          this._oModel.setProperty("/selectedFM3plJson", JSON.stringify(new3plJson, null, 2));
+        }
+      } catch (e) { /* JSON parse hatasi */ }
+    },
+
+    /**
+     * JSON objesinde belirtilen yola deger yazar.
+     * "HEADER.VBELN" → obj.HEADER.VBELN = value
+     * "ITEMS[].MATNR" → obj.ITEMS[0].MATNR = value
+     */
+    _setJsonPath: function (obj, path, value) {
+      if (!obj || !path) return;
+      var resolved = path.replace(/\[\]/g, "[0]");
+      var parts = resolved.split(".");
+      var current = obj;
+
+      for (var i = 0; i < parts.length - 1; i++) {
+        var part = parts[i];
+        var bracketMatch = part.match(/^(.*)\[(\d+)\]$/);
+        if (bracketMatch) {
+          if (bracketMatch[1]) current = current[bracketMatch[1]];
+          if (Array.isArray(current)) current = current[parseInt(bracketMatch[2], 10)];
+          else return;
+        } else if (Array.isArray(current)) {
+          current = current[0] ? current[0][part] : undefined;
+        } else {
+          current = current[part];
+        }
+        if (current === undefined || current === null) return;
+      }
+
+      var lastPart = parts[parts.length - 1];
+      var lastBracket = lastPart.match(/^(.*)\[(\d+)\]$/);
+      if (lastBracket) {
+        if (lastBracket[1]) current = current[lastBracket[1]];
+        if (Array.isArray(current)) current[parseInt(lastBracket[2], 10)] = value;
+      } else {
+        current[lastPart] = value;
+      }
+    },
+
+    /**
+     * Kuralları temizleyip API'ye kaydeder, tree ve JSON panellerini gunceller.
+     */
+    _saveRulesAndRefresh: function (aRules) {
+      var that = this;
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+
+      // Dahili property'leri temizle
+      var cleanRules = aRules.map(function (r) {
+        return { sap_field: r.sap_field, threepl_field: r.threepl_field, transform: r.transform };
+      });
+
+      var new3plJson = this._rebuildThreeplJson(cleanRules, oFound.profile.sap_sample_json || {});
+      API.put("/api/config/field-mappings/" + oFound.profile.id, {
+        field_rules: cleanRules,
+        threepl_sample_json: new3plJson
+      }).then(function (result) {
+        if (result.data && !Array.isArray(result.data)) {
+          that._setFMRules(cleanRules);
+          that._oModel.setProperty("/selectedFM3plJson", JSON.stringify(new3plJson, null, 2));
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/field_rules", cleanRules);
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/ruleCount", cleanRules.length);
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/threepl_sample_json", new3plJson);
         }
       });
     },
@@ -1046,10 +1345,15 @@ sap.ui.define([
     _rebuildThreeplJson: function (aRules, sapJson) {
       var self = this;
 
+      // Tek elemanli array → duz obje olarak isle (kullanici [{}] yapistirma hatasi)
+      if (Array.isArray(sapJson) && sapJson.length === 1) {
+        sapJson = sapJson[0];
+      }
+
       // Sadece threepl_field dolu kurallari isle
       var activeRules = aRules.filter(function (r) { return !!r.threepl_field; });
 
-      // ── Durum 1: Root-level array ──
+      // ── Durum 1: Root-level array (2+ eleman) ──
       if (Array.isArray(sapJson)) {
         return sapJson.map(function (item) {
           var row = {};
@@ -1127,6 +1431,12 @@ sap.ui.define([
         MessageBox.error(this._getText("fmInvalidSAPJson")); return;
       }
 
+      // Tek elemanli array → duz obje (normalize)
+      if (Array.isArray(oSapJson) && oSapJson.length === 1) {
+        oSapJson = oSapJson[0];
+        this._oModel.setProperty("/selectedFMSapJson", JSON.stringify(oSapJson, null, 2));
+      }
+
       var aKeys = this._flattenJsonKeys(oSapJson);
       var aExistingRules = (oFound.profile.field_rules || []).slice();
       var existingSapFields = {};
@@ -1152,7 +1462,7 @@ sap.ui.define([
       }).then(function (result) {
         if (result.data && !Array.isArray(result.data)) {
           MessageToast.show(that._getText("fmFieldsExtracted", [iAdded]));
-          that._oModel.setProperty("/selectedFMRules", aExistingRules);
+          that._setFMRules(aExistingRules);
           that._oModel.setProperty("/fieldMappings/" + oFound.index + "/field_rules", aExistingRules);
           that._oModel.setProperty("/fieldMappings/" + oFound.index + "/ruleCount", aExistingRules.length);
           that._oModel.setProperty("/fieldMappings/" + oFound.index + "/sap_sample_json", oSapJson);
@@ -1173,6 +1483,12 @@ sap.ui.define([
       var o3plJson;
       try { o3plJson = JSON.parse(s3plRaw); } catch (e) {
         MessageBox.error(this._getText("fmInvalid3PLJson")); return;
+      }
+
+      // Tek elemanli array → duz obje (normalize)
+      if (Array.isArray(o3plJson) && o3plJson.length === 1) {
+        o3plJson = o3plJson[0];
+        this._oModel.setProperty("/selectedFM3plJson", JSON.stringify(o3plJson, null, 2));
       }
 
       var aKeys = this._flattenJsonKeys(o3plJson);
@@ -1200,7 +1516,7 @@ sap.ui.define([
       }).then(function (result) {
         if (result.data && !Array.isArray(result.data)) {
           MessageToast.show(that._getText("fmFieldsExtracted", [iAdded]));
-          that._oModel.setProperty("/selectedFMRules", aExistingRules);
+          that._setFMRules(aExistingRules);
           that._oModel.setProperty("/fieldMappings/" + oFound.index + "/field_rules", aExistingRules);
           that._oModel.setProperty("/fieldMappings/" + oFound.index + "/ruleCount", aExistingRules.length);
           that._oModel.setProperty("/fieldMappings/" + oFound.index + "/threepl_sample_json", o3plJson);
@@ -1216,108 +1532,95 @@ sap.ui.define([
       var oFound = this._getSelectedFMProfile();
       if (!oFound) return;
 
-      var aRules = (oFound.profile.field_rules || []).slice();
+      var that = this;
 
-      // SAP alan adi → olasi 3PL karsiliklari sozlugu
-      var sapAliases = {
-        "VBELN": ["delivery", "order", "ref", "number", "shipment"],
-        "MATNR": ["material", "sku", "item_code", "item", "product_code"],
-        "MAKTX": ["description", "name", "product_name", "item_name"],
-        "LGORT": ["location", "storage", "warehouse", "bin"],
-        "WERKS": ["plant", "facility"],
-        "LFIMG": ["quantity", "qty", "amount"],
-        "MEINS": ["unit", "uom"],
-        "KUNNR": ["customer_id", "customer", "cust"],
-        "KUNNA": ["customer_name"],
-        "LIFNR": ["vendor_id", "supplier_id", "vendor"],
-        "LIFNA": ["vendor_name", "supplier_name"],
-        "WADAT": ["delivery_date", "ship_date", "date"],
-        "ERDAT": ["created_date", "create_date", "created"],
-        "POSNR": ["line", "item_no", "position", "line_number"],
-        "GRUND": ["reason", "reason_code"]
-      };
+      // SAP alan alias sozlugunu API'den yukle
+      API.get("/api/config/sap-field-aliases").then(function (result) {
+        var sapAliases = result.data || {};
 
-      // Eslesmemis alanlari topla
-      var unmappedSapIndices = [];
-      var unmapped3plMap = {}; // lowercase 3pl field → rule index
+        var aRules = (oFound.profile.field_rules || []).slice();
 
-      aRules.forEach(function (r, i) {
-        if (r.sap_field && !r.threepl_field) {
-          unmappedSapIndices.push(i);
-        }
-        if (r.threepl_field && !r.sap_field) {
-          unmapped3plMap[r.threepl_field.toLowerCase()] = i;
-        }
-      });
+        // Eslesmemis alanlari topla
+        var unmappedSapIndices = [];
+        var unmapped3plMap = {}; // lowercase 3pl field → rule index
 
-      if (unmappedSapIndices.length === 0) {
-        MessageToast.show(this._getText("fmAllMapped"));
-        return;
-      }
-
-      var iMatched = 0;
-      var usedIndices = {};
-
-      unmappedSapIndices.forEach(function (sapIdx) {
-        var baseSap = aRules[sapIdx].sap_field.split(".").pop().replace("[]", "");
-        var matched3plIdx = -1;
-
-        // 1. Tam isim eslesmesi (buyuk/kucuk harf duyarsiz)
-        for (var tField in unmapped3plMap) {
-          var idx = unmapped3plMap[tField];
-          if (usedIndices[idx]) continue;
-          if (tField === baseSap.toLowerCase()) {
-            matched3plIdx = idx;
-            break;
+        aRules.forEach(function (r, i) {
+          if (r.sap_field && !r.threepl_field) {
+            unmappedSapIndices.push(i);
           }
+          if (r.threepl_field && !r.sap_field) {
+            unmapped3plMap[r.threepl_field.toLowerCase()] = i;
+          }
+        });
+
+        if (unmappedSapIndices.length === 0) {
+          MessageToast.show(that._getText("fmAllMapped"));
+          return;
         }
 
-        // 2. Sozluk eslesmesi
-        if (matched3plIdx < 0 && sapAliases[baseSap]) {
-          var aliases = sapAliases[baseSap];
+        var iMatched = 0;
+        var usedIndices = {};
+
+        unmappedSapIndices.forEach(function (sapIdx) {
+          var baseSap = aRules[sapIdx].sap_field.split(".").pop().replace("[]", "");
+          var matched3plIdx = -1;
+
+          // 1. Tam isim eslesmesi (buyuk/kucuk harf duyarsiz)
           for (var tField in unmapped3plMap) {
             var idx = unmapped3plMap[tField];
             if (usedIndices[idx]) continue;
-            for (var a = 0; a < aliases.length; a++) {
-              if (tField.indexOf(aliases[a]) >= 0) {
-                matched3plIdx = idx;
-                break;
-              }
+            if (tField === baseSap.toLowerCase()) {
+              matched3plIdx = idx;
+              break;
             }
-            if (matched3plIdx >= 0) break;
           }
+
+          // 2. Sozluk eslesmesi
+          if (matched3plIdx < 0 && sapAliases[baseSap]) {
+            var aliases = sapAliases[baseSap];
+            for (var tField in unmapped3plMap) {
+              var idx = unmapped3plMap[tField];
+              if (usedIndices[idx]) continue;
+              for (var a = 0; a < aliases.length; a++) {
+                if (tField.indexOf(aliases[a]) >= 0) {
+                  matched3plIdx = idx;
+                  break;
+                }
+              }
+              if (matched3plIdx >= 0) break;
+            }
+          }
+
+          if (matched3plIdx >= 0) {
+            aRules[sapIdx].threepl_field = aRules[matched3plIdx].threepl_field;
+            aRules[matched3plIdx] = null;
+            usedIndices[matched3plIdx] = true;
+            iMatched++;
+          }
+        });
+
+        // Null satirlari kaldir
+        aRules = aRules.filter(function (r) { return r !== null; });
+
+        if (iMatched === 0) {
+          MessageToast.show(that._getText("fmNoAutoMatch"));
+          return;
         }
 
-        if (matched3plIdx >= 0) {
-          aRules[sapIdx].threepl_field = aRules[matched3plIdx].threepl_field;
-          aRules[matched3plIdx] = null;
-          usedIndices[matched3plIdx] = true;
-          iMatched++;
-        }
-      });
-
-      // Null satirlari kaldir
-      aRules = aRules.filter(function (r) { return r !== null; });
-
-      if (iMatched === 0) {
-        MessageToast.show(this._getText("fmNoAutoMatch"));
-        return;
-      }
-
-      var that = this;
-      var new3plJson = this._rebuildThreeplJson(aRules, oFound.profile.sap_sample_json || {});
-      API.put("/api/config/field-mappings/" + oFound.profile.id, {
-        field_rules: aRules,
-        threepl_sample_json: new3plJson
-      }).then(function (result) {
-        if (result.data && !Array.isArray(result.data)) {
-          MessageToast.show(that._getText("fmAutoMapped", [iMatched]));
-          that._oModel.setProperty("/selectedFMRules", aRules);
-          that._oModel.setProperty("/selectedFM3plJson", JSON.stringify(new3plJson, null, 2));
-          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/field_rules", aRules);
-          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/ruleCount", aRules.length);
-          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/threepl_sample_json", new3plJson);
-        }
+        var new3plJson = that._rebuildThreeplJson(aRules, oFound.profile.sap_sample_json || {});
+        API.put("/api/config/field-mappings/" + oFound.profile.id, {
+          field_rules: aRules,
+          threepl_sample_json: new3plJson
+        }).then(function (putResult) {
+          if (putResult.data && !Array.isArray(putResult.data)) {
+            MessageToast.show(that._getText("fmAutoMapped", [iMatched]));
+            that._setFMRules(aRules);
+            that._oModel.setProperty("/selectedFM3plJson", JSON.stringify(new3plJson, null, 2));
+            that._oModel.setProperty("/fieldMappings/" + oFound.index + "/field_rules", aRules);
+            that._oModel.setProperty("/fieldMappings/" + oFound.index + "/ruleCount", aRules.length);
+            that._oModel.setProperty("/fieldMappings/" + oFound.index + "/threepl_sample_json", new3plJson);
+          }
+        });
       });
     },
 
@@ -1487,10 +1790,12 @@ sap.ui.define([
             secInfo.scope = (oSec.config || {}).scope;
           } else if (oSec.auth_type === "API_KEY") {
             secInfo.header_name = (oSec.config || {}).header_name;
-            secInfo.api_key = "***";
+            secInfo.api_key = (oSec.config || {}).api_key;
           } else if (oSec.auth_type === "BASIC") {
             secInfo.username = (oSec.config || {}).username;
-            secInfo.password = "***";
+            secInfo.password = (oSec.config || {}).password;
+          } else if (oSec.auth_type === "BEARER") {
+            secInfo.token = (oSec.config || {}).token;
           }
           this._oModel.setProperty("/outputSecurity", JSON.stringify(secInfo, null, 2));
         } else {
@@ -1502,6 +1807,188 @@ sap.ui.define([
     },
 
     /* ═══════════════════════════════════════════
+       Entegrasyon – Kaynak/Hedef API + Guvenlik + Test
+       ═══════════════════════════════════════════ */
+
+    /**
+     * Surec tipine gore tekil kaynak API yolu olusturur.
+     * Ornek: /api/inbound/gi/abc-log, /api/inbound/sub-gi/xyz-depo
+     */
+    _generateSourceApiPath: function (oProfile) {
+      var sProcess = (oProfile.process_type || "unknown").toLowerCase().replace(/_/g, "-");
+      var sCompany = (oProfile.company_code || "default").toLowerCase().replace(/_/g, "-");
+      var sDir = oProfile.direction === "3PL_TO_SAP" ? "3pl-to-sap" : "sap-to-3pl";
+      var sBase = "/api/inbound/" + sProcess + "/" + sCompany;
+      // Benzersizlik kontrolu: ayni path baskasinda varsa suffix ekle
+      var aAll = this._oModel.getProperty("/fieldMappings") || [];
+      var sCandidate = sBase;
+      var iSuffix = 2;
+      var sCurrentId = oProfile.id;
+      while (aAll.some(function (fm) { return fm.id !== sCurrentId && fm.source_api_endpoint === sCandidate; })) {
+        sCandidate = sBase + "-" + iSuffix;
+        iSuffix++;
+      }
+      return sCandidate;
+    },
+
+    onCopySourceApi: function () {
+      var sUrl = this._oModel.getProperty("/selectedFMSourceApi") || "";
+      if (!sUrl) return;
+      // Tam URL olustur: window.location.origin + path
+      var sFullUrl = window.location.origin.replace(/:\d+$/, ":3000") + sUrl;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(sFullUrl);
+      }
+      MessageToast.show(this._getText("fmUrlCopied") + "\n" + sFullUrl);
+    },
+
+    onFMSourceSecurityChange: function (oEvent) {
+      var sKey = oEvent.getSource().getSelectedKey();
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+      var that = this;
+      API.put("/api/config/field-mappings/" + oFound.profile.id, { source_security_profile_id: sKey }).then(function (result) {
+        if (result.data && !Array.isArray(result.data)) {
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/source_security_profile_id", sKey);
+          MessageToast.show(that._getText("msgSaved"));
+        }
+      });
+    },
+
+    onFMMethodChange: function (oEvent) {
+      var sKey = oEvent.getSource().getSelectedKey();
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+      var that = this;
+      API.put("/api/config/field-mappings/" + oFound.profile.id, { http_method: sKey }).then(function (result) {
+        if (result.data && !Array.isArray(result.data)) {
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/http_method", sKey);
+          MessageToast.show(that._getText("msgSaved"));
+        }
+      });
+    },
+
+    onFMApiEndpointChange: function (oEvent) {
+      var sVal = oEvent.getSource().getValue().trim();
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+      var that = this;
+      API.put("/api/config/field-mappings/" + oFound.profile.id, { api_endpoint: sVal }).then(function (result) {
+        if (result.data && !Array.isArray(result.data)) {
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/api_endpoint", sVal);
+          MessageToast.show(that._getText("msgSaved"));
+        }
+      });
+    },
+
+    onTestIntegration: function () {
+      var that = this;
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+      var oProfile = oFound.profile;
+
+      var sEndpoint = this._oModel.getProperty("/selectedFMApiEndpoint");
+      var sMethod = this._oModel.getProperty("/selectedFMMethod");
+      if (!sEndpoint) {
+        MessageBox.error(this._getText("msgRequiredFields"));
+        return;
+      }
+
+      // Test input JSON'u oku
+      var sInputRaw = this._oModel.getProperty("/testInputJson");
+      if (!sInputRaw || !sInputRaw.trim()) {
+        // Eger bos ise, output preview JSON'u kullan
+        this.onPreviewOutput();
+        sInputRaw = this._oModel.getProperty("/outputJson") || "{}";
+        this._oModel.setProperty("/testInputJson", sInputRaw);
+      }
+
+      var oInputObj;
+      try { oInputObj = JSON.parse(sInputRaw); } catch (e) {
+        MessageBox.error(this._getText("fmInvalidSAPJson"));
+        return;
+      }
+
+      // Header'lari hazirla (mapping'deki manuel header'lar)
+      var aHeaders = (oProfile.headers || []).filter(function (h) { return h.key && h.value; });
+
+      this._oModel.setProperty("/testStatus", this._getText("fmTestRunning"));
+      this._oModel.setProperty("/testStatusState", "Information");
+      this._oModel.setProperty("/testResponseJson", "");
+
+      var tStart = Date.now();
+      var sStartedAt = new Date().toISOString();
+
+      // Backend proxy uzerinden test — CORS bypass + security profile
+      API.post("/api/config/test-dispatch", {
+        url: sEndpoint,
+        method: sMethod,
+        headers: aHeaders,
+        securityProfileId: oProfile.security_profile_id || null,
+        body: sMethod !== "GET" ? oInputObj : null,
+        responseRules: oProfile.response_rules || []
+      })
+        .then(function (result) {
+          var elapsed = Date.now() - tStart;
+          var oDispatch = result.data || {};
+          var oResponseParsed = oDispatch.responseBody;
+          var sFormatted;
+          try { sFormatted = JSON.stringify(oResponseParsed, null, 2); } catch (e) { sFormatted = String(oResponseParsed); }
+          var sDisplay = "HTTP " + (oDispatch.statusCode || 0) + " " + (oDispatch.statusText || "") + "\n" +
+            "Duration: " + (oDispatch.duration_ms || 0) + " ms\n\n" + sFormatted;
+          // Response rules uygulanmışsa eşlenmiş yanıtı da göster
+          if (oDispatch.transformedResponse) {
+            var sMapped;
+            try { sMapped = JSON.stringify(oDispatch.transformedResponse, null, 2); } catch (e2) { sMapped = String(oDispatch.transformedResponse); }
+            sDisplay += "\n\n\u2500\u2500 " + that._getText("fmMappedResponse") + " \u2500\u2500\n" + sMapped;
+          }
+          that._oModel.setProperty("/testResponseJson", sDisplay);
+          var bOk = oDispatch.ok;
+          if (bOk) {
+            that._oModel.setProperty("/testStatus", that._getText("fmTestSuccess", [oDispatch.duration_ms || elapsed]));
+            that._oModel.setProperty("/testStatusState", "Success");
+          } else {
+            that._oModel.setProperty("/testStatus", that._getText("fmTestError", [(oDispatch.statusCode || 0) + " " + (oDispatch.statusText || oDispatch.error || "")]));
+            that._oModel.setProperty("/testStatusState", "Error");
+          }
+          // Transaction log'a kaydet
+          API.post("/api/transactions", {
+            direction: "OUTBOUND",
+            action: "OUTBOUND_" + oProfile.process_type,
+            status: bOk ? "SUCCESS" : "FAILED",
+            sap_function: sEndpoint,
+            sap_request: oInputObj,
+            sap_response: oResponseParsed,
+            error_message: bOk ? null : (oDispatch.error || "HTTP " + oDispatch.statusCode),
+            retry_count: 0,
+            started_at: sStartedAt,
+            completed_at: new Date().toISOString(),
+            duration_ms: oDispatch.duration_ms || elapsed
+          });
+        })
+        .catch(function (err) {
+          var elapsed = Date.now() - tStart;
+          that._oModel.setProperty("/testResponseJson", err.toString());
+          that._oModel.setProperty("/testStatus", that._getText("fmTestError", [err.message || "Network error"]));
+          that._oModel.setProperty("/testStatusState", "Error");
+          // Hata transaction log'a kaydet
+          API.post("/api/transactions", {
+            direction: "OUTBOUND",
+            action: "OUTBOUND_" + oProfile.process_type,
+            status: "FAILED",
+            sap_function: sEndpoint,
+            sap_request: oInputObj,
+            sap_response: null,
+            error_message: err.message,
+            retry_count: 0,
+            started_at: sStartedAt,
+            completed_at: new Date().toISOString(),
+            duration_ms: elapsed
+          });
+        });
+    },
+
+    /* ═══════════════════════════════════════════
        Güvenlik Profilleri (Security Profiles) CRUD
        ═══════════════════════════════════════════ */
 
@@ -1510,11 +1997,23 @@ sap.ui.define([
       var bEdit = !!oExisting;
       var sTitle = bEdit ? this._getText("spEditProfile") : this._getText("spAddProfile");
 
-      var oCompany = new Input({ value: bEdit ? oExisting.company_code : "", placeholder: "ABC_LOG" });
+      var oCompany = new Select({ selectedKey: bEdit ? oExisting.company_code : "" });
+      var aWhSP = this._oModel.getProperty("/warehouses") || [];
+      var seenSP = {};
+      aWhSP.forEach(function (w) {
+        if (w.company_code && !seenSP[w.company_code]) {
+          oCompany.addItem(new Item({ key: w.company_code, text: w.company_code }));
+          seenSP[w.company_code] = true;
+        }
+      });
+      if (bEdit && oExisting.company_code && !seenSP[oExisting.company_code]) {
+        oCompany.insertItem(new Item({ key: oExisting.company_code, text: oExisting.company_code }), 0);
+      }
       var oAuthType = new Select({ selectedKey: bEdit ? oExisting.auth_type : "OAUTH2" });
       oAuthType.addItem(new Item({ key: "OAUTH2", text: "OAuth 2.0" }));
       oAuthType.addItem(new Item({ key: "API_KEY", text: "API Key" }));
       oAuthType.addItem(new Item({ key: "BASIC", text: "Basic Auth" }));
+      oAuthType.addItem(new Item({ key: "BEARER", text: "Bearer Token" }));
       var oEnvironment = new Select({ selectedKey: bEdit ? oExisting.environment : "QAS" });
       oEnvironment.addItem(new Item({ key: "PROD", text: "PROD" }));
       oEnvironment.addItem(new Item({ key: "QAS", text: "QAS" }));
@@ -1536,6 +2035,9 @@ sap.ui.define([
       var oUsername = new Input({ value: oConfig.username || "" });
       var oPassword = new Input({ value: oConfig.password || "", type: "Password" });
 
+      // Bearer Token field
+      var oBearerToken = new Input({ value: oConfig.token || "", placeholder: "eyJhbGciOiJSUzI1NiIs...", type: "Password" });
+
       var oActive = new Select({ selectedKey: bEdit ? String(oExisting.is_active) : "true" });
       oActive.addItem(new Item({ key: "true", text: this._getText("cfgActiveYes") }));
       oActive.addItem(new Item({ key: "false", text: this._getText("cfgActiveNo") }));
@@ -1549,12 +2051,14 @@ sap.ui.define([
       var oLblHeaderName = new Label({ text: this._getText("spHeaderName") });
       var oLblUsername = new Label({ text: this._getText("spUsername") });
       var oLblPassword = new Label({ text: this._getText("spPassword") });
+      var oLblBearerToken = new Label({ text: this._getText("spBearerToken") });
 
       var fnToggle = function () {
         var sType = oAuthType.getSelectedKey();
         var bOAuth = sType === "OAUTH2";
         var bApiKey = sType === "API_KEY";
         var bBasic = sType === "BASIC";
+        var bBearer = sType === "BEARER";
         oLblClientId.setVisible(bOAuth); oClientId.setVisible(bOAuth);
         oLblClientSecret.setVisible(bOAuth); oClientSecret.setVisible(bOAuth);
         oLblTokenUrl.setVisible(bOAuth); oTokenUrl.setVisible(bOAuth);
@@ -1563,6 +2067,7 @@ sap.ui.define([
         oLblHeaderName.setVisible(bApiKey); oHeaderName.setVisible(bApiKey);
         oLblUsername.setVisible(bBasic); oUsername.setVisible(bBasic);
         oLblPassword.setVisible(bBasic); oPassword.setVisible(bBasic);
+        oLblBearerToken.setVisible(bBearer); oBearerToken.setVisible(bBearer);
       };
       oAuthType.attachChange(fnToggle);
 
@@ -1584,6 +2089,7 @@ sap.ui.define([
           oLblHeaderName, oHeaderName,
           oLblUsername, oUsername,
           oLblPassword, oPassword,
+          oLblBearerToken, oBearerToken,
           new Label({ text: this._getText("cfgActive") }), oActive
         ]
       });
@@ -1618,9 +2124,13 @@ sap.ui.define([
                 username: oUsername.getValue().trim(),
                 password: oPassword.getValue().trim()
               };
+            } else if (sType === "BEARER") {
+              oConfigPayload = {
+                token: oBearerToken.getValue().trim()
+              };
             }
             var oPayload = {
-              company_code: oCompany.getValue().trim(),
+              company_code: oCompany.getSelectedKey(),
               auth_type: sType,
               environment: oEnvironment.getSelectedKey(),
               config: oConfigPayload,
@@ -1655,6 +2165,224 @@ sap.ui.define([
       oDialog.open();
     },
 
+    /* ═══════════════════════════════════════════
+       Yanıt Eşleme (Response Rules) CRUD
+       ═══════════════════════════════════════════ */
+
+    _saveResponseRulesAndRefresh: function (aRules) {
+      var that = this;
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+
+      var cleanRules = aRules.map(function (r) {
+        return { source_field: r.source_field, target_field: r.target_field, transform: r.transform };
+      });
+
+      // Response preview hesapla
+      var sResponseSample = this._oModel.getProperty("/selectedFMResponseSampleJson");
+      var oResponseSample;
+      try { oResponseSample = JSON.parse(sResponseSample); } catch (e) { oResponseSample = {}; }
+      var oPreview = this._rebuildResponsePreview(cleanRules, oResponseSample);
+
+      API.put("/api/config/field-mappings/" + oFound.profile.id, {
+        response_rules: cleanRules
+      }).then(function (result) {
+        if (result.data && !Array.isArray(result.data)) {
+          that._oModel.setProperty("/selectedFMResponseRules", cleanRules);
+          that._oModel.setProperty("/responsePreviewJson", JSON.stringify(oPreview, null, 2));
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/response_rules", cleanRules);
+        }
+      });
+    },
+
+    _rebuildResponsePreview: function (aRules, oResponseSample) {
+      if (!oResponseSample || typeof oResponseSample !== "object") return {};
+      var validRules = aRules.filter(function (r) { return r.source_field && r.target_field; });
+      if (validRules.length === 0) return {};
+
+      var self = this;
+      var output = {};
+      validRules.forEach(function (rule) {
+        var val = self._resolveJsonPath(oResponseSample, rule.source_field);
+        if (val !== undefined) {
+          output[rule.target_field] = self._applyTransform(val, rule.transform);
+        }
+      });
+      return output;
+    },
+
+    onAddResponseRule: function () {
+      var that = this;
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+
+      var oSourceInput = new Input({ placeholder: "shipment_id" });
+      var oTargetInput = new Input({ placeholder: "referans_no" });
+      var oTransformSelect = new Select({});
+      oTransformSelect.addItem(new Item({ key: "DIRECT", text: "DIRECT" }));
+      oTransformSelect.addItem(new Item({ key: "LOOKUP", text: "LOOKUP" }));
+      oTransformSelect.addItem(new Item({ key: "PREFIX", text: "PREFIX" }));
+      oTransformSelect.addItem(new Item({ key: "SAP_DATE", text: "SAP_DATE" }));
+
+      var oDialog = new Dialog({
+        title: this._getText("fmAddResponseRule"),
+        contentWidth: "400px",
+        content: [
+          new SimpleForm({
+            editable: true,
+            layout: "ResponsiveGridLayout",
+            labelSpanXL: 4, labelSpanL: 4, labelSpanM: 4,
+            content: [
+              new Label({ text: this._getText("fmSourceField"), required: true }), oSourceInput,
+              new Label({ text: this._getText("fmTargetField"), required: true }), oTargetInput,
+              new Label({ text: this._getText("fmTransform") }), oTransformSelect
+            ]
+          })
+        ],
+        beginButton: new Button({
+          text: this._getText("cfgSave"),
+          type: "Emphasized",
+          press: function () {
+            var sSource = oSourceInput.getValue().trim();
+            var sTarget = oTargetInput.getValue().trim();
+            if (!sSource || !sTarget) {
+              MessageBox.error(that._getText("msgRequiredFields"));
+              return;
+            }
+            var aRules = (that._oModel.getProperty("/selectedFMResponseRules") || []).slice();
+            aRules.push({ source_field: sSource, target_field: sTarget, transform: oTransformSelect.getSelectedKey() });
+            that._saveResponseRulesAndRefresh(aRules);
+            oDialog.close();
+          }
+        }),
+        endButton: new Button({
+          text: this._getText("cfgCancel"),
+          press: function () { oDialog.close(); }
+        }),
+        afterClose: function () { oDialog.destroy(); }
+      });
+      oDialog.open();
+    },
+
+    onDeleteResponseRule: function (oEvent) {
+      var that = this;
+      var oCtx = oEvent.getSource().getBindingContext("cfg");
+      if (!oCtx) return;
+      var sPath = oCtx.getPath();
+      // Path: /selectedFMResponseRules/0 → index = 0
+      var iIndex = parseInt(sPath.split("/").pop(), 10);
+      if (isNaN(iIndex)) return;
+
+      MessageBox.confirm(this._getText("msgConfirmDelete"), {
+        title: this._getText("msgConfirmDeleteTitle"),
+        onClose: function (sAction) {
+          if (sAction === MessageBox.Action.OK) {
+            var aRules = (that._oModel.getProperty("/selectedFMResponseRules") || []).slice();
+            aRules.splice(iIndex, 1);
+            that._saveResponseRulesAndRefresh(aRules);
+          }
+        }
+      });
+    },
+
+    onResponseTargetChange: function (oEvent) {
+      var oCtx = oEvent.getSource().getBindingContext("cfg");
+      if (!oCtx) return;
+      var sPath = oCtx.getPath();
+      var iIndex = parseInt(sPath.split("/").pop(), 10);
+      if (isNaN(iIndex)) return;
+
+      var sNewTarget = oEvent.getParameter("value").trim();
+      var aRules = (this._oModel.getProperty("/selectedFMResponseRules") || []).slice();
+      if (aRules[iIndex]) {
+        aRules[iIndex].target_field = sNewTarget;
+        this._saveResponseRulesAndRefresh(aRules);
+      }
+    },
+
+    onResponseTransformChange: function (oEvent) {
+      var oCtx = oEvent.getSource().getBindingContext("cfg");
+      if (!oCtx) return;
+      var sPath = oCtx.getPath();
+      var iIndex = parseInt(sPath.split("/").pop(), 10);
+      if (isNaN(iIndex)) return;
+
+      var sNewTransform = oEvent.getParameter("selectedItem").getKey();
+      var aRules = (this._oModel.getProperty("/selectedFMResponseRules") || []).slice();
+      if (aRules[iIndex]) {
+        aRules[iIndex].transform = sNewTransform;
+        this._saveResponseRulesAndRefresh(aRules);
+      }
+    },
+
+    onExtractResponseFields: function () {
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+
+      var sResponseRaw = this._oModel.getProperty("/selectedFMResponseSampleJson");
+      var oResponseJson;
+      try { oResponseJson = JSON.parse(sResponseRaw); } catch (e) {
+        MessageBox.error(this._getText("fmInvalidSAPJson")); return;
+      }
+
+      var aKeys = this._flattenJsonKeys(oResponseJson);
+      var aExistingRules = (this._oModel.getProperty("/selectedFMResponseRules") || []).slice();
+      var existingSourceFields = {};
+      aExistingRules.forEach(function (r) { existingSourceFields[r.source_field] = true; });
+
+      var iAdded = 0;
+      aKeys.forEach(function (key) {
+        if (!existingSourceFields[key]) {
+          aExistingRules.push({ source_field: key, target_field: "", transform: "DIRECT" });
+          iAdded++;
+        }
+      });
+
+      if (iAdded === 0) {
+        MessageToast.show(this._getText("fmNoNewFields"));
+        return;
+      }
+
+      var that = this;
+      API.put("/api/config/field-mappings/" + oFound.profile.id, {
+        response_rules: aExistingRules,
+        threepl_response_sample_json: oResponseJson
+      }).then(function (result) {
+        if (result.data && !Array.isArray(result.data)) {
+          MessageToast.show(that._getText("fmFieldsExtracted", [iAdded]));
+          that._oModel.setProperty("/selectedFMResponseRules", aExistingRules);
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/response_rules", aExistingRules);
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/threepl_response_sample_json", oResponseJson);
+        }
+      });
+    },
+
+    onAutoMapResponse: function () {
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+
+      var aRules = (this._oModel.getProperty("/selectedFMResponseRules") || []).slice();
+      var iMatched = 0;
+
+      // Basit auto-map: source_field'daki son segment'i target_field olarak ata (boş olanlar için)
+      aRules.forEach(function (rule) {
+        if (rule.source_field && !rule.target_field) {
+          // "data.shipment_id" → "shipment_id", "tracking_no" → "tracking_no"
+          var parts = rule.source_field.split(".");
+          rule.target_field = parts[parts.length - 1].replace(/\[\]/g, "");
+          iMatched++;
+        }
+      });
+
+      if (iMatched === 0) {
+        MessageToast.show(this._getText("fmNoNewFields"));
+        return;
+      }
+
+      this._saveResponseRulesAndRefresh(aRules);
+      MessageToast.show(this._getText("fmAutoMapped", [iMatched]));
+    },
+
     onAddSecurity: function () { this._openSecurityDialog(null); },
 
     onEditSecurity: function (oEvent) {
@@ -1673,6 +2401,8 @@ sap.ui.define([
               if (result.success) {
                 MessageToast.show(that._getText("msgDeleted"));
                 that._loadData();
+              } else {
+                MessageBox.error(that._getText("msgError"));
               }
             });
           }

@@ -1,0 +1,17 @@
+{
+  "VBELN": ["delivery", "order", "ref", "number", "shipment"],
+  "MATNR": ["material", "sku", "item_code", "item", "product_code"],
+  "MAKTX": ["description", "name", "product_name", "item_name"],
+  "LGORT": ["location", "storage", "warehouse", "bin"],
+  "WERKS": ["plant", "facility"],
+  "LFIMG": ["quantity", "qty", "amount"],
+  "MEINS": ["unit", "uom"],
+  "KUNNR": ["customer_id", "customer", "cust"],
+  "KUNNA": ["customer_name"],
+  "LIFNR": ["vendor_id", "supplier_id", "vendor"],
+  "LIFNA": ["vendor_name", "supplier_name"],
+  "WADAT": ["delivery_date", "ship_date", "date"],
+  "ERDAT": ["created_date", "create_date", "created"],
+  "POSNR": ["line", "item_no", "position", "line_number"],
+  "GRUND": ["reason", "reason_code"]
+}

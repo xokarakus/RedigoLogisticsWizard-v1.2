@@ -1,5 +1,5 @@
 {
-  "welcomeFile": "/webapp/index.html",
+  "welcomeFile": "/index.html",
   "authenticationMethod": "route",
   "routes": [
     {
@@ -9,15 +9,9 @@
       "authenticationType": "xsuaa"
     },
     {
-      "source": "^/webapp/(.*)$",
-      "target": "/$1",
-      "localDir": "../webapp",
-      "authenticationType": "xsuaa"
-    },
-    {
       "source": "^(.*)$",
       "target": "$1",
-      "localDir": "../webapp",
+      "localDir": "resources/webapp",
       "authenticationType": "xsuaa"
     }
   ]

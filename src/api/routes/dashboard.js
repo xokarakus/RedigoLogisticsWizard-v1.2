@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const JsonStore = require('../../shared/jsonStore');
+const DbStore = require('../../shared/database/dbStore');
 
-const woStore = new JsonStore('work_orders.json');
-const txStore = new JsonStore('transactions.json');
+const woStore = new DbStore('work_orders');
+const txStore = new DbStore('transaction_logs');
 
 // GET /api/dashboard/kpis - Compute KPIs from data
-router.get('/kpis', (req, res) => {
-  const orders = woStore.readAll();
-  const txs = txStore.readAll();
+router.get('/kpis', async (req, res) => {
+  const orders = await woStore.readAll();
+  const txs = await txStore.readAll();
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -17,11 +17,15 @@ router.get('/kpis', (req, res) => {
     ['IN_PROGRESS', 'SENT_TO_WMS', 'PICKING_COMPLETE', 'PARTIALLY_DONE'].includes(o.status)
   ).length;
   const completedToday = orders.filter(o =>
-    o.status === 'COMPLETED' && o.completed_at && o.completed_at.slice(0, 10) === today
+    o.status === 'COMPLETED' && o.completed_at && o.completed_at.toISOString
+      ? o.completed_at.toISOString().slice(0, 10) === today
+      : String(o.completed_at).slice(0, 10) === today
   ).length;
   const failedCount = orders.filter(o => o.status === 'FAILED').length;
   const todayIngest = orders.filter(o =>
-    o.received_at && o.received_at.slice(0, 10) === today
+    o.received_at && (o.received_at.toISOString
+      ? o.received_at.toISOString().slice(0, 10) === today
+      : String(o.received_at).slice(0, 10) === today)
   ).length;
   const pendingSAP = orders.filter(o =>
     ['RECEIVED', 'SENT_TO_WMS', 'IN_PROGRESS', 'PICKING_COMPLETE'].includes(o.status)

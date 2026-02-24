@@ -1,183 +1,211 @@
 const express = require('express');
 const router = express.Router();
-const JsonStore = require('../../shared/jsonStore');
+const DbStore = require('../../shared/database/dbStore');
+const { requireScope } = require('../../shared/middleware/auth');
 
-const configStore = new JsonStore('process_configs.json');
-const typeStore = new JsonStore('process_types.json');
-const warehouseStore = new JsonStore('warehouses.json');
-const mappingStore = new JsonStore('movement_mappings.json');
-const fieldMappingStore = new JsonStore('field_mappings.json');
-const securityStore = new JsonStore('security_profiles.json');
+const adminOnly = requireScope('Admin');
+
+const configStore = new DbStore('process_configs');
+const typeStore = new DbStore('process_types');
+const warehouseStore = new DbStore('warehouses');
+const mappingStore = new DbStore('movement_mappings');
+const fieldMappingStore = new DbStore('field_mappings');
+const securityStore = new DbStore('security_profiles');
+const aliasStore = new DbStore('sap_field_aliases');
 
 /* ═══════════════════════════════════════════
    Depolar (Warehouses) CRUD
    ═══════════════════════════════════════════ */
 
-router.get('/warehouses', (req, res) => {
-  res.json({ data: warehouseStore.readAll() });
+router.get('/warehouses', async (req, res) => {
+  res.json({ data: await warehouseStore.readAll() });
 });
 
-router.post('/warehouses', (req, res) => {
-  const item = warehouseStore.create(req.body);
+router.post('/warehouses', adminOnly, async (req, res) => {
+  const item = await warehouseStore.create(req.body);
   res.status(201).json({ data: item });
 });
 
-router.put('/warehouses/:id', (req, res) => {
-  const updated = warehouseStore.update(req.params.id, req.body);
+router.put('/warehouses/:id', adminOnly, async (req, res) => {
+  const updated = await warehouseStore.update(req.params.id, req.body);
   if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
   res.json({ data: updated });
 });
 
-router.delete('/warehouses/:id', (req, res) => {
-  const ok = warehouseStore.remove(req.params.id);
-  if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
-  res.json({ success: true });
+router.delete('/warehouses/:id', adminOnly, async (req, res) => {
+  try {
+    const ok = await warehouseStore.remove(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(409).json({ error: err.message });
+  }
 });
 
 /* ═══════════════════════════════════════════
    Hareket Eslemeleri (Mappings) CRUD
    ═══════════════════════════════════════════ */
 
-router.get('/mappings', (req, res) => {
-  res.json({ data: mappingStore.readAll() });
+router.get('/mappings', async (req, res) => {
+  res.json({ data: await mappingStore.readAll() });
 });
 
-router.post('/mappings', (req, res) => {
-  const item = mappingStore.create(req.body);
+router.post('/mappings', adminOnly, async (req, res) => {
+  const item = await mappingStore.create(req.body);
   res.status(201).json({ data: item });
 });
 
-router.put('/mappings/:id', (req, res) => {
-  const updated = mappingStore.update(req.params.id, req.body);
+router.put('/mappings/:id', adminOnly, async (req, res) => {
+  const updated = await mappingStore.update(req.params.id, req.body);
   if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
   res.json({ data: updated });
 });
 
-router.delete('/mappings/:id', (req, res) => {
-  const ok = mappingStore.remove(req.params.id);
-  if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
-  res.json({ success: true });
+router.delete('/mappings/:id', adminOnly, async (req, res) => {
+  try {
+    const ok = await mappingStore.remove(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(409).json({ error: err.message });
+  }
 });
 
 /* ═══════════════════════════════════════════
    Süreç Uyarlamaları (Process Configs) CRUD
    ═══════════════════════════════════════════ */
 
-router.get('/process-configs', (req, res) => {
-  res.json({ data: configStore.readAll() });
+router.get('/process-configs', async (req, res) => {
+  res.json({ data: await configStore.readAll() });
 });
 
-router.post('/process-configs', (req, res) => {
-  const item = configStore.create(req.body);
+router.post('/process-configs', adminOnly, async (req, res) => {
+  const item = await configStore.create(req.body);
   res.status(201).json({ data: item });
 });
 
-router.put('/process-configs/:id', (req, res) => {
-  const updated = configStore.update(req.params.id, req.body);
+router.put('/process-configs/:id', adminOnly, async (req, res) => {
+  const updated = await configStore.update(req.params.id, req.body);
   if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
   res.json({ data: updated });
 });
 
-router.delete('/process-configs/:id', (req, res) => {
-  const ok = configStore.remove(req.params.id);
-  if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
-  res.json({ success: true });
+router.delete('/process-configs/:id', adminOnly, async (req, res) => {
+  try {
+    const ok = await configStore.remove(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(409).json({ error: err.message });
+  }
 });
 
 /* ═══════════════════════════════════════════
    Süreç Tipleri (Process Types) CRUD
    ═══════════════════════════════════════════ */
 
-router.get('/process-types', (req, res) => {
-  res.json({ data: typeStore.readAll() });
+router.get('/process-types', async (req, res) => {
+  res.json({ data: await typeStore.readAll() });
 });
 
-router.post('/process-types', (req, res) => {
-  const item = typeStore.create(req.body);
+router.post('/process-types', adminOnly, async (req, res) => {
+  const item = await typeStore.create(req.body);
   res.status(201).json({ data: item });
 });
 
-router.put('/process-types/:id', (req, res) => {
-  const updated = typeStore.update(req.params.id, req.body);
+router.put('/process-types/:id', adminOnly, async (req, res) => {
+  const updated = await typeStore.update(req.params.id, req.body);
   if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
   res.json({ data: updated });
 });
 
-router.delete('/process-types/:id', (req, res) => {
-  const ok = typeStore.remove(req.params.id);
-  if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
-  res.json({ success: true });
+router.delete('/process-types/:id', adminOnly, async (req, res) => {
+  try {
+    const ok = await typeStore.remove(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(409).json({ error: err.message });
+  }
 });
 
 /* ═══════════════════════════════════════════
    Alan Eşleştirmeleri (Field Mappings) CRUD
    ═══════════════════════════════════════════ */
 
-router.get('/field-mappings', (req, res) => {
-  let data = fieldMappingStore.readAll();
+router.get('/field-mappings', async (req, res) => {
+  let data = await fieldMappingStore.readAll();
   if (req.query.company_code) {
     data = data.filter(fm => fm.company_code === req.query.company_code);
   }
   res.json({ data });
 });
 
-router.post('/field-mappings', (req, res) => {
-  const item = fieldMappingStore.create(req.body);
+router.post('/field-mappings', adminOnly, async (req, res) => {
+  const item = await fieldMappingStore.create(req.body);
   res.status(201).json({ data: item });
 });
 
-router.put('/field-mappings/:id', (req, res) => {
-  const updated = fieldMappingStore.update(req.params.id, req.body);
+router.put('/field-mappings/:id', adminOnly, async (req, res) => {
+  const updated = await fieldMappingStore.update(req.params.id, req.body);
   if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
   res.json({ data: updated });
 });
 
-router.delete('/field-mappings/:id', (req, res) => {
-  const ok = fieldMappingStore.remove(req.params.id);
-  if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
-  res.json({ success: true });
+router.delete('/field-mappings/:id', adminOnly, async (req, res) => {
+  try {
+    const ok = await fieldMappingStore.remove(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(409).json({ error: err.message });
+  }
 });
 
 /* ═══════════════════════════════════════════
    Güvenlik Profilleri (Security Profiles) CRUD
    ═══════════════════════════════════════════ */
 
-router.get('/security-profiles', (req, res) => {
-  let data = securityStore.readAll();
+router.get('/security-profiles', async (req, res) => {
+  let data = await securityStore.readAll();
   if (req.query.company_code) {
     data = data.filter(sp => sp.company_code === req.query.company_code);
   }
   res.json({ data });
 });
 
-router.post('/security-profiles', (req, res) => {
-  const item = securityStore.create(req.body);
+router.post('/security-profiles', adminOnly, async (req, res) => {
+  const item = await securityStore.create(req.body);
   res.status(201).json({ data: item });
 });
 
-router.put('/security-profiles/:id', (req, res) => {
-  const updated = securityStore.update(req.params.id, req.body);
+router.put('/security-profiles/:id', adminOnly, async (req, res) => {
+  const updated = await securityStore.update(req.params.id, req.body);
   if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
   res.json({ data: updated });
 });
 
-router.delete('/security-profiles/:id', (req, res) => {
-  const ok = securityStore.remove(req.params.id);
-  if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
-  res.json({ success: true });
+router.delete('/security-profiles/:id', adminOnly, async (req, res) => {
+  try {
+    const ok = await securityStore.remove(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(409).json({ error: err.message });
+  }
 });
 
 /* ═══════════════════════════════════════════
    İşlem Adımları (process-steps lookup)
    ═══════════════════════════════════════════ */
 
-router.get('/process-steps', (req, res) => {
+router.get('/process-steps', async (req, res) => {
   const { plant_code, warehouse_code, delivery_type } = req.query;
   if (!plant_code || !warehouse_code || !delivery_type) {
     return res.status(400).json({ error: 'plant_code, warehouse_code, delivery_type zorunlu' });
   }
 
-  const configs = configStore.readAll();
+  const configs = await configStore.readAll();
   const config = configs.find(c =>
     c.plant_code === plant_code &&
     c.warehouse_code === warehouse_code &&
@@ -188,7 +216,7 @@ router.get('/process-steps', (req, res) => {
     return res.status(404).json({ error: 'Bu kombinasyon icin uyarlama bulunamadi' });
   }
 
-  const types = typeStore.readAll();
+  const types = await typeStore.readAll();
   const pType = types.find(t => t.code === config.process_type);
   const templates = pType ? pType.steps : [];
 
@@ -222,6 +250,48 @@ router.get('/process-steps', (req, res) => {
       gm_code: config.gm_code
     }))
   });
+});
+
+/* ═══════════════════════════════════════════
+   SAP Alan Alias Sözlüğü
+   ═══════════════════════════════════════════ */
+
+router.get('/sap-field-aliases', async (req, res) => {
+  res.json({ data: await aliasStore.readAll() });
+});
+
+/* ═══════════════════════════════════════════
+   Test Dispatch (proxy — CORS bypass + security profile)
+   ═══════════════════════════════════════════ */
+
+const { dispatch } = require('../../shared/utils/httpDispatcher');
+const { applyResponseRules } = require('../../shared/utils/fieldTransformer');
+
+router.post('/test-dispatch', adminOnly, async (req, res) => {
+  const { url, method, headers, securityProfileId, body, responseRules } = req.body;
+  if (!url) {
+    return res.status(400).json({ error: 'url zorunlu' });
+  }
+  try {
+    const result = await dispatch({
+      url,
+      method: method || 'GET',
+      headers: headers || [],
+      securityProfileId: securityProfileId || null,
+      body: body || null
+    });
+
+    let transformedResponse = null;
+    if (responseRules && responseRules.length > 0 && result.responseBody) {
+      try {
+        transformedResponse = applyResponseRules(result.responseBody, responseRules);
+      } catch (_) { /* transform hatası — ham yanıtı döndür */ }
+    }
+
+    res.json({ data: { ...result, transformedResponse } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

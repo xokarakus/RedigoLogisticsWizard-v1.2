@@ -1,6 +1,6 @@
 [
   {
-    "id": "sp_1",
+    "id": "b0a00001-0001-4001-a001-000000000001",
     "company_code": "ABC_LOG",
     "auth_type": "OAUTH2",
     "environment": "PROD",
@@ -13,7 +13,7 @@
     "is_active": true
   },
   {
-    "id": "sp_2",
+    "id": "b0a00001-0002-4001-a001-000000000002",
     "company_code": "ABC_LOG",
     "auth_type": "OAUTH2",
     "environment": "QAS",
@@ -26,13 +26,49 @@
     "is_active": true
   },
   {
-    "id": "sp_3",
+    "id": "b0a00001-0003-4001-a001-000000000003",
     "company_code": "XYZ_DEPO",
     "auth_type": "API_KEY",
     "environment": "PROD",
     "config": {
       "api_key": "***",
       "header_name": "X-API-Key"
+    },
+    "is_active": true
+  },
+  {
+    "id": "b0a00001-0004-4001-a001-000000000004",
+    "company_code": "REDIGO",
+    "auth_type": "BASIC",
+    "environment": "PROD",
+    "config": {
+      "username": "RDG",
+      "password": "1234"
+    },
+    "is_active": true
+  },
+  {
+    "id": "b0a00001-0005-4001-a001-000000000005",
+    "company_code": "REDIGO",
+    "auth_type": "API_KEY",
+    "environment": "PROD",
+    "config": {
+      "api_key": "DEMO_KEY",
+      "header_name": "X-API-Key"
+    },
+    "is_active": true
+  },
+  {
+    "id": "b0a00001-0006-4001-a001-000000000006",
+    "name": "Duende Demo OAuth2",
+    "company_code": "DEMO",
+    "auth_type": "OAUTH2",
+    "environment": "QAS",
+    "config": {
+      "client_id": "m2m",
+      "client_secret": "secret",
+      "token_url": "https://demo.duendesoftware.com/connect/token",
+      "scope": "api"
     },
     "is_active": true
   }

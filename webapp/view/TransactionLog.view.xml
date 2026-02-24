@@ -20,8 +20,8 @@
         </Select>
         <Select id="directionFilter" change="onFilterChange">
           <core:Item key="ALL" text="{i18n>txAllDirections}" />
-          <core:Item key="SAP_TO_WMS" text="{i18n>txSAPtoWMS}" />
-          <core:Item key="WMS_TO_SAP" text="{i18n>txWMStoSAP}" />
+          <core:Item key="INBOUND" text="{i18n>txInbound}" />
+          <core:Item key="OUTBOUND" text="{i18n>txOutbound}" />
         </Select>
         <Select id="statusFilter" change="onFilterChange">
           <core:Item key="ALL" text="{i18n>txAllStatus}" />
@@ -46,6 +46,7 @@
 
         <columns>
           <Column importance="High"><Text text="{i18n>txAction}" /></Column>
+          <Column importance="High" width="7em"><Text text="{i18n>txCorrelationRef}" /></Column>
           <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>txDirection}" /></Column>
           <Column importance="High"><Text text="{i18n>txStatus}" /></Column>
           <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>txSAPFunction}" /></Column>
@@ -64,8 +65,14 @@
             <cells>
               <Text text="{txLog>action}" />
               <ObjectStatus
+                text="{txLog>correlation_ref}"
+                icon="sap-icon://chain-link"
+                state="Information"
+                visible="{= !!${txLog>correlation_ref}}" />
+              <ObjectStatus
                 text="{txLog>direction}"
-                state="{= ${txLog>direction} === 'SAP_TO_WMS' ? 'Information' : 'Success'}" />
+                icon="{= ${txLog>direction} === 'INBOUND' ? 'sap-icon://incoming-call' : 'sap-icon://outgoing-call'}"
+                state="{= ${txLog>direction} === 'INBOUND' ? 'Information' : 'Warning'}" />
               <ObjectStatus
                 text="{txLog>status}"
                 state="{= ${txLog>status} === 'SUCCESS' ? 'Success' : ${txLog>status} === 'FAILED' || ${txLog>status} === 'DEAD' ? 'Error' : ${txLog>status} === 'RETRYING' ? 'Warning' : 'None'}" />

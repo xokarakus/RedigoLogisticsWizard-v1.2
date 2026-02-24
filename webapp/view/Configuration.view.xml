@@ -8,6 +8,10 @@
 
   <Page title="{i18n>cfgTitle}" showNavButton="false">
 
+    <headerContent>
+      <Button text="{i18n>btnRefresh}" icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
+    </headerContent>
+
     <content>
       <IconTabBar expandable="false">
         <items>
@@ -29,19 +33,21 @@
                 <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgPlant}" /></Column>
                 <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgStorLoc}" /></Column>
                 <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgWMSCode}" /></Column>
-                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgProvider}" /></Column>
+                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgCompany}" /></Column>
+                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgSapPartner}" /></Column>
                 <Column importance="Medium" hAlign="Center" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgActive}" /></Column>
                 <Column importance="High" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
               </columns>
               <items>
                 <ColumnListItem>
                   <cells>
-                    <Text text="{cfg>code}" />
-                    <Text text="{cfg>name}" />
+                    <ObjectStatus text="{cfg>code}" state="Information" icon="sap-icon://supplier" />
+                    <ObjectStatus text="{cfg>name}" state="Information" />
                     <Text text="{cfg>sap_plant}" />
                     <Text text="{cfg>sap_stor_loc}" />
                     <Text text="{cfg>wms_code}" />
-                    <ObjectStatus text="{cfg>wms_provider}" state="Information" />
+                    <ObjectStatus text="{cfg>company_code}" state="Information" />
+                    <Text text="{cfg>sap_partner_no}" />
                     <core:Icon
                       src="{= ${cfg>is_active} ? 'sap-icon://accept' : 'sap-icon://decline'}"
                       color="{= ${cfg>is_active} ? '#2b7c2b' : '#cc0000'}" />
@@ -54,53 +60,7 @@
             </Table>
           </IconTabFilter>
 
-          <!-- TAB 2: Movement Mappings -->
-          <IconTabFilter text="{i18n>cfgMappings}" icon="sap-icon://transfer" key="mappings"
-            count="{cfg>/mappingCount}">
-
-            <OverflowToolbar>
-              <Title text="{i18n>cfgMappings}" level="H5" />
-              <ToolbarSpacer />
-              <Button text="{i18n>cfgAddMapping}" icon="sap-icon://add" press="onAddMapping" type="Emphasized" />
-            </OverflowToolbar>
-
-            <Table id="mappingTable" items="{cfg>/mappings}" mode="None" autoPopinMode="true">
-              <columns>
-                <Column importance="High"><Text text="{i18n>invWarehouse}" /></Column>
-                <Column importance="High"><Text text="{i18n>cfgWMSAction}" /></Column>
-                <Column importance="High"><Text text="{i18n>cfgSAPMvtType}" /></Column>
-                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgOverridePlant}" /></Column>
-                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgOverrideSLoc}" /></Column>
-                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgToPlant}" /></Column>
-                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgToSLoc}" /></Column>
-                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgDescription}" /></Column>
-                <Column importance="Medium" hAlign="Center" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgActive}" /></Column>
-                <Column importance="High" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
-              </columns>
-              <items>
-                <ColumnListItem>
-                  <cells>
-                    <Text text="{cfg>warehouse_code}" />
-                    <ObjectStatus text="{cfg>wms_action_code}" state="Information" />
-                    <ObjectNumber number="{cfg>sap_movement_type}" emphasized="true" />
-                    <Text text="{cfg>sap_plant}" />
-                    <Text text="{cfg>sap_stor_loc}" />
-                    <Text text="{cfg>sap_to_plant}" />
-                    <Text text="{cfg>sap_to_stor_loc}" />
-                    <Text text="{cfg>description}" />
-                    <core:Icon
-                      src="{= ${cfg>is_active} ? 'sap-icon://accept' : 'sap-icon://decline'}"
-                      color="{= ${cfg>is_active} ? '#2b7c2b' : '#cc0000'}" />
-                    <HBox justifyContent="Center">
-                      <Button icon="sap-icon://edit" press="onEditMapping" type="Transparent" />
-                    </HBox>
-                  </cells>
-                </ColumnListItem>
-              </items>
-            </Table>
-          </IconTabFilter>
-
-          <!-- TAB 3: Process Configurations (Süreç Uyarlamaları) -->
+          <!-- TAB 2: Process Configurations (Süreç Uyarlamaları) -->
           <IconTabFilter text="{i18n>cfgProcessConfigs}" icon="sap-icon://process" key="processConfigs"
             count="{cfg>/processConfigCount}">
 
@@ -119,7 +79,6 @@
                 <Column importance="High"><Text text="{i18n>cfgProcessType}" /></Column>
                 <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgMvtType}" /></Column>
                 <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgCompany}" /></Column>
-                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgCompanyCode}" /></Column>
                 <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgApiBaseUrl}" /></Column>
                 <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgBapiName}" /></Column>
                 <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgGmCode}" /></Column>
@@ -134,8 +93,7 @@
                     <Text text="{cfg>delivery_type_desc}" />
                     <ObjectStatus text="{cfg>process_type}" state="{= ${cfg>process_type} === 'GI' ? 'Warning' : ${cfg>process_type} === 'GR' ? 'Success' : 'Information'}" />
                     <ObjectNumber number="{cfg>mvt_type}" emphasized="true" />
-                    <Text text="{cfg>company_name}" />
-                    <Text text="{cfg>company_code}" />
+                    <ObjectStatus text="{= ${cfg>company_name} + ' (' + ${cfg>company_code} + ')'}" state="Information" />
                     <Text text="{cfg>api_base_url}" wrapping="false" />
                     <Text text="{cfg>bapi_name}" />
                     <Text text="{cfg>gm_code}" />
@@ -196,11 +154,7 @@
                   <Column importance="High"><Text text="{i18n>cfgStepName}" /></Column>
                   <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgStepSource}" /></Column>
                   <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgStepTarget}" /></Column>
-                  <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgStepDirection}" /></Column>
-                  <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgStepApi}" /></Column>
-                  <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgStepMethod}" /></Column>
-                  <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgStepTimeout}" /></Column>
-                  <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgStepRetry}" /></Column>
+                  <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgStepDirection}" /></Column>
                   <Column importance="High" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
                 </columns>
                 <items>
@@ -211,10 +165,6 @@
                       <Text text="{cfg>source}" />
                       <Text text="{cfg>target}" />
                       <ObjectStatus text="{cfg>direction}" state="{= ${cfg>direction} === 'INBOUND' ? 'Success' : 'Warning'}" />
-                      <Text text="{cfg>api}" />
-                      <ObjectStatus text="{cfg>method}" state="Information" />
-                      <ObjectNumber number="{cfg>timeout_ms}" unit="ms" />
-                      <ObjectNumber number="{cfg>retry_count}" />
                       <HBox justifyContent="Center">
                         <Button icon="sap-icon://edit" press="onEditStep" type="Transparent" />
                         <Button icon="sap-icon://delete" press="onDeleteStep" type="Transparent" />
@@ -247,6 +197,7 @@
                 <Column importance="High"><Text text="{i18n>cfgProcessType}" /></Column>
                 <Column importance="High"><Text text="{i18n>fmCompanyCode}" /></Column>
                 <Column importance="High"><Text text="{i18n>cfgDescription}" /></Column>
+                <Column importance="Medium" hAlign="Center" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>fmDirection}" /></Column>
                 <Column importance="Medium" hAlign="Center" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>fmRuleCount}" /></Column>
                 <Column importance="Medium" hAlign="Center" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgActive}" /></Column>
                 <Column importance="High" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
@@ -258,6 +209,8 @@
                       state="{= ${cfg>process_type} === 'GI' || ${cfg>process_type} === 'SUBCONTRACT_GI' ? 'Warning' : ${cfg>process_type} === 'GR' || ${cfg>process_type} === 'SUBCONTRACT_GR' ? 'Success' : ${cfg>process_type} === 'RETURN' ? 'Error' : 'Information'}" />
                     <ObjectStatus text="{cfg>company_code}" state="Information" />
                     <Text text="{cfg>description}" />
+                    <ObjectStatus text="{= ${cfg>direction} === '3PL_TO_SAP' ? '3PL \u2192 SAP' : 'SAP \u2192 3PL'}"
+                      state="{= ${cfg>direction} === '3PL_TO_SAP' ? 'Success' : 'Warning'}" />
                     <ObjectNumber number="{cfg>ruleCount}" />
                     <core:Icon
                       src="{= ${cfg>is_active} ? 'sap-icon://accept' : 'sap-icon://decline'}"
@@ -274,22 +227,62 @@
             <!-- Detail: Flow Designer -->
             <Panel visible="{= !!${cfg>/selectedFM}}">
 
-              <!-- Ayarlar: Baslik + Guvenlik Profili -->
+              <!-- Baslik -->
               <OverflowToolbar>
                 <Title text="{cfg>/selectedFMTitle}" level="H5" />
-                <ToolbarSpacer />
-                <ToolbarSeparator />
-                <Label text="{i18n>fmSecurityProfile}" />
-                <Select selectedKey="{cfg>/selectedFMSecurityId}" change="onFMSecurityChange"
-                  items="{ path: 'cfg>/securityForCompany' }">
-                  <core:Item key="{cfg>id}" text="{cfg>displayText}" />
-                </Select>
               </OverflowToolbar>
 
-              <!-- JSON Panelleri: SAP (Gelen) | 3PL (Giden) - Duzenlenebilir -->
+              <!-- Kaynak / Hedef API Ayarlari -->
+              <l:Grid defaultSpan="L6 M6 S12" class="sapUiSmallMarginTop">
+                <l:content>
+
+                  <!-- SOL: Kaynak API (SAP → Kokpit) -->
+                  <Panel headerText="{i18n>fmSourceApi}">
+                    <f:SimpleForm editable="false" layout="ResponsiveGridLayout"
+                      labelSpanL="4" labelSpanM="4" emptySpanL="0" emptySpanM="0"
+                      columnsL="1" columnsM="1">
+                      <Label text="Endpoint" />
+                      <HBox alignItems="Center">
+                        <Input value="{cfg>/selectedFMSourceApi}" editable="false" width="100%" />
+                        <Button icon="sap-icon://copy" press="onCopySourceApi" type="Transparent" tooltip="{i18n>fmCopyUrl}" />
+                      </HBox>
+                      <Label text="{i18n>fmSourceSecurity}" />
+                      <Select selectedKey="{cfg>/selectedFMSourceSecurityId}" change="onFMSourceSecurityChange"
+                        items="{ path: 'cfg>/sourceSecurityProfiles' }">
+                        <core:Item key="{cfg>id}" text="{cfg>displayText}" />
+                      </Select>
+                    </f:SimpleForm>
+                  </Panel>
+
+                  <!-- SAG: Hedef API (Kokpit → 3PL) -->
+                  <Panel headerText="{i18n>fmApiEndpoint}">
+                    <f:SimpleForm editable="true" layout="ResponsiveGridLayout"
+                      labelSpanL="4" labelSpanM="4" emptySpanL="0" emptySpanM="0"
+                      columnsL="1" columnsM="1">
+                      <Label text="{i18n>fmHttpMethod}" />
+                      <Select selectedKey="{cfg>/selectedFMMethod}" change="onFMMethodChange">
+                        <core:Item key="POST" text="POST" />
+                        <core:Item key="GET" text="GET" />
+                        <core:Item key="PUT" text="PUT" />
+                        <core:Item key="PATCH" text="PATCH" />
+                      </Select>
+                      <Label text="Endpoint" />
+                      <Input value="{cfg>/selectedFMApiEndpoint}" placeholder="https://api.3pl.com/orders" change="onFMApiEndpointChange" />
+                      <Label text="{i18n>fmTargetSecurity}" />
+                      <Select selectedKey="{cfg>/selectedFMSecurityId}" change="onFMSecurityChange"
+                        items="{ path: 'cfg>/securityForCompany' }">
+                        <core:Item key="{cfg>id}" text="{cfg>displayText}" />
+                      </Select>
+                    </f:SimpleForm>
+                  </Panel>
+
+                </l:content>
+              </l:Grid>
+
+              <!-- JSON Panelleri: Yone gore etiketlenir -->
               <l:Grid defaultSpan="L6 M6 S12">
                 <l:content>
-                  <Panel headerText="{i18n>fmSAPJson}">
+                  <Panel headerText="{= ${cfg>/selectedFMDirection} === '3PL_TO_SAP' ? '3PL JSON (Kaynak)' : 'SAP JSON (Kaynak)'}">
                     <OverflowToolbar>
                       <ToolbarSpacer />
                       <Button text="{i18n>fmExtractFields}" icon="sap-icon://detail-view" press="onExtractSapFields" />
@@ -299,7 +292,7 @@
                       rows="12" width="100%" editable="true"
                       class="sapUiTinyMargin" />
                   </Panel>
-                  <Panel headerText="{i18n>fm3PLJson}">
+                  <Panel headerText="{= ${cfg>/selectedFMDirection} === '3PL_TO_SAP' ? 'SAP JSON (Hedef)' : '3PL JSON (Hedef)'}">
                     <OverflowToolbar>
                       <ToolbarSpacer />
                       <Button text="{i18n>fmExtractFields}" icon="sap-icon://detail-view" press="onExtract3plFields" />
@@ -320,30 +313,37 @@
                 <Button text="{i18n>fmAddRule}" icon="sap-icon://add" press="onAddFieldRule" type="Emphasized" />
               </OverflowToolbar>
 
-              <Table items="{cfg>/selectedFMRules}" autoPopinMode="true">
-                <columns>
-                  <Column importance="High"><Text text="{i18n>fmSAPField}" /></Column>
-                  <Column importance="High" hAlign="Center" width="3rem"><Text text="" /></Column>
-                  <Column importance="High"><Text text="{i18n>fm3PLField}" /></Column>
-                  <Column importance="High"><Text text="{i18n>fmTransformRule}" /></Column>
-                  <Column importance="High" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
-                </columns>
-                <items>
-                  <ColumnListItem>
-                    <cells>
-                      <ObjectStatus text="{cfg>sap_field}" state="Warning" />
-                      <core:Icon src="sap-icon://arrow-right" color="#0854a0" />
-                      <ObjectStatus text="{cfg>threepl_field}" state="{= ${cfg>threepl_field} ? 'Success' : 'None'}" />
-                      <ObjectStatus text="{cfg>transform}"
-                        state="{= ${cfg>transform} === 'DIRECT' ? 'Information' : ${cfg>transform} === 'LOOKUP' ? 'Warning' : 'Success'}" />
-                      <HBox justifyContent="Center">
-                        <Button icon="sap-icon://edit" press="onEditFieldRule" type="Transparent" />
-                        <Button icon="sap-icon://delete" press="onDeleteFieldRule" type="Transparent" />
-                      </HBox>
-                    </cells>
-                  </ColumnListItem>
-                </items>
-              </Table>
+              <Tree id="fmRulesTree"
+                items="{ path: 'cfg>/fmTreeNodes', parameters: { arrayNames: ['children'] } }">
+                <CustomTreeItem>
+                  <!-- Grup dugumu -->
+                  <HBox visible="{= ${cfg>_nodeType} === 'group'}"
+                    alignItems="Center" class="sapUiTinyMarginBeginEnd">
+                    <Title text="{cfg>_label}" level="H6" />
+                  </HBox>
+                  <!-- Alan dugumu — Inline PO-tarzi -->
+                  <HBox visible="{= ${cfg>_nodeType} === 'field'}"
+                    alignItems="Center" class="sapUiTinyMarginBeginEnd">
+                    <ObjectStatus text="{cfg>_sapFieldShort}"
+                      state="{= ${cfg>_mapped} ? 'Warning' : 'None'}" class="sapUiTinyMarginEnd" />
+                    <Input value="{cfg>_sample}" width="8rem" class="sapUiTinyMarginEnd"
+                      change="onSampleValueChange" placeholder="..." />
+                    <core:Icon src="sap-icon://arrow-right" color="#0854a0" class="sapUiTinyMarginEnd" />
+                    <Input value="{cfg>_threepl}" width="10rem" class="sapUiTinyMarginEnd"
+                      change="onTargetFieldChange" placeholder="{i18n>fmTargetField}" />
+                    <Select selectedKey="{cfg>_transform}" change="onTransformChange" width="7rem">
+                      <core:Item key="DIRECT" text="DIRECT" />
+                      <core:Item key="LOOKUP" text="LOOKUP" />
+                      <core:Item key="PREFIX" text="PREFIX" />
+                      <core:Item key="SAP_DATE" text="SAP_DATE" />
+                    </Select>
+                    <Button icon="sap-icon://edit" press="onEditFieldRule" type="Transparent"
+                      tooltip="{i18n>fmEditRule}" />
+                    <Button icon="sap-icon://delete" press="onDeleteFieldRule" type="Transparent"
+                      visible="{cfg>_mapped}" />
+                  </HBox>
+                </CustomTreeItem>
+              </Tree>
 
               <!-- HTTP Basliklari -->
               <OverflowToolbar>
@@ -391,6 +391,80 @@
                   </Panel>
                   <Panel headerText="{i18n>fmOutputSecurity}">
                     <TextArea value="{cfg>/outputSecurity}" rows="8" width="100%" editable="false"
+                      class="sapUiTinyMargin" />
+                  </Panel>
+                </l:content>
+              </l:Grid>
+
+              <!-- Yanit Esleme (Response Mapping) -->
+              <OverflowToolbar>
+                <Title text="{i18n>fmResponseMapping}" level="H5" />
+                <ToolbarSpacer />
+                <Button text="{i18n>fmExtractResponseFields}" icon="sap-icon://detail-view" press="onExtractResponseFields" />
+                <Button text="{i18n>fmAutoMapResponse}" icon="sap-icon://synchronize" press="onAutoMapResponse" />
+                <Button text="{i18n>fmAddResponseRule}" icon="sap-icon://add" press="onAddResponseRule" type="Emphasized" />
+              </OverflowToolbar>
+
+              <l:Grid defaultSpan="L6 M6 S12">
+                <l:content>
+                  <Panel headerText="{i18n>fmResponseSampleJson}">
+                    <TextArea
+                      value="{cfg>/selectedFMResponseSampleJson}"
+                      rows="8" width="100%" editable="true"
+                      placeholder="{i18n>fmResponseSamplePlaceholder}"
+                      class="sapUiTinyMargin" />
+                  </Panel>
+                  <Panel headerText="{i18n>fmResponseMappedJson}">
+                    <TextArea
+                      value="{cfg>/responsePreviewJson}"
+                      rows="8" width="100%" editable="false"
+                      class="sapUiTinyMargin" />
+                  </Panel>
+                </l:content>
+              </l:Grid>
+
+              <Table id="responseRulesTable" items="{cfg>/selectedFMResponseRules}" autoPopinMode="true">
+                <columns>
+                  <Column importance="High"><Text text="{i18n>fmSourceField}" /></Column>
+                  <Column importance="High"><Text text="{i18n>fmTargetField}" /></Column>
+                  <Column importance="High" width="8em"><Text text="{i18n>fmTransform}" /></Column>
+                  <Column importance="High" hAlign="Center" width="6em"><Text text="{i18n>cfgActions}" /></Column>
+                </columns>
+                <items>
+                  <ColumnListItem>
+                    <cells>
+                      <ObjectStatus text="{cfg>source_field}" state="Information" />
+                      <Input value="{cfg>target_field}" change="onResponseTargetChange" placeholder="{i18n>fmTargetField}" />
+                      <Select selectedKey="{cfg>transform}" change="onResponseTransformChange" width="7rem">
+                        <core:Item key="DIRECT" text="DIRECT" />
+                        <core:Item key="LOOKUP" text="LOOKUP" />
+                        <core:Item key="PREFIX" text="PREFIX" />
+                        <core:Item key="SAP_DATE" text="SAP_DATE" />
+                      </Select>
+                      <HBox justifyContent="Center">
+                        <Button icon="sap-icon://delete" press="onDeleteResponseRule" type="Transparent" />
+                      </HBox>
+                    </cells>
+                  </ColumnListItem>
+                </items>
+              </Table>
+
+              <!-- Entegrasyon Testi -->
+              <OverflowToolbar>
+                <Title text="{i18n>fmTestTitle}" level="H5" />
+                <ToolbarSpacer />
+                <Button text="{i18n>fmTestRun}" icon="sap-icon://initiative" press="onTestIntegration" type="Emphasized" />
+              </OverflowToolbar>
+
+              <l:Grid defaultSpan="L6 M6 S12">
+                <l:content>
+                  <Panel headerText="{i18n>fmTestInput}">
+                    <TextArea value="{cfg>/testInputJson}" rows="12" width="100%" editable="true"
+                      class="sapUiTinyMargin" />
+                  </Panel>
+                  <Panel headerText="{i18n>fmTestResponse}">
+                    <ObjectStatus text="{cfg>/testStatus}" state="{cfg>/testStatusState}" class="sapUiSmallMarginBegin" />
+                    <TextArea value="{cfg>/testResponseJson}" rows="12" width="100%" editable="false"
                       class="sapUiTinyMargin" />
                   </Panel>
                 </l:content>
