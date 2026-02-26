@@ -71,5 +71,43 @@
       "scope": "api"
     },
     "is_active": true
+  },
+  {
+    "id": "b0a00001-1001-4001-a001-000000000001",
+    "name": "Mock OAUTH2 Test",
+    "company_code": "MOCK",
+    "auth_type": "OAUTH2",
+    "environment": "TEST",
+    "config": {
+      "client_id": "test_client",
+      "client_secret": "test_secret",
+      "token_url": "http://localhost:3001/mock/oauth2/token",
+      "scope": "api"
+    },
+    "is_active": true
+  },
+  {
+    "id": "b0a00001-1002-4001-a001-000000000002",
+    "name": "Mock BASIC Test",
+    "company_code": "MOCK",
+    "auth_type": "BASIC",
+    "environment": "TEST",
+    "config": {
+      "username": "test",
+      "password": "test123"
+    },
+    "is_active": true
+  },
+  {
+    "id": "b0a00001-1003-4001-a001-000000000003",
+    "name": "Mock API_KEY Test",
+    "company_code": "MOCK",
+    "auth_type": "API_KEY",
+    "environment": "TEST",
+    "config": {
+      "api_key": "MOCK_KEY_2026",
+      "header_name": "X-Api-Key"
+    },
+    "is_active": true
   }
 ]

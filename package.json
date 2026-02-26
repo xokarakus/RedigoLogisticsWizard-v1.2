@@ -9,6 +9,7 @@
     "migrate": "node src/shared/database/migrate.js",
     "seed": "node src/shared/database/seed.js",
     "traffic": "node tools/traffic-agent/index.js",
+    "test-services": "node src/test-services.js",
     "test": "jest",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration"

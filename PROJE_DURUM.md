@@ -239,3 +239,5 @@ RedigoLogisticsWizard-v1.2/
 - BTP olduğunu atama tüm süreçlerde ve kodlarda bunu unutma
 - örnek dataları ben vermediğim sürece silme
 - Backend restart için benden onay alman gerek yok.
+- varsayımda bulunma ban sor
+- Karar alırken neye göre karar alınacağını paylaş
