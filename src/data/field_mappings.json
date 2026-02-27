@@ -775,5 +775,815 @@
     "security_profile_id": "b0a00001-0005-4001-a001-000000000005",
     "headers": [],
     "response_rules": []
+  },
+  {
+    "id": "fm_horoz_createorder",
+    "process_type": "GI",
+    "company_code": "HOROZ",
+    "description": "Mal \u00c7\u0131k\u0131\u015f\u0131 \u2013 Horoz createOrder",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "https://ewms.horoz.com.tr:9992/horozwarehouseservice_test/v1/createOrder",
+    "sap_sample_json": {
+      "HEADER": {
+        "VBELN": "",
+        "LFART": "",
+        "WADAT": "",
+        "KUNNR": "",
+        "NAME1": "",
+        "WERKS": "",
+        "LGORT": ""
+      },
+      "ITEMS": [
+        {
+          "POSNR": "",
+          "MATNR": "",
+          "MAKTX": "",
+          "LFIMG": 0,
+          "MEINS": ""
+        }
+      ]
+    },
+    "threepl_sample_json": {
+      "processKey": "",
+      "orderNumber": "",
+      "orderDetail": [
+        {
+          "productCode": "",
+          "quantity": 0,
+          "quantityType": "piece",
+          "lotNo": "",
+          "serialNo": "",
+          "expirationDate": ""
+        }
+      ]
+    },
+    "field_rules": [
+      { "sap_field": "HEADER.VBELN", "threepl_field": "orderNumber", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MATNR", "threepl_field": "orderDetail[].productCode", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].LFIMG", "threepl_field": "orderDetail[].quantity", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MEINS", "threepl_field": "orderDetail[].quantityType", "transform": "LOOKUP" },
+      { "sap_field": "HEADER.LFART", "threepl_field": "", "transform": "DIRECT" },
+      { "sap_field": "HEADER.WADAT", "threepl_field": "", "transform": "SAP_DATE" },
+      { "sap_field": "HEADER.KUNNR", "threepl_field": "", "transform": "DIRECT" },
+      { "sap_field": "HEADER.NAME1", "threepl_field": "", "transform": "DIRECT" },
+      { "sap_field": "HEADER.WERKS", "threepl_field": "", "transform": "DIRECT" },
+      { "sap_field": "HEADER.LGORT", "threepl_field": "", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].POSNR", "threepl_field": "", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MAKTX", "threepl_field": "", "transform": "DIRECT" }
+    ],
+    "headers": [
+      { "key": "Content-Type", "value": "application/json" },
+      { "key": "Accept", "value": "application/json" }
+    ],
+    "security_profile_id": "b0a00001-3001-4001-a001-000000000001",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gi/horoz",
+    "response_rules": [
+      { "source_field": "result", "target_field": "success", "transform": "DIRECT" },
+      { "source_field": "errorCode", "target_field": "error_code", "transform": "DIRECT" },
+      { "source_field": "systemMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_expectedreceipt",
+    "process_type": "GR",
+    "company_code": "HOROZ",
+    "description": "Beklenen Mal Giri\u015f \u2013 Horoz createExpectedReceipt",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "https://ewms.horoz.com.tr:9992/horozwarehouseservice_test/v1/createExpectedReceipt",
+    "sap_sample_json": {
+      "HEADER": {
+        "VBELN": "",
+        "LIFNR": "",
+        "LIFNA": "",
+        "WADAT": "",
+        "WERKS": "",
+        "LGORT": ""
+      },
+      "ITEMS": [
+        {
+          "POSNR": "",
+          "MATNR": "",
+          "MAKTX": "",
+          "LFIMG": 0,
+          "MEINS": ""
+        }
+      ]
+    },
+    "threepl_sample_json": {
+      "processKey": "",
+      "expectedReceiptNumber": "",
+      "expectedReceiptDetail": [
+        {
+          "productCode": "",
+          "quantity": 0,
+          "quantityType": "piece",
+          "lotNo": "",
+          "expirationDate": ""
+        }
+      ]
+    },
+    "field_rules": [
+      { "sap_field": "HEADER.VBELN", "threepl_field": "expectedReceiptNumber", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MATNR", "threepl_field": "expectedReceiptDetail[].productCode", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].LFIMG", "threepl_field": "expectedReceiptDetail[].quantity", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MEINS", "threepl_field": "expectedReceiptDetail[].quantityType", "transform": "LOOKUP" },
+      { "sap_field": "HEADER.LIFNR", "threepl_field": "", "transform": "DIRECT" },
+      { "sap_field": "HEADER.LIFNA", "threepl_field": "", "transform": "DIRECT" },
+      { "sap_field": "HEADER.WADAT", "threepl_field": "", "transform": "SAP_DATE" },
+      { "sap_field": "HEADER.WERKS", "threepl_field": "", "transform": "DIRECT" },
+      { "sap_field": "HEADER.LGORT", "threepl_field": "", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].POSNR", "threepl_field": "", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MAKTX", "threepl_field": "", "transform": "DIRECT" }
+    ],
+    "headers": [
+      { "key": "Content-Type", "value": "application/json" },
+      { "key": "Accept", "value": "application/json" }
+    ],
+    "security_profile_id": "b0a00001-3001-4001-a001-000000000001",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gr/horoz",
+    "response_rules": [
+      { "source_field": "result", "target_field": "success", "transform": "DIRECT" },
+      { "source_field": "errorCode", "target_field": "error_code", "transform": "DIRECT" },
+      { "source_field": "systemMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_stocklist",
+    "process_type": "GR",
+    "company_code": "HOROZ",
+    "description": "Stok Sorgulama \u2013 Horoz stockList",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "https://ewms.horoz.com.tr:9992/horozwarehouseservice_test/v1/stockList",
+    "sap_sample_json": {
+      "MATNR": ""
+    },
+    "threepl_sample_json": {
+      "processKey": "",
+      "productCode": ""
+    },
+    "field_rules": [
+      { "sap_field": "MATNR", "threepl_field": "productCode", "transform": "DIRECT" }
+    ],
+    "headers": [
+      { "key": "Content-Type", "value": "application/json" },
+      { "key": "Accept", "value": "application/json" }
+    ],
+    "security_profile_id": "b0a00001-3001-4001-a001-000000000001",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gr/horoz-stock",
+    "response_rules": [
+      { "source_field": "result", "target_field": "success", "transform": "DIRECT" },
+      { "source_field": "productList", "target_field": "stock_items", "transform": "DIRECT" },
+      { "source_field": "errorCode", "target_field": "error_code", "transform": "DIRECT" },
+      { "source_field": "systemMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_createproduct",
+    "process_type": "GR",
+    "company_code": "HOROZ",
+    "description": "Malzeme Aktar\u0131m \u2013 Horoz createProduct",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "https://ewms.horoz.com.tr:9992/horozwarehouseservice_test/v1/createProduct",
+    "sap_sample_json": {
+      "MATNR": "",
+      "MAKTX": "",
+      "MEINS": "",
+      "NTGEW": 0,
+      "BRGEW": 0,
+      "LAENG": 0,
+      "BREIT": 0,
+      "HOEHE": 0
+    },
+    "threepl_sample_json": {
+      "processKey": "",
+      "productList": [
+        {
+          "productCode": "",
+          "productName": "",
+          "productDescription": "",
+          "serialNumberTracking": "",
+          "productSizes": {
+            "measuringUnit": "",
+            "width": "",
+            "length": "",
+            "height": "",
+            "grossWeight": "",
+            "netWeight": "",
+            "lengthUnit": "cm",
+            "weightUnit": "kg"
+          }
+        }
+      ]
+    },
+    "field_rules": [
+      { "sap_field": "MATNR", "threepl_field": "productList[].productCode", "transform": "DIRECT" },
+      { "sap_field": "MAKTX", "threepl_field": "productList[].productName", "transform": "DIRECT" },
+      { "sap_field": "MEINS", "threepl_field": "productList[].productSizes.measuringUnit", "transform": "LOOKUP" },
+      { "sap_field": "NTGEW", "threepl_field": "productList[].productSizes.netWeight", "transform": "DIRECT" },
+      { "sap_field": "BRGEW", "threepl_field": "productList[].productSizes.grossWeight", "transform": "DIRECT" },
+      { "sap_field": "LAENG", "threepl_field": "productList[].productSizes.length", "transform": "DIRECT" },
+      { "sap_field": "BREIT", "threepl_field": "productList[].productSizes.width", "transform": "DIRECT" },
+      { "sap_field": "HOEHE", "threepl_field": "productList[].productSizes.height", "transform": "DIRECT" }
+    ],
+    "headers": [
+      { "key": "Content-Type", "value": "application/json" }
+    ],
+    "security_profile_id": "b0a00001-3001-4001-a001-000000000001",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gr/horoz-product",
+    "response_rules": [
+      { "source_field": "result", "target_field": "success", "transform": "DIRECT" },
+      { "source_field": "errorCode", "target_field": "error_code", "transform": "DIRECT" },
+      { "source_field": "systemMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_createcustomer",
+    "process_type": "GI",
+    "company_code": "HOROZ",
+    "description": "M\u00fc\u015fteri Aktar\u0131m \u2013 Horoz createCustomer",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "https://ewms.horoz.com.tr:9992/horozwarehouseservice_test/v1/createCustomer",
+    "sap_sample_json": {
+      "KUNNR": "",
+      "NAME1": "",
+      "NAME2": "",
+      "STRAS": "",
+      "ORT01": "",
+      "PSTLZ": "",
+      "LAND1": "",
+      "TELF1": "",
+      "ADRNR": ""
+    },
+    "threepl_sample_json": {
+      "processKey": "",
+      "customerList": [
+        {
+          "customerNumber": "",
+          "title": "",
+          "shortTitle": "",
+          "address": "",
+          "city": "",
+          "county": "",
+          "postCode": "",
+          "country": "",
+          "phoneNumber": "",
+          "email": ""
+        }
+      ]
+    },
+    "field_rules": [
+      { "sap_field": "KUNNR", "threepl_field": "customerList[].customerNumber", "transform": "DIRECT" },
+      { "sap_field": "NAME1", "threepl_field": "customerList[].title", "transform": "DIRECT" },
+      { "sap_field": "NAME2", "threepl_field": "customerList[].shortTitle", "transform": "DIRECT" },
+      { "sap_field": "STRAS", "threepl_field": "customerList[].address", "transform": "DIRECT" },
+      { "sap_field": "ORT01", "threepl_field": "customerList[].city", "transform": "DIRECT" },
+      { "sap_field": "PSTLZ", "threepl_field": "customerList[].postCode", "transform": "DIRECT" },
+      { "sap_field": "LAND1", "threepl_field": "customerList[].country", "transform": "DIRECT" },
+      { "sap_field": "TELF1", "threepl_field": "customerList[].phoneNumber", "transform": "DIRECT" }
+    ],
+    "headers": [
+      { "key": "Content-Type", "value": "application/json" }
+    ],
+    "security_profile_id": "b0a00001-3001-4001-a001-000000000001",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gi/horoz-customer",
+    "response_rules": [
+      { "source_field": "result", "target_field": "success", "transform": "DIRECT" },
+      { "source_field": "errorCode", "target_field": "error_code", "transform": "DIRECT" },
+      { "source_field": "systemMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_createsupplier",
+    "process_type": "GR",
+    "company_code": "HOROZ",
+    "description": "Tedarik\u00e7i Aktar\u0131m \u2013 Horoz createSupplier",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "https://ewms.horoz.com.tr:9992/horozwarehouseservice_test/v1/createSupplier",
+    "sap_sample_json": {
+      "LIFNR": "",
+      "NAME1": "",
+      "NAME2": "",
+      "STRAS": "",
+      "ORT01": "",
+      "PSTLZ": "",
+      "LAND1": "",
+      "TELF1": "",
+      "STCD1": ""
+    },
+    "threepl_sample_json": {
+      "processKey": "",
+      "supplierList": [
+        {
+          "supplierCode": "",
+          "title": "",
+          "shortTitle": "",
+          "address": "",
+          "city": "",
+          "county": "",
+          "postCode": "",
+          "country": "",
+          "phoneNumber": "",
+          "taxNumber": ""
+        }
+      ]
+    },
+    "field_rules": [
+      { "sap_field": "LIFNR", "threepl_field": "supplierList[].supplierCode", "transform": "DIRECT" },
+      { "sap_field": "NAME1", "threepl_field": "supplierList[].title", "transform": "DIRECT" },
+      { "sap_field": "NAME2", "threepl_field": "supplierList[].shortTitle", "transform": "DIRECT" },
+      { "sap_field": "STRAS", "threepl_field": "supplierList[].address", "transform": "DIRECT" },
+      { "sap_field": "ORT01", "threepl_field": "supplierList[].city", "transform": "DIRECT" },
+      { "sap_field": "PSTLZ", "threepl_field": "supplierList[].postCode", "transform": "DIRECT" },
+      { "sap_field": "LAND1", "threepl_field": "supplierList[].country", "transform": "DIRECT" },
+      { "sap_field": "TELF1", "threepl_field": "supplierList[].phoneNumber", "transform": "DIRECT" },
+      { "sap_field": "STCD1", "threepl_field": "supplierList[].taxNumber", "transform": "DIRECT" }
+    ],
+    "headers": [
+      { "key": "Content-Type", "value": "application/json" }
+    ],
+    "security_profile_id": "b0a00001-3001-4001-a001-000000000001",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gr/horoz-supplier",
+    "response_rules": [
+      { "source_field": "result", "target_field": "success", "transform": "DIRECT" },
+      { "source_field": "errorCode", "target_field": "error_code", "transform": "DIRECT" },
+      { "source_field": "systemMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_cancel",
+    "process_type": "GI",
+    "company_code": "HOROZ",
+    "description": "\u0130ptal \u2013 Horoz cancel",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "https://ewms.horoz.com.tr:9992/horozwarehouseservice_test/v1/cancel",
+    "sap_sample_json": {
+      "VBELN": "",
+      "LFART": ""
+    },
+    "threepl_sample_json": {
+      "processKey": "",
+      "opCode": "",
+      "opType": ""
+    },
+    "field_rules": [
+      { "sap_field": "VBELN", "threepl_field": "opCode", "transform": "DIRECT" },
+      { "sap_field": "LFART", "threepl_field": "opType", "transform": "DIRECT" }
+    ],
+    "headers": [
+      { "key": "Content-Type", "value": "application/json" }
+    ],
+    "security_profile_id": "b0a00001-3001-4001-a001-000000000001",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gi/horoz-cancel",
+    "response_rules": [
+      { "source_field": "result", "target_field": "success", "transform": "DIRECT" },
+      { "source_field": "errorCode", "target_field": "error_code", "transform": "DIRECT" },
+      { "source_field": "systemMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_createshipping",
+    "process_type": "GI",
+    "company_code": "HOROZ_DIST",
+    "description": "G\u00f6nderi Olu\u015ftur \u2013 Horoz createShipping",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "http://b2btest.horoz.com.tr:7801/horozshipping_test/v1/createShipping",
+    "sap_sample_json": {
+      "HEADER": {
+        "VBELN": "",
+        "WADAT": "",
+        "KUNNR": "",
+        "NAME1": "",
+        "STRAS": "",
+        "ORT01": "",
+        "ORT02": "",
+        "TELF1": ""
+      },
+      "ITEMS": [
+        {
+          "MATNR": "",
+          "MAKTX": "",
+          "LFIMG": 0,
+          "BRGEW": 0,
+          "VOLUM": 0
+        }
+      ]
+    },
+    "threepl_sample_json": {
+      "requestNumber": "",
+      "senderCode": 0,
+      "senderTitle": "",
+      "senderCity": "",
+      "senderCounty": "",
+      "senderAdress": "",
+      "senderPhoneNumber": "",
+      "recipientCode": 0,
+      "recipientTitle": "",
+      "recipientCity": "",
+      "recipientCounty": "",
+      "recipientAdress": "",
+      "recipientPhoneNumber": "",
+      "shipmentCount": 0,
+      "totalDesi": 0,
+      "shippingType": "ShippingRequest",
+      "requestDate": "",
+      "shippingDetail": [
+        {
+          "productCode": "",
+          "productName": "",
+          "quantity": 0,
+          "weightInKg": 0,
+          "desi": 0
+        }
+      ]
+    },
+    "field_rules": [
+      { "sap_field": "HEADER.VBELN", "threepl_field": "requestNumber", "transform": "DIRECT" },
+      { "sap_field": "HEADER.WADAT", "threepl_field": "requestDate", "transform": "SAP_DATE" },
+      { "sap_field": "HEADER.KUNNR", "threepl_field": "recipientCode", "transform": "DIRECT" },
+      { "sap_field": "HEADER.NAME1", "threepl_field": "recipientTitle", "transform": "DIRECT" },
+      { "sap_field": "HEADER.ORT01", "threepl_field": "recipientCity", "transform": "DIRECT" },
+      { "sap_field": "HEADER.ORT02", "threepl_field": "recipientCounty", "transform": "DIRECT" },
+      { "sap_field": "HEADER.STRAS", "threepl_field": "recipientAdress", "transform": "DIRECT" },
+      { "sap_field": "HEADER.TELF1", "threepl_field": "recipientPhoneNumber", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MATNR", "threepl_field": "shippingDetail[].productCode", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MAKTX", "threepl_field": "shippingDetail[].productName", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].LFIMG", "threepl_field": "shippingDetail[].quantity", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].BRGEW", "threepl_field": "shippingDetail[].weightInKg", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].VOLUM", "threepl_field": "shippingDetail[].desi", "transform": "DIRECT" }
+    ],
+    "headers": [
+      { "key": "Content-Type", "value": "application/json" }
+    ],
+    "security_profile_id": "b0a00001-3003-4001-a001-000000000003",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gi/horoz-shipping",
+    "response_rules": [
+      { "source_field": "response.responseCode", "target_field": "status_code", "transform": "DIRECT" },
+      { "source_field": "response.responseMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_cancelshipping",
+    "process_type": "GI",
+    "company_code": "HOROZ_DIST",
+    "description": "G\u00f6nderi \u0130ptal \u2013 Horoz cancelShipping",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "http://b2btest.horoz.com.tr:7801/horozshipping_test/v1/cancelShipping",
+    "sap_sample_json": {
+      "VBELN": ""
+    },
+    "threepl_sample_json": {
+      "requestNumber": ""
+    },
+    "field_rules": [
+      { "sap_field": "VBELN", "threepl_field": "requestNumber", "transform": "DIRECT" }
+    ],
+    "headers": [
+      { "key": "Content-Type", "value": "application/json" }
+    ],
+    "security_profile_id": "b0a00001-3003-4001-a001-000000000003",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gi/horoz-cancel-shipping",
+    "response_rules": [
+      { "source_field": "response.responseCode", "target_field": "status_code", "transform": "DIRECT" },
+      { "source_field": "response.responseMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_createbarcode",
+    "process_type": "GI",
+    "company_code": "HOROZ_DIST",
+    "description": "Barkod Olu\u015ftur \u2013 Horoz createBarcode",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "http://b2btest.horoz.com.tr:7801/horozshipping_test/v1/createBarcode",
+    "sap_sample_json": {
+      "VBELN": "",
+      "LFIMG": 0,
+      "VOLUM": 0,
+      "BRGEW": 0
+    },
+    "threepl_sample_json": {
+      "requestNumber": "",
+      "partNumber": 1,
+      "quantity": 0,
+      "desi": 0,
+      "weightInKg": 0
+    },
+    "field_rules": [
+      { "sap_field": "VBELN", "threepl_field": "requestNumber", "transform": "DIRECT" },
+      { "sap_field": "LFIMG", "threepl_field": "quantity", "transform": "DIRECT" },
+      { "sap_field": "VOLUM", "threepl_field": "desi", "transform": "DIRECT" },
+      { "sap_field": "BRGEW", "threepl_field": "weightInKg", "transform": "DIRECT" }
+    ],
+    "headers": [
+      { "key": "Content-Type", "value": "application/json" }
+    ],
+    "security_profile_id": "b0a00001-3003-4001-a001-000000000003",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gi/horoz-barcode",
+    "response_rules": [
+      { "source_field": "response.responseCode", "target_field": "status_code", "transform": "DIRECT" },
+      { "source_field": "response.responseMessage", "target_field": "message", "transform": "DIRECT" },
+      { "source_field": "response.barcodeList", "target_field": "barcodes", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_tracking",
+    "process_type": "GI",
+    "company_code": "HOROZ_TRACK",
+    "description": "Kargo Takip \u2013 Horoz listShippingDetails",
+    "direction": "SAP_TO_3PL",
+    "http_method": "GET",
+    "api_endpoint": "http://b2btest.horoz.com.tr:7801/listsrestservice_test/v1/listShippingDetails",
+    "sap_sample_json": {
+      "VBELN": ""
+    },
+    "threepl_sample_json": {},
+    "field_rules": [],
+    "headers": [
+      { "key": "Content-Type", "value": "application/json" },
+      { "key": "requestNumber", "value": "" }
+    ],
+    "security_profile_id": "b0a00001-3004-4001-a001-000000000004",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gi/horoz-tracking",
+    "response_rules": [
+      { "source_field": "shippingDeliveryState", "target_field": "delivery_status", "transform": "DIRECT" },
+      { "source_field": "listOfShipments", "target_field": "shipments", "transform": "DIRECT" },
+      { "source_field": "listOfMovements", "target_field": "movements", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_ecom_createorder",
+    "process_type": "GI",
+    "company_code": "HOROZ_ECOM",
+    "description": "E-Ticaret Sipari\u015f \u2013 Horoz createOrder",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "https://ewms.horoz.com.tr:9992/ecomwarehouseservice_test/v1/createOrder",
+    "sap_sample_json": {
+      "HEADER": { "VBELN": "", "WADAT": "", "KUNNR": "", "NAME1": "" },
+      "ITEMS": [{ "MATNR": "", "LFIMG": 0, "MEINS": "" }]
+    },
+    "threepl_sample_json": {
+      "processKey": "",
+      "orderNumber": "",
+      "orderDetail": [{ "productCode": "", "quantity": 0, "quantityType": "piece" }]
+    },
+    "field_rules": [
+      { "sap_field": "HEADER.VBELN", "threepl_field": "orderNumber", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MATNR", "threepl_field": "orderDetail[].productCode", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].LFIMG", "threepl_field": "orderDetail[].quantity", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MEINS", "threepl_field": "orderDetail[].quantityType", "transform": "LOOKUP" }
+    ],
+    "headers": [{ "key": "Content-Type", "value": "application/json" }],
+    "security_profile_id": "b0a00001-3005-4001-a001-000000000005",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gi/horoz-ecom",
+    "response_rules": [
+      { "source_field": "result", "target_field": "success", "transform": "DIRECT" },
+      { "source_field": "errorCode", "target_field": "error_code", "transform": "DIRECT" },
+      { "source_field": "systemMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_ecom_stocklist",
+    "process_type": "GR",
+    "company_code": "HOROZ_ECOM",
+    "description": "E-Ticaret Stok \u2013 Horoz stockList",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "https://ewms.horoz.com.tr:9992/ecomwarehouseservice_test/v1/stockList",
+    "sap_sample_json": { "MATNR": "" },
+    "threepl_sample_json": { "processKey": "", "productCode": "" },
+    "field_rules": [
+      { "sap_field": "MATNR", "threepl_field": "productCode", "transform": "DIRECT" }
+    ],
+    "headers": [{ "key": "Content-Type", "value": "application/json" }],
+    "security_profile_id": "b0a00001-3005-4001-a001-000000000005",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gr/horoz-ecom-stock",
+    "response_rules": [
+      { "source_field": "result", "target_field": "success", "transform": "DIRECT" },
+      { "source_field": "productList", "target_field": "stock_items", "transform": "DIRECT" },
+      { "source_field": "systemMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_export_wh_createorder",
+    "process_type": "GI",
+    "company_code": "HOROZ_EXPORT_WH",
+    "description": "E-\u0130hracat Sipari\u015f \u2013 Horoz createOrder",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "https://ewms.horoz.com.tr:9992/fullfillmentservice_test/v1/createOrder",
+    "sap_sample_json": {
+      "HEADER": { "VBELN": "", "WADAT": "", "KUNNR": "", "NAME1": "" },
+      "ITEMS": [{ "MATNR": "", "LFIMG": 0, "MEINS": "" }]
+    },
+    "threepl_sample_json": {
+      "processKey": "",
+      "orderNumber": "",
+      "orderDetail": [{ "productCode": "", "quantity": 0, "quantityType": "piece" }]
+    },
+    "field_rules": [
+      { "sap_field": "HEADER.VBELN", "threepl_field": "orderNumber", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MATNR", "threepl_field": "orderDetail[].productCode", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].LFIMG", "threepl_field": "orderDetail[].quantity", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MEINS", "threepl_field": "orderDetail[].quantityType", "transform": "LOOKUP" }
+    ],
+    "headers": [{ "key": "Content-Type", "value": "application/json" }],
+    "security_profile_id": "b0a00001-3006-4001-a001-000000000006",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gi/horoz-export-wh",
+    "response_rules": [
+      { "source_field": "result", "target_field": "success", "transform": "DIRECT" },
+      { "source_field": "errorCode", "target_field": "error_code", "transform": "DIRECT" },
+      { "source_field": "systemMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_export_wh_orderstatus",
+    "process_type": "GI",
+    "company_code": "HOROZ_EXPORT_WH",
+    "description": "Sipari\u015f Durum Sorgu \u2013 Horoz searchOrderStatus",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "https://ewms.horoz.com.tr:9992/fullfillmentservice_test/v1/searchOrderStatus",
+    "sap_sample_json": { "VBELN": "" },
+    "threepl_sample_json": { "processKey": "", "orderNumber": "" },
+    "field_rules": [
+      { "sap_field": "VBELN", "threepl_field": "orderNumber", "transform": "DIRECT" }
+    ],
+    "headers": [{ "key": "Content-Type", "value": "application/json" }],
+    "security_profile_id": "b0a00001-3006-4001-a001-000000000006",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gi/horoz-export-order-status",
+    "response_rules": [
+      { "source_field": "result", "target_field": "success", "transform": "DIRECT" },
+      { "source_field": "errorCode", "target_field": "error_code", "transform": "DIRECT" },
+      { "source_field": "systemMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_export_wh_receiptstatus",
+    "process_type": "GR",
+    "company_code": "HOROZ_EXPORT_WH",
+    "description": "Teslim Alma Durum Sorgu \u2013 Horoz searchReceiptStatus",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "https://ewms.horoz.com.tr:9992/fullfillmentservice_test/v1/searchReceiptStatus",
+    "sap_sample_json": { "VBELN": "" },
+    "threepl_sample_json": { "processKey": "", "expectedReceiptNumber": "" },
+    "field_rules": [
+      { "sap_field": "VBELN", "threepl_field": "expectedReceiptNumber", "transform": "DIRECT" }
+    ],
+    "headers": [{ "key": "Content-Type", "value": "application/json" }],
+    "security_profile_id": "b0a00001-3006-4001-a001-000000000006",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gr/horoz-export-receipt-status",
+    "response_rules": [
+      { "source_field": "result", "target_field": "success", "transform": "DIRECT" },
+      { "source_field": "errorCode", "target_field": "error_code", "transform": "DIRECT" },
+      { "source_field": "systemMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_export_roadorder",
+    "process_type": "GI",
+    "company_code": "HOROZ_EXPORT",
+    "description": "Karayolu G\u00f6nderi \u2013 Horoz createRoadOrder",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "http://b2btest.horoz.com.tr:7801/eexport_test/v1/createRoadOrder",
+    "sap_sample_json": {
+      "HEADER": {
+        "VBELN": "",
+        "WADAT": "",
+        "NAME1": "",
+        "LAND1": "",
+        "REGIO": "",
+        "ORT01": "",
+        "ORT02": "",
+        "STRAS": "",
+        "PSTLZ": "",
+        "TELF1": ""
+      },
+      "ITEMS": [{ "MATNR": "", "MAKTX": "", "LFIMG": 0 }]
+    },
+    "threepl_sample_json": {
+      "customerOrderNumber": "",
+      "recipientTitle": "",
+      "recipientCountryName": "",
+      "recipientStateName": "",
+      "recipientCityName": "",
+      "recipientAddress": "",
+      "recipientPostCode": "",
+      "recipientPhone1": "",
+      "totalQuantity": 0,
+      "totalDesi": 0,
+      "totalWeight": 0,
+      "shippingType": "economic",
+      "exportType": "micro",
+      "orderDetail": [{ "productCode": "", "productName": "", "quantity": 0 }]
+    },
+    "field_rules": [
+      { "sap_field": "HEADER.VBELN", "threepl_field": "customerOrderNumber", "transform": "DIRECT" },
+      { "sap_field": "HEADER.NAME1", "threepl_field": "recipientTitle", "transform": "DIRECT" },
+      { "sap_field": "HEADER.LAND1", "threepl_field": "recipientCountryName", "transform": "DIRECT" },
+      { "sap_field": "HEADER.REGIO", "threepl_field": "recipientStateName", "transform": "DIRECT" },
+      { "sap_field": "HEADER.ORT01", "threepl_field": "recipientCityName", "transform": "DIRECT" },
+      { "sap_field": "HEADER.STRAS", "threepl_field": "recipientAddress", "transform": "DIRECT" },
+      { "sap_field": "HEADER.PSTLZ", "threepl_field": "recipientPostCode", "transform": "DIRECT" },
+      { "sap_field": "HEADER.TELF1", "threepl_field": "recipientPhone1", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MATNR", "threepl_field": "orderDetail[].productCode", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MAKTX", "threepl_field": "orderDetail[].productName", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].LFIMG", "threepl_field": "orderDetail[].quantity", "transform": "DIRECT" }
+    ],
+    "headers": [{ "key": "Content-Type", "value": "application/json" }],
+    "security_profile_id": "b0a00001-3007-4001-a001-000000000007",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gi/horoz-export-road",
+    "response_rules": [
+      { "source_field": "response.responseCode", "target_field": "status_code", "transform": "DIRECT" },
+      { "source_field": "response.responseMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
+  },
+  {
+    "id": "fm_horoz_export_airorder",
+    "process_type": "GI",
+    "company_code": "HOROZ_EXPORT",
+    "description": "Havayolu G\u00f6nderi \u2013 Horoz createAirOrder",
+    "direction": "SAP_TO_3PL",
+    "http_method": "POST",
+    "api_endpoint": "http://b2btest.horoz.com.tr:7801/eexport_test/v1/createAirOrder",
+    "sap_sample_json": {
+      "HEADER": {
+        "VBELN": "",
+        "NAME1": "",
+        "LAND1": "",
+        "REGIO": "",
+        "ORT01": "",
+        "STRAS": "",
+        "PSTLZ": "",
+        "TELF1": "",
+        "SMTP_ADDR": ""
+      },
+      "ITEMS": [{ "MATNR": "", "MAKTX": "", "LFIMG": 0, "NETPR": 0, "WAERK": "" }]
+    },
+    "threepl_sample_json": {
+      "customerOrderNumber": "",
+      "recipientName": "",
+      "recipientCountry": "",
+      "recipientState": "",
+      "recipientCity": "",
+      "recipientAddress": "",
+      "recipientPostCode": "",
+      "recipientPhone": "",
+      "recipientEmail": "",
+      "amountType": "ECONOMY",
+      "shipmentType": "MICROEXPORT",
+      "containerDetails": [{ "productNameEn": "", "quantity": 0, "unitPrice": 0, "currency": "EUR" }]
+    },
+    "field_rules": [
+      { "sap_field": "HEADER.VBELN", "threepl_field": "customerOrderNumber", "transform": "DIRECT" },
+      { "sap_field": "HEADER.NAME1", "threepl_field": "recipientName", "transform": "DIRECT" },
+      { "sap_field": "HEADER.LAND1", "threepl_field": "recipientCountry", "transform": "DIRECT" },
+      { "sap_field": "HEADER.REGIO", "threepl_field": "recipientState", "transform": "DIRECT" },
+      { "sap_field": "HEADER.ORT01", "threepl_field": "recipientCity", "transform": "DIRECT" },
+      { "sap_field": "HEADER.STRAS", "threepl_field": "recipientAddress", "transform": "DIRECT" },
+      { "sap_field": "HEADER.PSTLZ", "threepl_field": "recipientPostCode", "transform": "DIRECT" },
+      { "sap_field": "HEADER.TELF1", "threepl_field": "recipientPhone", "transform": "DIRECT" },
+      { "sap_field": "HEADER.SMTP_ADDR", "threepl_field": "recipientEmail", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].MAKTX", "threepl_field": "containerDetails[].productNameEn", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].LFIMG", "threepl_field": "containerDetails[].quantity", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].NETPR", "threepl_field": "containerDetails[].unitPrice", "transform": "DIRECT" },
+      { "sap_field": "ITEMS[].WAERK", "threepl_field": "containerDetails[].currency", "transform": "DIRECT" }
+    ],
+    "headers": [{ "key": "Content-Type", "value": "application/json" }],
+    "security_profile_id": "b0a00001-3007-4001-a001-000000000007",
+    "is_active": true,
+    "source_api_endpoint": "/api/inbound/gi/horoz-export-air",
+    "response_rules": [
+      { "source_field": "response.responseCode", "target_field": "status_code", "transform": "DIRECT" },
+      { "source_field": "response.responseMessage", "target_field": "message", "transform": "DIRECT" }
+    ]
   }
 ]

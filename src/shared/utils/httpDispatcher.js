@@ -72,6 +72,18 @@ async function resolveSecurityHeaders(securityProfileId) {
       return { 'Authorization': 'Bearer ' + cfg.token };
     }
 
+    case 'PROCESS_KEY': {
+      // Horoz API'lerinde processKey iki modda kullanılır:
+      //   injection: "header" → Header'a eklenir (Yurtiçi Dağıtım, Kargo Takip)
+      //   injection: "body"   → Body'ye enjekte edilir (Depolama, E-Ticaret)
+      const keyField = cfg.key_field || 'processKey';
+      if (cfg.injection === 'header') {
+        return { [keyField]: cfg.key_value };
+      }
+      // Default: body injection
+      return { _bodyParams: { [keyField]: cfg.key_value } };
+    }
+
     default:
       return {};
   }
@@ -158,12 +170,23 @@ async function dispatch(opts) {
     headers.forEach(h => { if (h.key && h.value) reqHeaders[h.key] = h.value; });
 
     // Security header'ları ekle
-    const authHeaders = await resolveSecurityHeaders(securityProfileId);
-    Object.assign(reqHeaders, authHeaders);
+    const authResult = await resolveSecurityHeaders(securityProfileId);
+    // PROCESS_KEY gibi body-injection auth tipleri _bodyParams döner
+    const bodyParams = authResult._bodyParams;
+    if (bodyParams) delete authResult._bodyParams;
+    Object.assign(reqHeaders, authResult);
+
+    // Body hazırla (PROCESS_KEY varsa body'ye enjekte et)
+    let finalBody = body;
+    if (bodyParams && finalBody && typeof finalBody === 'object') {
+      finalBody = { ...bodyParams, ...finalBody };
+    } else if (bodyParams && !finalBody) {
+      finalBody = { ...bodyParams };
+    }
 
     const fetchOpts = { method, headers: reqHeaders };
-    if (method !== 'GET' && body) {
-      fetchOpts.body = JSON.stringify(body);
+    if (method !== 'GET' && finalBody) {
+      fetchOpts.body = JSON.stringify(finalBody);
     }
 
     logger.info('Dispatch to 3PL', { url, method });

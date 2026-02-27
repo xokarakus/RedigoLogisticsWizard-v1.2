@@ -6,6 +6,8 @@ const config = require('./shared/config');
 const logger = require('./shared/utils/logger');
 const sapClient = require('./shared/sap/client');
 const { setupAuth, authenticate, requireScope } = require('./shared/middleware/auth');
+const pgQueue = require('./shared/queue/pgQueue');
+const queueHandlers = require('./modules/work-order/services/WorkOrderQueueHandler');
 
 const app = express();
 
@@ -47,6 +49,45 @@ app.use('/api/reconciliation', authenticate, require('./api/routes/reconciliatio
 app.use('/api/inventory', authenticate, require('./api/routes/inventory'));
 app.use('/api/config', authenticate, require('./api/routes/config'));
 
+// ── Queue API (kuyruk yönetimi) ──
+app.get('/api/queue/stats', authenticate, async (req, res) => {
+  try {
+    const stats = await pgQueue.getStats();
+    res.json(stats);
+  } catch (err) {
+    logger.error('Queue stats error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/queue/jobs', authenticate, async (req, res) => {
+  try {
+    const { status, correlation_id, job_type, limit, offset } = req.query;
+    const jobs = await pgQueue.getJobs({
+      status, correlation_id, job_type,
+      limit: Number(limit) || 50,
+      offset: Number(offset) || 0
+    });
+    res.json({ data: jobs, count: jobs.length });
+  } catch (err) {
+    logger.error('Queue jobs error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/queue/jobs/:id/retry', authenticate, async (req, res) => {
+  try {
+    const job = await pgQueue.retryJob(req.params.id);
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found or not in DEAD status' });
+    }
+    res.json({ message: 'Job re-queued', job });
+  } catch (err) {
+    logger.error('Queue retry error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
@@ -61,6 +102,10 @@ app.use((err, req, res, _next) => {
 // Startup
 async function start() {
   await sapClient.initialize();
+
+  // PostgreSQL Queue Worker başlat
+  pgQueue.startWorker(queueHandlers);
+
   app.listen(config.port, () => {
     logger.info(`Redigo Logistics Cockpit v1.2 running on port ${config.port}`);
     logger.info(`Environment: ${config.env}`);
@@ -70,6 +115,13 @@ async function start() {
 start().catch((err) => {
   logger.error('Failed to start', { error: err.message });
   process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, stopping queue worker...');
+  pgQueue.stopWorker();
+  process.exit(0);
 });
 
 module.exports = app;

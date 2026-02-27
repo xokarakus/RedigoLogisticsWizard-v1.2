@@ -188,10 +188,12 @@
             <OverflowToolbar>
               <Title text="{i18n>fmTitle}" level="H5" />
               <ToolbarSpacer />
+              <SearchField id="fieldMappingSearch" placeholder="{i18n>btnSearch}" width="300px"
+                search="onSearchFieldMapping" liveChange="onSearchFieldMapping" />
               <Button text="{i18n>fmAddProfile}" icon="sap-icon://add" press="onAddFieldMapping" type="Emphasized" />
             </OverflowToolbar>
 
-            <Table id="fieldMappingTable" items="{cfg>/fieldMappings}" mode="SingleSelectMaster"
+            <Table id="fieldMappingTable" items="{cfg>/fieldMappingsFiltered}" mode="SingleSelectMaster"
               autoPopinMode="true" selectionChange="onSelectFieldMapping">
               <columns>
                 <Column importance="High"><Text text="{i18n>cfgProcessType}" /></Column>

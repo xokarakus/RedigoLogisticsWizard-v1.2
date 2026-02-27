@@ -3,8 +3,8 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const DbStore = require('../../shared/database/dbStore');
 const logger = require('../../shared/utils/logger');
-const { dispatch } = require('../../shared/utils/httpDispatcher');
-const { applyFieldRules, applyResponseRules } = require('../../shared/utils/fieldTransformer');
+const { applyFieldRules } = require('../../shared/utils/fieldTransformer');
+const pgQueue = require('../../shared/queue/pgQueue');
 
 const fieldMappingStore = new DbStore('field_mappings');
 const transactionStore = new DbStore('transaction_logs');
@@ -14,13 +14,13 @@ const transactionStore = new DbStore('transaction_logs');
  * SAP bu endpoint'e POST yaparak kokpite veri gönderir.
  * URL pattern: /api/inbound/:processSlug/:companySlug
  *
- * Tam pipeline:
- * 1. Gelen URL'i field_mappings.json içindeki source_api_endpoint ile eşleştir
+ * Pipeline:
+ * 1. Gelen URL'i field_mappings'deki source_api_endpoint ile eşleştir
  * 2. Eşleşen mapping'in field_rules'ını uygula (SAP → 3PL dönüşümü)
  * 3. INBOUND transaction kaydı oluştur (correlation_id ile)
- * 4. Mapping'de api_endpoint varsa → dönüştürülmüş veriyi 3PL'e gönder
- * 5. OUTBOUND transaction kaydı oluştur (aynı correlation_id)
- * 6. Sonucu döndür
+ * 4. CREATE_WORK_ORDER işini kuyruğa ekle (asenkron)
+ *    → Worker: iş emri oluşturur, api_endpoint varsa DISPATCH_TO_3PL kuyruğa ekler
+ * 5. correlation_id ile hızlı yanıt dön
  */
 router.all('/*', async (req, res) => {
   const incomingPath = '/api/inbound' + req.path;
@@ -86,13 +86,17 @@ router.all('/*', async (req, res) => {
   const rulesApplied = (mapping.field_rules || []).filter(r => r.sap_field && r.threepl_field).length;
 
   // ── Adım 2: INBOUND transaction kaydı ──
+  const deliveryNo = inputPayload.HEADER
+    ? inputPayload.HEADER.VBELN
+    : (inputPayload.VBELN || null);
+
   const inboundTx = await transactionStore.create({
     correlation_id: correlationId,
     direction: 'INBOUND',
     action: 'INBOUND_' + mapping.process_type,
     status: 'SUCCESS',
     sap_function: incomingPath,
-    sap_doc_number: inputPayload.HEADER ? inputPayload.HEADER.VBELN : (inputPayload.VBELN || null),
+    sap_doc_number: deliveryNo,
     sap_request: inputPayload,
     sap_response: transformed,
     error_message: null,
@@ -102,80 +106,25 @@ router.all('/*', async (req, res) => {
     duration_ms: Date.now() - startTime
   });
 
-  // ── Adım 3: 3PL'e Dispatch (api_endpoint varsa) ──
-  let dispatchResult = null;
-  if (mapping.api_endpoint) {
-    const dispatchStartTime = Date.now();
-    const dispatchStartedAt = new Date().toISOString();
+  // ── Adım 3: CREATE_WORK_ORDER kuyruğa ekle ──
+  const job = await pgQueue.enqueue('CREATE_WORK_ORDER', correlationId, {
+    original: inputPayload,
+    transformed: transformed,
+    mapping: {
+      id: mapping.id,
+      process_type: mapping.process_type,
+      company_code: mapping.company_code,
+      warehouse_code: mapping.warehouse_code || null,
+      api_endpoint: mapping.api_endpoint || null,
+      http_method: mapping.http_method || 'POST',
+      headers: mapping.headers || [],
+      security_profile_id: mapping.security_profile_id || null,
+      response_rules: mapping.response_rules || []
+    },
+    inbound_tx_id: inboundTx.id
+  }, { delivery_no: deliveryNo });
 
-    try {
-      dispatchResult = await dispatch({
-        url: mapping.api_endpoint,
-        method: mapping.http_method || 'POST',
-        headers: mapping.headers || [],
-        securityProfileId: mapping.security_profile_id,
-        body: transformed
-      });
-
-      // OUTBOUND transaction kaydı
-      await transactionStore.create({
-        correlation_id: correlationId,
-        direction: 'OUTBOUND',
-        action: 'OUTBOUND_' + mapping.process_type,
-        status: dispatchResult.ok ? 'SUCCESS' : 'FAILED',
-        sap_function: mapping.api_endpoint,
-        sap_doc_number: inputPayload.HEADER ? inputPayload.HEADER.VBELN : (inputPayload.VBELN || null),
-        sap_request: transformed,
-        sap_response: dispatchResult.responseBody,
-        error_message: dispatchResult.error,
-        retry_count: 0,
-        started_at: dispatchStartedAt,
-        completed_at: new Date().toISOString(),
-        duration_ms: dispatchResult.duration_ms
-      });
-
-      logger.info('Dispatch completed', {
-        correlation_id: correlationId,
-        target: mapping.api_endpoint,
-        status: dispatchResult.ok ? 'SUCCESS' : 'FAILED',
-        statusCode: dispatchResult.statusCode,
-        duration_ms: dispatchResult.duration_ms
-      });
-    } catch (err) {
-      logger.error('Dispatch unexpected error', { correlation_id: correlationId, error: err.message });
-      dispatchResult = { ok: false, error: err.message, statusCode: 0, duration_ms: Date.now() - dispatchStartTime };
-      await transactionStore.create({
-        correlation_id: correlationId,
-        direction: 'OUTBOUND',
-        action: 'OUTBOUND_' + mapping.process_type,
-        status: 'FAILED',
-        sap_function: mapping.api_endpoint,
-        sap_request: transformed,
-        sap_response: null,
-        error_message: err.message,
-        retry_count: 0,
-        started_at: dispatchStartedAt,
-        completed_at: new Date().toISOString(),
-        duration_ms: Date.now() - dispatchStartTime
-      });
-    }
-  } else {
-    logger.info('Dispatch skipped: no api_endpoint configured', { correlation_id: correlationId });
-  }
-
-  // ── Adım 4: Response rules uygula (3PL yanıtını dönüştür) ──
-  let transformedResponse = null;
-  const responseRules = mapping.response_rules || [];
-  if (dispatchResult && dispatchResult.responseBody && responseRules.length > 0) {
-    try {
-      transformedResponse = applyResponseRules(dispatchResult.responseBody, responseRules);
-      logger.info('Response rules applied', { correlation_id: correlationId, rules_count: responseRules.length });
-    } catch (err) {
-      logger.error('Response rules error', { correlation_id: correlationId, error: err.message });
-    }
-  }
-
-  // ── Adım 5: Sonucu döndür ──
+  // ── Adım 4: Hızlı yanıt dön ──
   res.json({
     status: 'received',
     correlation_id: correlationId,
@@ -190,17 +139,11 @@ router.all('/*', async (req, res) => {
     original_payload: inputPayload,
     transformed_payload: transformed,
     field_rules_applied: rulesApplied,
-    dispatch: dispatchResult ? {
-      target: mapping.api_endpoint,
-      method: mapping.http_method || 'POST',
-      ok: dispatchResult.ok,
-      statusCode: dispatchResult.statusCode,
-      statusText: dispatchResult.statusText,
-      duration_ms: dispatchResult.duration_ms,
-      error: dispatchResult.error,
-      responseBody: dispatchResult.responseBody,
-      transformedResponse: transformedResponse
-    } : { skipped: true, reason: 'No api_endpoint configured' }
+    queue: {
+      job_id: job.id,
+      job_type: 'CREATE_WORK_ORDER',
+      status: 'PENDING'
+    }
   });
 });
 

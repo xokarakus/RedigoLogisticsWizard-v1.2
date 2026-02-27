@@ -42,5 +42,16 @@
     "sap_partner_no": "",
     "is_active": true,
     "id": "id_1771879138959_ivbt"
+  },
+  {
+    "id": "wh_horoz_ist",
+    "code": "WH-HRZ-01",
+    "name": "Horoz \u0130stanbul Depo",
+    "sap_plant": "1000",
+    "sap_stor_loc": "0001",
+    "wms_code": "HRZ01",
+    "company_code": "HOROZ",
+    "sap_partner_no": "",
+    "is_active": true
   }
 ]

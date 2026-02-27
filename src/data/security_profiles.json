@@ -43,7 +43,7 @@
     "environment": "PROD",
     "config": {
       "username": "RDG",
-      "password": "1234"
+      "password": "***"
     },
     "is_active": true
   },
@@ -53,7 +53,7 @@
     "auth_type": "API_KEY",
     "environment": "PROD",
     "config": {
-      "api_key": "DEMO_KEY",
+      "api_key": "***",
       "header_name": "X-API-Key"
     },
     "is_active": true
@@ -66,7 +66,7 @@
     "environment": "QAS",
     "config": {
       "client_id": "m2m",
-      "client_secret": "secret",
+      "client_secret": "***",
       "token_url": "https://demo.duendesoftware.com/connect/token",
       "scope": "api"
     },
@@ -107,6 +107,105 @@
     "config": {
       "api_key": "MOCK_KEY_2026",
       "header_name": "X-Api-Key"
+    },
+    "is_active": true
+  },
+  {
+    "id": "b0a00001-3001-4001-a001-000000000001",
+    "name": "Horoz Lojistik TEST",
+    "company_code": "HOROZ",
+    "auth_type": "PROCESS_KEY",
+    "environment": "QAS",
+    "config": {
+      "key_field": "processKey",
+      "key_value": "HOROZ_TEST_KEY"
+    },
+    "is_active": true
+  },
+  {
+    "id": "b0a00001-3002-4001-a001-000000000002",
+    "name": "Horoz Lojistik PROD",
+    "company_code": "HOROZ",
+    "auth_type": "PROCESS_KEY",
+    "environment": "PROD",
+    "config": {
+      "key_field": "processKey",
+      "key_value": "***"
+    },
+    "is_active": false
+  },
+  {
+    "id": "b0a00001-3003-4001-a001-000000000003",
+    "name": "Horoz Yurti\u00e7i Da\u011f\u0131t\u0131m TEST",
+    "company_code": "HOROZ_DIST",
+    "auth_type": "PROCESS_KEY",
+    "environment": "QAS",
+    "config": {
+      "key_field": "processKey",
+      "key_value": "HOROZ_DIST_TEST_KEY",
+      "injection": "header"
+    },
+    "is_active": true
+  },
+  {
+    "id": "b0a00001-3004-4001-a001-000000000004",
+    "name": "Horoz Kargo Takip TEST",
+    "company_code": "HOROZ_TRACK",
+    "auth_type": "PROCESS_KEY",
+    "environment": "QAS",
+    "config": {
+      "key_field": "processKey",
+      "key_value": "HOROZ_TRACK_TEST_KEY",
+      "injection": "header"
+    },
+    "is_active": true
+  },
+  {
+    "id": "b0a00001-3005-4001-a001-000000000005",
+    "name": "Horoz E-Ticaret Depo TEST",
+    "company_code": "HOROZ_ECOM",
+    "auth_type": "PROCESS_KEY",
+    "environment": "QAS",
+    "config": {
+      "key_field": "processKey",
+      "key_value": "HOROZ_ECOM_TEST_KEY"
+    },
+    "is_active": true
+  },
+  {
+    "id": "b0a00001-3006-4001-a001-000000000006",
+    "name": "Horoz E-\u0130hracat Depo TEST",
+    "company_code": "HOROZ_EXPORT_WH",
+    "auth_type": "PROCESS_KEY",
+    "environment": "QAS",
+    "config": {
+      "key_field": "processKey",
+      "key_value": "HOROZ_EXPORT_WH_TEST_KEY"
+    },
+    "is_active": true
+  },
+  {
+    "id": "b0a00001-3007-4001-a001-000000000007",
+    "name": "Horoz E-\u0130hracat Da\u011f\u0131t\u0131m TEST",
+    "company_code": "HOROZ_EXPORT",
+    "auth_type": "PROCESS_KEY",
+    "environment": "QAS",
+    "config": {
+      "key_field": "processKey",
+      "key_value": "HOROZ_EXPORT_TEST_KEY",
+      "injection": "header"
+    },
+    "is_active": true
+  },
+  {
+    "id": "b0a00001-1004-4001-a001-000000000004",
+    "name": "Mock PROCESS_KEY Test",
+    "company_code": "MOCK",
+    "auth_type": "PROCESS_KEY",
+    "environment": "TEST",
+    "config": {
+      "key_field": "processKey",
+      "key_value": "MOCK_PROCESS_KEY_2026"
     },
     "is_active": true
   }

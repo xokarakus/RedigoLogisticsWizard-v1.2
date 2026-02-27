@@ -20,7 +20,7 @@ sap.ui.define([
         warehouses: [], mappings: [], processConfigs: [], processTypes: [],
         warehouseCount: 0, mappingCount: 0, processConfigCount: 0, processTypeCount: 0,
         selectedType: null, selectedTypeName: "", selectedTypeSteps: [],
-        fieldMappings: [], fieldMappingCount: 0,
+        fieldMappings: [], fieldMappingsFiltered: [], fieldMappingCount: 0,
         selectedFM: null, selectedFMTitle: "", selectedFMSapJson: "", selectedFM3plJson: "", selectedFMRules: [],
         selectedFMHeaders: [], selectedFMSecurityId: "", selectedFMDirection: "SAP_TO_3PL",
         securityForCompany: [], fmTreeNodes: [],
@@ -63,6 +63,7 @@ sap.ui.define([
         var aData = result.data || [];
         aData.forEach(function (fm) { fm.ruleCount = (fm.field_rules || []).length; });
         that._oModel.setProperty("/fieldMappings", aData);
+        that._oModel.setProperty("/fieldMappingsFiltered", aData);
         that._oModel.setProperty("/fieldMappingCount", aData.length);
       }).catch(fnErr);
       API.get("/api/config/security-profiles").then(function (result) {
@@ -583,6 +584,25 @@ sap.ui.define([
     /* ═══════════════════════════════════════════
        Alan Eşleştirmeleri (Field Mappings) – Profil CRUD
        ═══════════════════════════════════════════ */
+
+    onSearchFieldMapping: function (oEvent) {
+      var sQuery = (oEvent.getParameter("newValue") || oEvent.getParameter("query") || "").toLowerCase().trim();
+      var aAll = this._oModel.getProperty("/fieldMappings") || [];
+
+      if (!sQuery) {
+        this._oModel.setProperty("/fieldMappingsFiltered", aAll);
+        return;
+      }
+
+      var aFiltered = aAll.filter(function (o) {
+        return (o.company_code || "").toLowerCase().indexOf(sQuery) >= 0
+          || (o.description || "").toLowerCase().indexOf(sQuery) >= 0
+          || (o.direction || "").toLowerCase().indexOf(sQuery) >= 0
+          || (o.process_type || "").toLowerCase().indexOf(sQuery) >= 0
+          || (o.http_method || "").toLowerCase().indexOf(sQuery) >= 0;
+      });
+      this._oModel.setProperty("/fieldMappingsFiltered", aFiltered);
+    },
 
     onSelectFieldMapping: function (oEvent) {
       var oItem = oEvent.getParameter("listItem");
