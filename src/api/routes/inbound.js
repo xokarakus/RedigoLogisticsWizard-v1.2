@@ -8,6 +8,10 @@ const pgQueue = require('../../shared/queue/pgQueue');
 
 const fieldMappingStore = new DbStore('field_mappings');
 const transactionStore = new DbStore('transaction_logs');
+const workOrderStore = new DbStore('work_orders');
+
+// Tekrar işleme alınmaması gereken durumlar
+const ACTIVE_STATUSES = ['RECEIVED', 'SENT_TO_WMS', 'IN_PROGRESS', 'PARTIALLY_DONE', 'COMPLETED', 'PGI_POSTED', 'GR_POSTED'];
 
 /**
  * Dinamik Inbound Endpoint
@@ -45,6 +49,35 @@ router.all('/*', async (req, res) => {
   const inputPayload = req.body || {};
   const startTime = Date.now();
   const receivedAt = new Date().toISOString();
+
+  // ── Duplike kontrolü: aynı teslimat no ile aktif iş emri var mı? ──
+  const deliveryNo = inputPayload.HEADER
+    ? inputPayload.HEADER.VBELN
+    : (inputPayload.VBELN || null);
+
+  if (deliveryNo) {
+    const existingOrders = await workOrderStore.readAll();
+    const duplicate = existingOrders.find(wo =>
+      wo.sap_delivery_no === deliveryNo && ACTIVE_STATUSES.includes(wo.status)
+    );
+
+    if (duplicate) {
+      logger.warn('Inbound: duplicate delivery rejected', {
+        delivery_no: deliveryNo,
+        existing_work_order: duplicate.id,
+        existing_status: duplicate.status,
+        existing_correlation_id: duplicate.correlation_id
+      });
+      return res.status(409).json({
+        error: 'Bu teslimat zaten isleniyor',
+        delivery_no: deliveryNo,
+        existing_work_order_id: duplicate.id,
+        existing_correlation_id: duplicate.correlation_id,
+        existing_status: duplicate.status
+      });
+    }
+  }
+
   const correlationId = uuidv4();
 
   logger.info('Inbound: received data', {
@@ -86,10 +119,6 @@ router.all('/*', async (req, res) => {
   const rulesApplied = (mapping.field_rules || []).filter(r => r.sap_field && r.threepl_field).length;
 
   // ── Adım 2: INBOUND transaction kaydı ──
-  const deliveryNo = inputPayload.HEADER
-    ? inputPayload.HEADER.VBELN
-    : (inputPayload.VBELN || null);
-
   const inboundTx = await transactionStore.create({
     correlation_id: correlationId,
     direction: 'INBOUND',

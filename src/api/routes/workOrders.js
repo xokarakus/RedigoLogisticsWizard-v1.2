@@ -4,6 +4,7 @@ const DbStore = require('../../shared/database/dbStore');
 
 const store = new DbStore('work_orders');
 const pcStore = new DbStore('process_configs');
+const ptStore = new DbStore('process_types');
 
 // Build lookup key from work order fields
 function configKey(plantCode, warehouseCode, deliveryType) {
@@ -22,19 +23,27 @@ router.get('/', async (req, res) => {
     data = data.filter(o => o.order_type === type);
   }
 
-  // Enrich with process_type from process_configs
+  // process_types tablosundan kod→ad eşleştirmesi
+  const processTypes = await ptStore.readAll();
+  const ptMap = {};
+  processTypes.forEach(pt => { ptMap[pt.code] = pt.name; });
+
+  // Enrich: process_type zaten work_order'da varsa kullan, yoksa process_configs'den bul
   const configs = await pcStore.readAll();
   const configMap = {};
   configs.forEach(c => {
     configMap[configKey(c.plant_code, c.warehouse_code, c.delivery_type)] = c;
   });
   data = data.map(o => {
-    const key = configKey(o.plant_code || '1000', o.warehouse_code, o.sap_delivery_type);
-    const cfg = configMap[key];
-    if (cfg) {
-      o.process_type = cfg.process_type;
-      o.process_type_desc = cfg.delivery_type_desc;
+    if (!o.process_type) {
+      const key = configKey(o.plant_code || '1000', o.warehouse_code, o.sap_delivery_type);
+      const cfg = configMap[key];
+      if (cfg) {
+        o.process_type = cfg.process_type;
+      }
     }
+    // process_type_desc her zaman process_types tablosundan gelsin
+    o.process_type_desc = ptMap[o.process_type] || '';
     return o;
   });
 
@@ -52,14 +61,19 @@ router.get('/:id', async (req, res) => {
   const item = await store.findById(req.params.id);
   if (!item) return res.status(404).json({ error: 'Kayit bulunamadi' });
 
-  // Enrich single item too
-  const configs = await pcStore.readAll();
-  const key = configKey(item.plant_code || '1000', item.warehouse_code, item.sap_delivery_type);
-  const cfg = configs.find(c => configKey(c.plant_code, c.warehouse_code, c.delivery_type) === key);
-  if (cfg) {
-    item.process_type = cfg.process_type;
-    item.process_type_desc = cfg.delivery_type_desc;
+  // Enrich: process_type zaten varsa kullan, yoksa process_configs'den bul
+  if (!item.process_type) {
+    const configs = await pcStore.readAll();
+    const key = configKey(item.plant_code || '1000', item.warehouse_code, item.sap_delivery_type);
+    const cfg = configs.find(c => configKey(c.plant_code, c.warehouse_code, c.delivery_type) === key);
+    if (cfg) {
+      item.process_type = cfg.process_type;
+    }
   }
+  // process_type_desc her zaman process_types tablosundan gelsin
+  const processTypes = await ptStore.readAll();
+  const pt = processTypes.find(p => p.code === item.process_type);
+  item.process_type_desc = pt ? pt.name : '';
 
   res.json({ data: item });
 });

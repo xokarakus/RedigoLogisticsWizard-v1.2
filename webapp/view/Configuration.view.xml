@@ -281,10 +281,11 @@
                 </l:content>
               </l:Grid>
 
-              <!-- JSON Panelleri: Yone gore etiketlenir -->
+              <!-- JSON Panelleri: Yone gore etiketlenir, varsayilan kapali -->
               <l:Grid defaultSpan="L6 M6 S12">
                 <l:content>
-                  <Panel headerText="{= ${cfg>/selectedFMDirection} === '3PL_TO_SAP' ? '3PL JSON (Kaynak)' : 'SAP JSON (Kaynak)'}">
+                  <Panel expandable="true" expanded="false"
+                    headerText="{= ${cfg>/selectedFMDirection} === '3PL_TO_SAP' ? '3PL JSON (Kaynak)' : 'SAP JSON (Kaynak)'}">
                     <OverflowToolbar>
                       <ToolbarSpacer />
                       <Button text="{i18n>fmExtractFields}" icon="sap-icon://detail-view" press="onExtractSapFields" />
@@ -292,9 +293,11 @@
                     <TextArea
                       value="{cfg>/selectedFMSapJson}"
                       rows="12" width="100%" editable="true"
+                      change="onSapJsonChange"
                       class="sapUiTinyMargin" />
                   </Panel>
-                  <Panel headerText="{= ${cfg>/selectedFMDirection} === '3PL_TO_SAP' ? 'SAP JSON (Hedef)' : '3PL JSON (Hedef)'}">
+                  <Panel expandable="true" expanded="false"
+                    headerText="{= ${cfg>/selectedFMDirection} === '3PL_TO_SAP' ? 'SAP JSON (Hedef)' : '3PL JSON (Hedef)'}">
                     <OverflowToolbar>
                       <ToolbarSpacer />
                       <Button text="{i18n>fmExtractFields}" icon="sap-icon://detail-view" press="onExtract3plFields" />
@@ -302,6 +305,7 @@
                     <TextArea
                       value="{cfg>/selectedFM3plJson}"
                       rows="12" width="100%" editable="true"
+                      change="on3plJsonChange"
                       class="sapUiTinyMargin" />
                   </Panel>
                 </l:content>
@@ -321,12 +325,13 @@
                   <!-- Grup dugumu -->
                   <HBox visible="{= ${cfg>_nodeType} === 'group'}"
                     alignItems="Center" class="sapUiTinyMarginBeginEnd">
+                    <core:Icon src="sap-icon://folder-blank" color="#0854a0" class="sapUiTinyMarginEnd" />
                     <Title text="{cfg>_label}" level="H6" />
                   </HBox>
                   <!-- Alan dugumu — Inline PO-tarzi -->
                   <HBox visible="{= ${cfg>_nodeType} === 'field'}"
                     alignItems="Center" class="sapUiTinyMarginBeginEnd">
-                    <ObjectStatus text="{cfg>_sapFieldShort}"
+                    <ObjectStatus text="{cfg>_sapFieldShort}" tooltip="{cfg>_sapField}"
                       state="{= ${cfg>_mapped} ? 'Warning' : 'None'}" class="sapUiTinyMarginEnd" />
                     <Input value="{cfg>_sample}" width="8rem" class="sapUiTinyMarginEnd"
                       change="onSampleValueChange" placeholder="..." />

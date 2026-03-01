@@ -9,9 +9,17 @@
     #loadMsg { padding: 40px; font-family: Arial; color: #555; }
   </style>
   <script>
-    window.onerror = function(msg, url, line) {
-      document.body.insertAdjacentHTML("beforeend", '<div class="errBox">JS Error: ' + msg + '\n' + url + ':' + line + '</div>');
+    window.onerror = function(msg, url, line, col, err) {
+      if (msg === "Script error." && !url) return true;
+      var detail = msg + "\n" + (url || "(unknown)") + ":" + line;
+      if (err && err.stack) detail += "\n" + err.stack;
+      document.body.insertAdjacentHTML("beforeend", '<div class="errBox">JS Error: ' + detail + '</div>');
     };
+    window.addEventListener("unhandledrejection", function(e) {
+      var msg = e.reason ? (e.reason.message || String(e.reason)) : "Unknown";
+      var stack = e.reason && e.reason.stack ? "\n" + e.reason.stack : "";
+      document.body.insertAdjacentHTML("beforeend", '<div class="errBox">Unhandled Promise: ' + msg + stack + '</div>');
+    });
   </script>
   <script
     id="sap-ui-bootstrap"

@@ -39,15 +39,18 @@ async function handleCreateWorkOrder(job) {
   const soldTo = header.KUNAG || original.KUNAG || null;
   const docDate = header.ERDAT || original.ERDAT || null;
 
-  // ITEMS → lines
+  // ITEMS → lines (WorkOrderDetail.view.xml formatına uyumlu)
   const items = original.ITEMS || original.items || [];
   const lines = items.map((item, idx) => ({
-    line_no: item.POSNR || String((idx + 1) * 10),
-    material: item.MATNR || item.material,
-    quantity: parseFloat(item.LFIMG || item.quantity || 0),
-    uom: item.VRKME || item.uom || 'EA',
-    batch: item.CHARG || item.batch || null,
-    description: item.MAKTX || item.description || null
+    sap_item_no: item.POSNR || String((idx + 1) * 10),
+    sap_material: item.MATNR || item.material || '',
+    sap_material_desc: item.MAKTX || item.description || '',
+    sap_batch: item.CHARG || item.batch || '',
+    sap_requested_qty: parseFloat(item.LFIMG || item.quantity || 0),
+    wms_picked_qty: 0,
+    final_qty: 0,
+    sap_uom: item.VRKME || item.uom || 'EA',
+    is_closed: false
   }));
 
   // Process type → order_type eşlemesi
@@ -57,13 +60,11 @@ async function handleCreateWorkOrder(job) {
     orderType = 'INBOUND';
   }
 
-  // İdempotent: aynı delivery_no + correlation_id varsa güncelle
+  // İdempotent: aynı delivery_no ile aktif iş emri varsa güncelle
   let workOrder = null;
   if (deliveryNo) {
     const existing = await workOrderStore.readAll();
-    workOrder = existing.find(wo =>
-      wo.sap_delivery_no === deliveryNo && wo.correlation_id === job.correlation_id
-    );
+    workOrder = existing.find(wo => wo.sap_delivery_no === deliveryNo);
   }
 
   if (workOrder) {
@@ -71,6 +72,7 @@ async function handleCreateWorkOrder(job) {
     workOrder = await workOrderStore.update(workOrder.id, {
       sap_delivery_type: deliveryType || workOrder.sap_delivery_type,
       plant_code: plantCode,
+      process_type: processType || workOrder.process_type,
       lines: lines.length > 0 ? lines : workOrder.lines,
       sap_raw_payload: original,
       status: workOrder.status === 'FAILED' ? 'RECEIVED' : workOrder.status
@@ -90,6 +92,7 @@ async function handleCreateWorkOrder(job) {
       sap_ship_to: shipTo,
       sap_sold_to: soldTo,
       order_type: orderType,
+      process_type: processType,
       status: 'RECEIVED',
       warehouse_code: mapping.warehouse_code || null,
       plant_code: plantCode,
@@ -188,7 +191,13 @@ async function handleDispatchTo3PL(job) {
   });
 
   if (!dispatchResult.ok) {
-    // Başarısız → throw → retry mekanizması devreye girecek
+    // İş emri durumunu güncelle → entegrasyonda hata var
+    await workOrderStore.update(work_order_id, {
+      status: 'DISPATCH_FAILED',
+      wms_raw_payload: dispatchResult.responseBody
+    });
+
+    // throw → retry mekanizması devreye girecek
     throw new Error(
       '3PL dispatch failed: HTTP ' + dispatchResult.statusCode +
       ' — ' + (dispatchResult.error || 'Unknown error')

@@ -22,13 +22,22 @@ sap.ui.define([], function () {
 
       return fetch(sFullUrl, oOptions)
         .then(function (res) {
-          if (!res.ok) throw new Error("HTTP " + res.status);
+          if (!res.ok) {
+            return res.text().then(function (body) {
+              var detail = "";
+              try { detail = JSON.parse(body).error || body; } catch (_) { detail = body; }
+              throw new Error("HTTP " + res.status + ": " + detail);
+            });
+          }
           return res.json();
         })
         .catch(function (err) {
-          console.warn("[API] " + sMethod + " " + sUrl + " failed:", err.message);
-          // Return empty response so views don't break
-          return { data: [], count: 0 };
+          console.error("[API] " + sMethod + " " + sUrl + " failed:", err.message);
+          // GET için boş liste dön (view'lar kırılmasın), write için null dön (kaydetme kontrolü çalışsın)
+          if (sMethod === "GET") {
+            return { data: [], count: 0 };
+          }
+          return { data: null, error: err.message };
         });
     },
 

@@ -9,6 +9,7 @@
  *   POST /mock/secure-basic     → Basic auth dogrular
  *   POST /mock/secure-apikey    → X-Api-Key header dogrular
  *   POST /mock/secure-oauth2    → Bearer token dogrular
+ *   POST /mock/secure-processkey→ Body icindeki processKey dogrular (Horoz tipi)
  *   POST /mock/open-api         → Auth'suz, her zaman 200
  *
  * Kullanim: npm run test-services
@@ -25,6 +26,7 @@ const OAUTH2_CLIENT_SECRET = 'test_secret';
 const BASIC_USER = 'test';
 const BASIC_PASS = 'test123';
 const API_KEY = 'MOCK_KEY_2026';
+const PROCESS_KEY = 'MOCK_PROCESS_KEY_2026';
 
 // Basit JWT benzeri token (gercek JWT degil, test icin yeterli)
 let tokenCounter = 0;
@@ -219,6 +221,45 @@ async function handleSecureOAuth2(req, res) {
   });
 }
 
+async function handleSecureProcessKey(req, res) {
+  const body = await parseBody(req);
+  // processKey hem body'de hem header'da olabilir (Horoz Depolama=body, Dagitim=header)
+  const processKey = body.processKey || req.headers['processkey'];
+  const source = body.processKey ? 'body' : (req.headers['processkey'] ? 'header' : null);
+
+  if (!processKey) {
+    log('POST', '/mock/secure-processkey', 401, '→ processKey eksik (ne body ne header)');
+    return json(res, 401, {
+      error: 'unauthorized',
+      message: 'processKey gerekli (body veya header)',
+      received_headers: filterHeaders(req.headers),
+      received_body: body,
+      timestamp: timestamp()
+    });
+  }
+
+  if (processKey !== PROCESS_KEY) {
+    log('POST', '/mock/secure-processkey', 403, '→ wrong processKey: ' + processKey.substring(0, 10) + '...');
+    return json(res, 403, {
+      error: 'forbidden',
+      message: 'Gecersiz processKey',
+      timestamp: timestamp()
+    });
+  }
+
+  log('POST', '/mock/secure-processkey', 200, '→ valid processKey (' + source + ')');
+  return json(res, 200, {
+    result: '0',
+    errorCode: '',
+    systemMessage: 'Islem basarili (mock)',
+    auth_type: 'PROCESS_KEY',
+    processKey_source: source,
+    received_body: body,
+    received_headers: filterHeaders(req.headers),
+    timestamp: timestamp()
+  });
+}
+
 async function handleOpenApi(req, res) {
   const body = await parseBody(req);
   log(req.method, '/mock/open-api', 200, '→ no auth required');
@@ -269,6 +310,8 @@ const server = http.createServer(async (req, res) => {
         return await handleSecureApiKey(req, res);
       case '/mock/secure-oauth2':
         return await handleSecureOAuth2(req, res);
+      case '/mock/secure-processkey':
+        return await handleSecureProcessKey(req, res);
       case '/mock/open-api':
         return await handleOpenApi(req, res);
       case '/health':
@@ -293,11 +336,13 @@ server.listen(PORT, () => {
   console.log('    POST /mock/secure-oauth2      Bearer token dogrulama');
   console.log('    POST /mock/secure-basic       Basic auth dogrulama');
   console.log('    POST /mock/secure-apikey      API key dogrulama');
+  console.log('    POST /mock/secure-processkey  Body processKey dogrulama (Horoz tipi)');
   console.log('    POST /mock/open-api           Auth\'suz endpoint');
   console.log('    GET  /health                  Saglik kontrolu\n');
   console.log('  Test Credentials:');
-  console.log('    OAUTH2:  client_id=\x1b[32mtest_client\x1b[0m  client_secret=\x1b[32mtest_secret\x1b[0m');
-  console.log('    BASIC:   username=\x1b[32mtest\x1b[0m  password=\x1b[32mtest123\x1b[0m');
-  console.log('    API_KEY: \x1b[32mMOCK_KEY_2026\x1b[0m (header: X-Api-Key)\n');
+  console.log('    OAUTH2:      client_id=\x1b[32mtest_client\x1b[0m  client_secret=\x1b[32mtest_secret\x1b[0m');
+  console.log('    BASIC:       username=\x1b[32mtest\x1b[0m  password=\x1b[32mtest123\x1b[0m');
+  console.log('    API_KEY:     \x1b[32mMOCK_KEY_2026\x1b[0m (header: X-Api-Key)');
+  console.log('    PROCESS_KEY: \x1b[32mMOCK_PROCESS_KEY_2026\x1b[0m (body: processKey)\n');
   console.log('  \x1b[90mCtrl+C ile durdur\x1b[0m\n');
 });

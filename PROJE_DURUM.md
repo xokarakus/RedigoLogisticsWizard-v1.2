@@ -241,3 +241,4 @@ RedigoLogisticsWizard-v1.2/
 - Backend restart için benden onay alman gerek yok.
 - varsayımda bulunma ban sor
 - Karar alırken neye göre karar alınacağını paylaş
+- Aksini söylemedikçe tüm çalışmLeı sadece RedigoLogisticsWizard-v1.2 
