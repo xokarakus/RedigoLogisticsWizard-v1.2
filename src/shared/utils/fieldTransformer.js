@@ -43,6 +43,12 @@ function applyTransform(value, transform) {
         return value.substring(0, 4) + '-' + value.substring(4, 6) + '-' + value.substring(6, 8);
       }
       return value;
+    case 'TO_NUMBER': {
+      const n = Number(value);
+      return isNaN(n) ? 0 : n;
+    }
+    case 'TO_STRING':
+      return value == null ? '' : String(value);
     case 'LOOKUP':
       return value;
     default:

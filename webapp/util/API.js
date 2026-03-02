@@ -1,4 +1,4 @@
-sap.ui.define([], function () {
+sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
   "use strict";
 
   var API = {
@@ -33,9 +33,10 @@ sap.ui.define([], function () {
         })
         .catch(function (err) {
           console.error("[API] " + sMethod + " " + sUrl + " failed:", err.message);
-          // GET için boş liste dön (view'lar kırılmasın), write için null dön (kaydetme kontrolü çalışsın)
+          MessageToast.show("Sunucu hatas\u0131: " + err.message, { duration: 5000 });
+          // GET için boş liste + error dön (view'lar kırılmasın ama hata gösterilebilsin)
           if (sMethod === "GET") {
-            return { data: [], count: 0 };
+            return { data: [], count: 0, error: err.message };
           }
           return { data: null, error: err.message };
         });

@@ -176,7 +176,7 @@ class DeliveryExecutionService {
       .map((line) => ({
         DELIV_NUMB: workOrder.sap_delivery_no,
         DELIV_ITEM: line.sap_item_no,
-        DLV_QTY: line.wms_picked_qty,
+        DLV_QTY: Number(line.wms_picked_qty) || 0,
         DLV_QTY_IMPU: 'X', // Flag: qty is being changed
       }));
 
@@ -233,7 +233,7 @@ class DeliveryExecutionService {
       VBPOK_TAB: lines.map((line) => ({
         VBELN_VL: workOrder.sap_delivery_no,
         POSNR_VL: line.sap_item_no,
-        LFIMG: line.sap_final_qty || line.wms_picked_qty,
+        LFIMG: Number(line.sap_final_qty || line.wms_picked_qty) || 0,
       })),
     };
 
@@ -254,10 +254,10 @@ class DeliveryExecutionService {
   async _postGoodsReceipt(workOrder, lines, isFinal, txLogId) {
     const gmItems = lines.map((line) => ({
       MATERIAL: line.sap_material,
-      PLANT: workOrder.sap_plant || '',
+      PLANT: workOrder.sap_plant || workOrder.plant_code || '',
       STGE_LOC: workOrder.sap_stor_loc || '',
       MOVE_TYPE: '101',
-      ENTRY_QNT: line.wms_picked_qty,
+      ENTRY_QNT: Number(line.wms_picked_qty) || 0,
       ENTRY_UOM: line.sap_uom,
       PO_NUMBER: '', // Purchase order if applicable
       DELIV_NUMB: workOrder.sap_delivery_no,
@@ -321,8 +321,10 @@ class DeliveryExecutionService {
    * Validate over-delivery against SAP tolerance (UEBTO)
    */
   async _validateOverDelivery(workOrder, line) {
-    const overQty = line.wms_picked_qty - line.sap_requested_qty;
-    const overPct = (overQty / line.sap_requested_qty) * 100;
+    const pickedQty = Number(line.wms_picked_qty) || 0;
+    const requestedQty = Number(line.sap_requested_qty) || 0;
+    const overQty = pickedQty - requestedQty;
+    const overPct = requestedQty > 0 ? (overQty / requestedQty) * 100 : (overQty > 0 ? Infinity : 0);
 
     // TODO: Fetch actual UEBTO from SAP material master
     const tolerancePct = 10; // Default 10%
@@ -376,7 +378,7 @@ class DeliveryExecutionService {
         delivery: workOrder.sap_delivery_no,
         openLines: partialLines.map((l) => ({
           item: l.sap_item_no,
-          remaining: l.sap_requested_qty - l.wms_picked_qty,
+          remaining: (Number(l.sap_requested_qty) || 0) - (Number(l.wms_picked_qty) || 0),
         })),
       });
     }

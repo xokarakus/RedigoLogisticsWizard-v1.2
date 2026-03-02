@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const DbStore = require('../../shared/database/dbStore');
 const { requireScope } = require('../../shared/middleware/auth');
+const logger = require('../../shared/utils/logger');
+const { maskCredentials, isMasked, SENSITIVE_KEYS } = require('../../shared/utils/securityUtils');
 
 const adminOnly = requireScope('Admin');
 
@@ -18,18 +20,37 @@ const aliasStore = new DbStore('sap_field_aliases');
    ═══════════════════════════════════════════ */
 
 router.get('/warehouses', async (req, res) => {
-  res.json({ data: await warehouseStore.readAll() });
+  try {
+    const { limit, offset } = req.query;
+    const opts = {};
+    if (limit) opts.limit = Number(limit);
+    if (offset) opts.offset = Number(offset);
+    res.json({ data: await warehouseStore.readAll(opts) });
+  } catch (err) {
+    logger.error('GET /config/warehouses error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.post('/warehouses', adminOnly, async (req, res) => {
-  const item = await warehouseStore.create(req.body);
-  res.status(201).json({ data: item });
+  try {
+    const item = await warehouseStore.create(req.body);
+    res.status(201).json({ data: item });
+  } catch (err) {
+    logger.error('POST /config/warehouses error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.put('/warehouses/:id', adminOnly, async (req, res) => {
-  const updated = await warehouseStore.update(req.params.id, req.body);
-  if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
-  res.json({ data: updated });
+  try {
+    const updated = await warehouseStore.update(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    res.json({ data: updated });
+  } catch (err) {
+    logger.error('PUT /config/warehouses error', { error: err.message, id: req.params.id });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.delete('/warehouses/:id', adminOnly, async (req, res) => {
@@ -47,18 +68,37 @@ router.delete('/warehouses/:id', adminOnly, async (req, res) => {
    ═══════════════════════════════════════════ */
 
 router.get('/mappings', async (req, res) => {
-  res.json({ data: await mappingStore.readAll() });
+  try {
+    const { limit, offset } = req.query;
+    const opts = {};
+    if (limit) opts.limit = Number(limit);
+    if (offset) opts.offset = Number(offset);
+    res.json({ data: await mappingStore.readAll(opts) });
+  } catch (err) {
+    logger.error('GET /config/mappings error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.post('/mappings', adminOnly, async (req, res) => {
-  const item = await mappingStore.create(req.body);
-  res.status(201).json({ data: item });
+  try {
+    const item = await mappingStore.create(req.body);
+    res.status(201).json({ data: item });
+  } catch (err) {
+    logger.error('POST /config/mappings error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.put('/mappings/:id', adminOnly, async (req, res) => {
-  const updated = await mappingStore.update(req.params.id, req.body);
-  if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
-  res.json({ data: updated });
+  try {
+    const updated = await mappingStore.update(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    res.json({ data: updated });
+  } catch (err) {
+    logger.error('PUT /config/mappings error', { error: err.message, id: req.params.id });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.delete('/mappings/:id', adminOnly, async (req, res) => {
@@ -76,18 +116,37 @@ router.delete('/mappings/:id', adminOnly, async (req, res) => {
    ═══════════════════════════════════════════ */
 
 router.get('/process-configs', async (req, res) => {
-  res.json({ data: await configStore.readAll() });
+  try {
+    const { limit, offset } = req.query;
+    const opts = {};
+    if (limit) opts.limit = Number(limit);
+    if (offset) opts.offset = Number(offset);
+    res.json({ data: await configStore.readAll(opts) });
+  } catch (err) {
+    logger.error('GET /config/process-configs error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.post('/process-configs', adminOnly, async (req, res) => {
-  const item = await configStore.create(req.body);
-  res.status(201).json({ data: item });
+  try {
+    const item = await configStore.create(req.body);
+    res.status(201).json({ data: item });
+  } catch (err) {
+    logger.error('POST /config/process-configs error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.put('/process-configs/:id', adminOnly, async (req, res) => {
-  const updated = await configStore.update(req.params.id, req.body);
-  if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
-  res.json({ data: updated });
+  try {
+    const updated = await configStore.update(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    res.json({ data: updated });
+  } catch (err) {
+    logger.error('PUT /config/process-configs error', { error: err.message, id: req.params.id });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.delete('/process-configs/:id', adminOnly, async (req, res) => {
@@ -105,18 +164,37 @@ router.delete('/process-configs/:id', adminOnly, async (req, res) => {
    ═══════════════════════════════════════════ */
 
 router.get('/process-types', async (req, res) => {
-  res.json({ data: await typeStore.readAll() });
+  try {
+    const { limit, offset } = req.query;
+    const opts = {};
+    if (limit) opts.limit = Number(limit);
+    if (offset) opts.offset = Number(offset);
+    res.json({ data: await typeStore.readAll(opts) });
+  } catch (err) {
+    logger.error('GET /config/process-types error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.post('/process-types', adminOnly, async (req, res) => {
-  const item = await typeStore.create(req.body);
-  res.status(201).json({ data: item });
+  try {
+    const item = await typeStore.create(req.body);
+    res.status(201).json({ data: item });
+  } catch (err) {
+    logger.error('POST /config/process-types error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.put('/process-types/:id', adminOnly, async (req, res) => {
-  const updated = await typeStore.update(req.params.id, req.body);
-  if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
-  res.json({ data: updated });
+  try {
+    const updated = await typeStore.update(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    res.json({ data: updated });
+  } catch (err) {
+    logger.error('PUT /config/process-types error', { error: err.message, id: req.params.id });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.delete('/process-types/:id', adminOnly, async (req, res) => {
@@ -134,22 +212,39 @@ router.delete('/process-types/:id', adminOnly, async (req, res) => {
    ═══════════════════════════════════════════ */
 
 router.get('/field-mappings', async (req, res) => {
-  let data = await fieldMappingStore.readAll();
-  if (req.query.company_code) {
-    data = data.filter(fm => fm.company_code === req.query.company_code);
+  try {
+    const { company_code, limit, offset } = req.query;
+    const opts = {};
+    if (company_code) opts.filter = { company_code };
+    if (limit) opts.limit = Number(limit);
+    if (offset) opts.offset = Number(offset);
+    const data = await fieldMappingStore.readAll(opts);
+    res.json({ data });
+  } catch (err) {
+    logger.error('GET /config/field-mappings error', { error: err.message });
+    res.status(500).json({ error: err.message });
   }
-  res.json({ data });
 });
 
 router.post('/field-mappings', adminOnly, async (req, res) => {
-  const item = await fieldMappingStore.create(req.body);
-  res.status(201).json({ data: item });
+  try {
+    const item = await fieldMappingStore.create(req.body);
+    res.status(201).json({ data: item });
+  } catch (err) {
+    logger.error('POST /config/field-mappings error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.put('/field-mappings/:id', adminOnly, async (req, res) => {
-  const updated = await fieldMappingStore.update(req.params.id, req.body);
-  if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
-  res.json({ data: updated });
+  try {
+    const updated = await fieldMappingStore.update(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    res.json({ data: updated });
+  } catch (err) {
+    logger.error('PUT /config/field-mappings error', { error: err.message, id: req.params.id });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.delete('/field-mappings/:id', adminOnly, async (req, res) => {
@@ -167,22 +262,59 @@ router.delete('/field-mappings/:id', adminOnly, async (req, res) => {
    ═══════════════════════════════════════════ */
 
 router.get('/security-profiles', async (req, res) => {
-  let data = await securityStore.readAll();
-  if (req.query.company_code) {
-    data = data.filter(sp => sp.company_code === req.query.company_code);
+  try {
+    const { company_code, limit, offset } = req.query;
+    const opts = {};
+    if (company_code) opts.filter = { company_code };
+    if (limit) opts.limit = Number(limit);
+    if (offset) opts.offset = Number(offset);
+    const data = await securityStore.readAll(opts);
+    res.json({ data: data.map(maskCredentials) });
+  } catch (err) {
+    logger.error('GET /config/security-profiles error', { error: err.message });
+    res.status(500).json({ error: err.message });
   }
-  res.json({ data });
 });
 
 router.post('/security-profiles', adminOnly, async (req, res) => {
-  const item = await securityStore.create(req.body);
-  res.status(201).json({ data: item });
+  try {
+    const item = await securityStore.create(req.body);
+    res.status(201).json({ data: maskCredentials(item) });
+  } catch (err) {
+    logger.error('POST /config/security-profiles error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.put('/security-profiles/:id', adminOnly, async (req, res) => {
-  const updated = await securityStore.update(req.params.id, req.body);
-  if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
-  res.json({ data: updated });
+  try {
+    const payload = { ...req.body };
+
+    // Merge: masked ("******") credential → preserve existing DB value
+    if (payload.config && typeof payload.config === 'object') {
+      const hasMasked = Object.entries(payload.config)
+        .some(([k, v]) => SENSITIVE_KEYS.has(k) && isMasked(v));
+      if (hasMasked) {
+        const existing = await securityStore.findById(req.params.id);
+        if (existing && existing.config) {
+          const merged = { ...payload.config };
+          for (const key of SENSITIVE_KEYS) {
+            if (isMasked(merged[key]) && existing.config[key] !== undefined) {
+              merged[key] = existing.config[key];
+            }
+          }
+          payload.config = merged;
+        }
+      }
+    }
+
+    const updated = await securityStore.update(req.params.id, payload);
+    if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    res.json({ data: maskCredentials(updated) });
+  } catch (err) {
+    logger.error('PUT /config/security-profiles error', { error: err.message, id: req.params.id });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.delete('/security-profiles/:id', adminOnly, async (req, res) => {
@@ -200,56 +332,61 @@ router.delete('/security-profiles/:id', adminOnly, async (req, res) => {
    ═══════════════════════════════════════════ */
 
 router.get('/process-steps', async (req, res) => {
-  const { plant_code, warehouse_code, delivery_type } = req.query;
-  if (!plant_code || !warehouse_code || !delivery_type) {
-    return res.status(400).json({ error: 'plant_code, warehouse_code, delivery_type zorunlu' });
+  try {
+    const { plant_code, warehouse_code, delivery_type } = req.query;
+    if (!plant_code || !warehouse_code || !delivery_type) {
+      return res.status(400).json({ error: 'plant_code, warehouse_code, delivery_type zorunlu' });
+    }
+
+    const configs = await configStore.readAll();
+    const config = configs.find(c =>
+      c.plant_code === plant_code &&
+      c.warehouse_code === warehouse_code &&
+      c.delivery_type === delivery_type
+    );
+
+    if (!config) {
+      return res.status(404).json({ error: 'Bu kombinasyon icin uyarlama bulunamadi' });
+    }
+
+    const types = await typeStore.readAll();
+    const pType = types.find(t => t.code === config.process_type);
+    const templates = pType ? pType.steps : [];
+
+    res.json({
+      process_config: {
+        plant_code: config.plant_code,
+        warehouse_code: config.warehouse_code,
+        delivery_type: config.delivery_type,
+        delivery_type_desc: config.delivery_type_desc,
+        process_type: config.process_type,
+        mvt_type: config.mvt_type,
+        company_name: config.company_name,
+        company_code: config.company_code,
+        api_base_url: config.api_base_url,
+        bapi_name: config.bapi_name,
+        gm_code: config.gm_code
+      },
+      steps: templates.map(t => ({
+        step_no: t.step_no,
+        name: t.name,
+        source_system: t.source === "3PL" ? config.company_name : t.source,
+        target_system: t.target === "3PL" ? config.company_name : t.target,
+        direction: t.direction,
+        api_endpoint: t.api,
+        status: "BEKLIYOR",
+        enabled: true,
+        company_name: config.company_name,
+        company_api_url: config.api_base_url,
+        bapi_name: config.bapi_name,
+        mvt_type: config.mvt_type,
+        gm_code: config.gm_code
+      }))
+    });
+  } catch (err) {
+    logger.error('GET /config/process-steps error', { error: err.message });
+    res.status(500).json({ error: err.message });
   }
-
-  const configs = await configStore.readAll();
-  const config = configs.find(c =>
-    c.plant_code === plant_code &&
-    c.warehouse_code === warehouse_code &&
-    c.delivery_type === delivery_type
-  );
-
-  if (!config) {
-    return res.status(404).json({ error: 'Bu kombinasyon icin uyarlama bulunamadi' });
-  }
-
-  const types = await typeStore.readAll();
-  const pType = types.find(t => t.code === config.process_type);
-  const templates = pType ? pType.steps : [];
-
-  res.json({
-    process_config: {
-      plant_code: config.plant_code,
-      warehouse_code: config.warehouse_code,
-      delivery_type: config.delivery_type,
-      delivery_type_desc: config.delivery_type_desc,
-      process_type: config.process_type,
-      mvt_type: config.mvt_type,
-      company_name: config.company_name,
-      company_code: config.company_code,
-      api_base_url: config.api_base_url,
-      bapi_name: config.bapi_name,
-      gm_code: config.gm_code
-    },
-    steps: templates.map(t => ({
-      step_no: t.step_no,
-      name: t.name,
-      source_system: t.source === "3PL" ? config.company_name : t.source,
-      target_system: t.target === "3PL" ? config.company_name : t.target,
-      direction: t.direction,
-      api_endpoint: t.api,
-      status: "BEKLIYOR",
-      enabled: true,
-      company_name: config.company_name,
-      company_api_url: config.api_base_url,
-      bapi_name: config.bapi_name,
-      mvt_type: config.mvt_type,
-      gm_code: config.gm_code
-    }))
-  });
 });
 
 /* ═══════════════════════════════════════════
@@ -257,7 +394,12 @@ router.get('/process-steps', async (req, res) => {
    ═══════════════════════════════════════════ */
 
 router.get('/sap-field-aliases', async (req, res) => {
-  res.json({ data: await aliasStore.readAll() });
+  try {
+    res.json({ data: await aliasStore.readAll() });
+  } catch (err) {
+    logger.error('GET /config/sap-field-aliases error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /* ═══════════════════════════════════════════

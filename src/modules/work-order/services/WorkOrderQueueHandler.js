@@ -14,6 +14,12 @@ const logger = require('../../../shared/utils/logger');
 const workOrderStore = new DbStore('work_orders');
 const transactionStore = new DbStore('transaction_logs');
 
+/** Null-safe numeric conversion — NaN, null, undefined, "" → 0 */
+function safeNum(val) {
+  const n = Number(val);
+  return isNaN(n) ? 0 : n;
+}
+
 /**
  * CREATE_WORK_ORDER Handler
  *
@@ -46,7 +52,7 @@ async function handleCreateWorkOrder(job) {
     sap_material: item.MATNR || item.material || '',
     sap_material_desc: item.MAKTX || item.description || '',
     sap_batch: item.CHARG || item.batch || '',
-    sap_requested_qty: parseFloat(item.LFIMG || item.quantity || 0),
+    sap_requested_qty: safeNum(item.LFIMG ?? item.quantity),
     wms_picked_qty: 0,
     final_qty: 0,
     sap_uom: item.VRKME || item.uom || 'EA',

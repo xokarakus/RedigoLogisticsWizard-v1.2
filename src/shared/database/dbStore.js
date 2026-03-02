@@ -31,18 +31,76 @@ class DbStore {
   }
 
   /**
-   * Read all rows from the table.
-   * For sap_field_aliases: returns the aliases JSONB object (not array of rows).
+   * Read rows from the table with optional pagination and filtering.
+   * Backward compatible: readAll() with no args returns all rows.
+   * @param {Object} [options]
+   * @param {number} [options.limit]  - SQL LIMIT
+   * @param {number} [options.offset] - SQL OFFSET
+   * @param {Object} [options.filter] - Key-value pairs for WHERE (equality)
    */
-  async readAll() {
+  async readAll(options = {}) {
     if (this.table === 'sap_field_aliases') {
       const { rows } = await query('SELECT aliases FROM sap_field_aliases WHERE id = 1');
       return rows.length > 0 ? rows[0].aliases : {};
     }
-    const { rows } = await query(
-      `SELECT * FROM "${this.table}" ORDER BY created_at DESC`
-    );
+
+    const { limit, offset, filter } = options;
+    const values = [];
+    const whereClauses = [];
+
+    if (filter && typeof filter === 'object') {
+      for (const [key, val] of Object.entries(filter)) {
+        if (val !== undefined && val !== null) {
+          values.push(val);
+          whereClauses.push(`"${key}" = $${values.length}`);
+        }
+      }
+    }
+
+    let sql = `SELECT * FROM "${this.table}"`;
+    if (whereClauses.length > 0) {
+      sql += ' WHERE ' + whereClauses.join(' AND ');
+    }
+    sql += ' ORDER BY created_at DESC';
+
+    if (limit != null) {
+      values.push(Number(limit));
+      sql += ` LIMIT $${values.length}`;
+    }
+    if (offset != null) {
+      values.push(Number(offset));
+      sql += ` OFFSET $${values.length}`;
+    }
+
+    const { rows } = await query(sql, values.length > 0 ? values : undefined);
     return rows;
+  }
+
+  /**
+   * Count rows in the table with optional filtering.
+   * @param {Object} [filter] - Key-value pairs for WHERE (equality)
+   * @returns {Promise<number>}
+   */
+  async count(filter) {
+    const values = [];
+    const whereClauses = [];
+
+    if (filter && typeof filter === 'object') {
+      for (const [key, val] of Object.entries(filter)) {
+        if (val !== undefined && val !== null) {
+          values.push(val);
+          whereClauses.push(`"${key}" = $${values.length}`);
+        }
+      }
+    }
+
+    let sql = `SELECT COUNT(*) AS total FROM "${this.table}"`;
+    if (whereClauses.length > 0) {
+      sql += ' WHERE ' + whereClauses.join(' AND ');
+    }
+
+    const { rows } = await query(sql, values.length > 0 ? values : undefined);
+    return Number(rows[0].total);
   }
 
   /**

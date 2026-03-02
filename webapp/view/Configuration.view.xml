@@ -198,6 +198,7 @@
               <columns>
                 <Column importance="High"><Text text="{i18n>cfgProcessType}" /></Column>
                 <Column importance="High"><Text text="{i18n>fmCompanyCode}" /></Column>
+                <Column importance="High"><Text text="{i18n>fmCategory}" /></Column>
                 <Column importance="High"><Text text="{i18n>cfgDescription}" /></Column>
                 <Column importance="Medium" hAlign="Center" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>fmDirection}" /></Column>
                 <Column importance="Medium" hAlign="Center" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>fmRuleCount}" /></Column>
@@ -210,6 +211,8 @@
                     <ObjectStatus text="{cfg>process_type}"
                       state="{= ${cfg>process_type} === 'GI' || ${cfg>process_type} === 'SUBCONTRACT_GI' ? 'Warning' : ${cfg>process_type} === 'GR' || ${cfg>process_type} === 'SUBCONTRACT_GR' ? 'Success' : ${cfg>process_type} === 'RETURN' ? 'Error' : 'Information'}" />
                     <ObjectStatus text="{cfg>company_code}" state="Information" />
+                    <ObjectStatus text="{= ${cfg>category} === 'MASTER_DATA' ? ${i18n>fmCategoryMasterData} : ${i18n>fmCategoryWorkOrder}}"
+                      state="{= ${cfg>category} === 'MASTER_DATA' ? 'Success' : 'Warning'}" />
                     <Text text="{cfg>description}" />
                     <ObjectStatus text="{= ${cfg>direction} === '3PL_TO_SAP' ? '3PL \u2192 SAP' : 'SAP \u2192 3PL'}"
                       state="{= ${cfg>direction} === '3PL_TO_SAP' ? 'Success' : 'Warning'}" />

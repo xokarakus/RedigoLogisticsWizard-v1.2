@@ -27,6 +27,7 @@ const ACTIVE_STATUSES = ['RECEIVED', 'SENT_TO_WMS', 'IN_PROGRESS', 'PARTIALLY_DO
  * 5. correlation_id ile hızlı yanıt dön
  */
 router.all('/*', async (req, res) => {
+  try {
   const incomingPath = '/api/inbound' + req.path;
   const mappings = await fieldMappingStore.readAll();
 
@@ -49,13 +50,14 @@ router.all('/*', async (req, res) => {
   const inputPayload = req.body || {};
   const startTime = Date.now();
   const receivedAt = new Date().toISOString();
+  const isWorkOrder = mapping.category !== 'MASTER_DATA';
 
-  // ── Duplike kontrolü: aynı teslimat no ile aktif iş emri var mı? ──
+  // ── Duplike kontrolü: yalnızca WORK_ORDER kategorisi için ──
   const deliveryNo = inputPayload.HEADER
     ? inputPayload.HEADER.VBELN
     : (inputPayload.VBELN || null);
 
-  if (deliveryNo) {
+  if (isWorkOrder && deliveryNo) {
     const existingOrders = await workOrderStore.readAll();
     const duplicate = existingOrders.find(wo =>
       wo.sap_delivery_no === deliveryNo && ACTIVE_STATUSES.includes(wo.status)
@@ -135,29 +137,53 @@ router.all('/*', async (req, res) => {
     duration_ms: Date.now() - startTime
   });
 
-  // ── Adım 3: CREATE_WORK_ORDER kuyruğa ekle ──
-  const job = await pgQueue.enqueue('CREATE_WORK_ORDER', correlationId, {
-    original: inputPayload,
-    transformed: transformed,
-    mapping: {
-      id: mapping.id,
-      process_type: mapping.process_type,
-      company_code: mapping.company_code,
-      warehouse_code: mapping.warehouse_code || null,
-      api_endpoint: mapping.api_endpoint || null,
-      http_method: mapping.http_method || 'POST',
-      headers: mapping.headers || [],
-      security_profile_id: mapping.security_profile_id || null,
-      response_rules: mapping.response_rules || []
-    },
-    inbound_tx_id: inboundTx.id
-  }, { delivery_no: deliveryNo });
+  // ── Adım 3: Kategoriye göre kuyruğa ekle ──
+  const mappingPayload = {
+    id: mapping.id,
+    process_type: mapping.process_type,
+    company_code: mapping.company_code,
+    warehouse_code: mapping.warehouse_code || null,
+    api_endpoint: mapping.api_endpoint || null,
+    http_method: mapping.http_method || 'POST',
+    headers: mapping.headers || [],
+    security_profile_id: mapping.security_profile_id || null,
+    response_rules: mapping.response_rules || []
+  };
+
+  let job;
+  let jobType;
+
+  if (isWorkOrder) {
+    // WORK_ORDER: İş emri oluştur, ardından 3PL'e dispatch
+    jobType = 'CREATE_WORK_ORDER';
+    job = await pgQueue.enqueue(jobType, correlationId, {
+      original: inputPayload,
+      transformed: transformed,
+      mapping: mappingPayload,
+      inbound_tx_id: inboundTx.id
+    }, { delivery_no: deliveryNo });
+  } else {
+    // MASTER_DATA: İş emri oluşturma, direkt 3PL'e dispatch et
+    if (mapping.api_endpoint) {
+      jobType = 'DISPATCH_TO_3PL';
+      job = await pgQueue.enqueue(jobType, correlationId, {
+        transformed: transformed,
+        mapping: mappingPayload,
+        inbound_tx_id: inboundTx.id
+      });
+    } else {
+      // api_endpoint yoksa sadece INBOUND log kalır
+      jobType = null;
+      job = null;
+    }
+  }
 
   // ── Adım 4: Hızlı yanıt dön ──
   res.json({
     status: 'received',
     correlation_id: correlationId,
     received_at: receivedAt,
+    category: mapping.category || 'WORK_ORDER',
     mapping: {
       id: mapping.id,
       process_type: mapping.process_type,
@@ -168,12 +194,16 @@ router.all('/*', async (req, res) => {
     original_payload: inputPayload,
     transformed_payload: transformed,
     field_rules_applied: rulesApplied,
-    queue: {
+    queue: job ? {
       job_id: job.id,
-      job_type: 'CREATE_WORK_ORDER',
+      job_type: jobType,
       status: 'PENDING'
-    }
+    } : null
   });
+  } catch (err) {
+    logger.error('Inbound: unhandled error', { error: err.message, path: req.path });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
