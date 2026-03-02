@@ -7,10 +7,11 @@ sap.ui.define([
   "sap/m/Input",
   "sap/m/Select",
   "sap/m/TextArea",
+  "sap/m/CheckBox",
   "sap/ui/core/Item",
   "sap/ui/layout/form/SimpleForm",
   "com/redigo/logistics/cockpit/util/API"
-], function (MessageToast, MessageBox, Dialog, Button, Label, Input, Select, TextArea, Item, SimpleForm, API) {
+], function (MessageToast, MessageBox, Dialog, Button, Label, Input, Select, TextArea, CheckBox, Item, SimpleForm, API) {
   "use strict";
 
   return {
@@ -289,7 +290,7 @@ sap.ui.define([
 
     _setFMRules: function (aRules) {
       var rules = (aRules || []).map(function (r) {
-        return { sap_field: r.sap_field, threepl_field: r.threepl_field, transform: r.transform };
+        return { sap_field: r.sap_field, threepl_field: r.threepl_field, transform: r.transform, required: !!r.required };
       });
       this._oModel.setProperty("/selectedFMRules", rules);
       this._buildSourceTree();
@@ -305,7 +306,7 @@ sap.ui.define([
       aRules.forEach(function (r, idx) {
         var sourceKey = bSapSource ? r.sap_field : r.threepl_field;
         var targetVal = bSapSource ? r.threepl_field : r.sap_field;
-        if (sourceKey) ruleMap[sourceKey] = { targetField: targetVal || "", transform: r.transform || "DIRECT", _ruleIndex: idx };
+        if (sourceKey) ruleMap[sourceKey] = { targetField: targetVal || "", transform: r.transform || "DIRECT", required: !!r.required, _ruleIndex: idx };
       });
 
       var treeNodes = [];
@@ -334,6 +335,7 @@ sap.ui.define([
           _mapped: !!rule && !!rule.targetField,
           _threepl: rule ? rule.targetField : "",
           _transform: rule ? rule.transform : "DIRECT",
+          _required: rule ? !!rule.required : false,
           _ruleIndex: rule ? rule._ruleIndex : -1
         };
       }
@@ -407,6 +409,9 @@ sap.ui.define([
       oTransform.addItem(new Item({ key: "LOOKUP", text: this._getText("fmLookupRule") }));
       oTransform.addItem(new Item({ key: "PREFIX", text: this._getText("fmPrefixRule") }));
       oTransform.addItem(new Item({ key: "SAP_DATE", text: this._getText("fmSapDateRule") }));
+      oTransform.addItem(new Item({ key: "TO_NUMBER", text: this._getText("fmToNumberRule") }));
+      oTransform.addItem(new Item({ key: "TO_STRING", text: this._getText("fmToStringRule") }));
+      var oRequired = new CheckBox({ selected: bEdit ? !!oExisting.required : false });
 
       var oForm = new SimpleForm({
         editable: true,
@@ -415,7 +420,8 @@ sap.ui.define([
         content: [
           new Label({ text: this._getText("fmSAPField"), required: true }), oSapField,
           new Label({ text: this._getText("fm3PLField"), required: true }), o3plField,
-          new Label({ text: this._getText("fmTransformRule") }), oTransform
+          new Label({ text: this._getText("fmTransformRule") }), oTransform,
+          new Label({ text: this._getText("fmRequired") }), oRequired
         ]
       });
 
@@ -430,7 +436,8 @@ sap.ui.define([
             var oRule = {
               sap_field: oSapField.getValue().trim(),
               threepl_field: o3plField.getValue().trim(),
-              transform: oTransform.getSelectedKey()
+              transform: oTransform.getSelectedKey(),
+              required: oRequired.getSelected()
             };
             if (!oRule.sap_field || !oRule.threepl_field) {
               MessageBox.error(that._getText("msgRequiredFields")); return;
@@ -663,7 +670,7 @@ sap.ui.define([
       if (!oFound) return;
 
       var cleanRules = aRules.map(function (r) {
-        return { sap_field: r.sap_field, threepl_field: r.threepl_field, transform: r.transform };
+        return { sap_field: r.sap_field, threepl_field: r.threepl_field, transform: r.transform, required: !!r.required };
       });
 
       var oCurrentSapJson = oFound.profile.sap_sample_json || {};

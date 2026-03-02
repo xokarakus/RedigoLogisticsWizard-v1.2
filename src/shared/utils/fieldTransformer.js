@@ -105,4 +105,22 @@ function applyResponseRules(responseBody, rules) {
   return output;
 }
 
-module.exports = { applyFieldRules, applyResponseRules, getNestedValue, setNestedValue, applyTransform };
+/**
+ * Zorunlu alan dogrulamasi — required: true olan kurallarin kaynak degerlerini kontrol et.
+ * @param {Object} input - Gelen payload
+ * @param {Array} rules - [{ sap_field, threepl_field, required, ... }]
+ * @returns {{ valid: boolean, missing: string[] }} Eksik zorunlu alanlar
+ */
+function validateRequiredFields(input, rules) {
+  const missing = [];
+  const requiredRules = (rules || []).filter(r => r.required && r.sap_field);
+  for (const rule of requiredRules) {
+    const value = getNestedValue(input, rule.sap_field);
+    if (value === undefined || value === null || value === '') {
+      missing.push(rule.sap_field);
+    }
+  }
+  return { valid: missing.length === 0, missing };
+}
+
+module.exports = { applyFieldRules, applyResponseRules, validateRequiredFields, getNestedValue, setNestedValue, applyTransform };

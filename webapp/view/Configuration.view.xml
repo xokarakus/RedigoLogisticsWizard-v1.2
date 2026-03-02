@@ -334,6 +334,8 @@
                   <!-- Alan dugumu — Inline PO-tarzi -->
                   <HBox visible="{= ${cfg>_nodeType} === 'field'}"
                     alignItems="Center" class="sapUiTinyMarginBeginEnd">
+                    <core:Icon src="sap-icon://sys-enter-2" color="#cc0000"
+                      visible="{cfg>_required}" tooltip="{i18n>fmRequired}" class="sapUiTinyMarginEnd" />
                     <ObjectStatus text="{cfg>_sapFieldShort}" tooltip="{cfg>_sapField}"
                       state="{= ${cfg>_mapped} ? 'Warning' : 'None'}" class="sapUiTinyMarginEnd" />
                     <Input value="{cfg>_sample}" width="8rem" class="sapUiTinyMarginEnd"
@@ -346,6 +348,8 @@
                       <core:Item key="LOOKUP" text="LOOKUP" />
                       <core:Item key="PREFIX" text="PREFIX" />
                       <core:Item key="SAP_DATE" text="SAP_DATE" />
+                      <core:Item key="TO_NUMBER" text="TO_NUMBER" />
+                      <core:Item key="TO_STRING" text="TO_STRING" />
                     </Select>
                     <Button icon="sap-icon://edit" press="onEditFieldRule" type="Transparent"
                       tooltip="{i18n>fmEditRule}" />

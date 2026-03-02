@@ -3,7 +3,7 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const DbStore = require('../../shared/database/dbStore');
 const logger = require('../../shared/utils/logger');
-const { applyFieldRules } = require('../../shared/utils/fieldTransformer');
+const { applyFieldRules, validateRequiredFields } = require('../../shared/utils/fieldTransformer');
 const pgQueue = require('../../shared/queue/pgQueue');
 
 const fieldMappingStore = new DbStore('field_mappings');
@@ -89,6 +89,34 @@ router.all('/*', async (req, res) => {
     company_code: mapping.company_code,
     correlation_id: correlationId
   });
+
+  // ── Adım 0: Zorunlu alan kontrolü ──
+  const reqCheck = validateRequiredFields(inputPayload, mapping.field_rules || []);
+  if (!reqCheck.valid) {
+    logger.warn('Inbound: required fields missing', {
+      correlation_id: correlationId,
+      missing: reqCheck.missing
+    });
+    await transactionStore.create({
+      correlation_id: correlationId,
+      direction: 'INBOUND',
+      action: 'INBOUND_' + mapping.process_type,
+      status: 'FAILED',
+      sap_function: incomingPath,
+      sap_request: inputPayload,
+      sap_response: null,
+      error_message: 'Zorunlu alanlar eksik: ' + reqCheck.missing.join(', '),
+      retry_count: 0,
+      started_at: receivedAt,
+      completed_at: new Date().toISOString(),
+      duration_ms: Date.now() - startTime
+    });
+    return res.status(400).json({
+      error: 'Zorunlu alanlar eksik',
+      missing_fields: reqCheck.missing,
+      correlation_id: correlationId
+    });
+  }
 
   // ── Adım 1: Alan kurallarını uygula ──
   let transformed = {};
