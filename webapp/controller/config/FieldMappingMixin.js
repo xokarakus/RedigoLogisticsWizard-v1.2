@@ -290,7 +290,7 @@ sap.ui.define([
 
     _setFMRules: function (aRules) {
       var rules = (aRules || []).map(function (r) {
-        return { sap_field: r.sap_field, threepl_field: r.threepl_field, transform: r.transform, required: !!r.required };
+        return { sap_field: r.sap_field, threepl_field: r.threepl_field, transform: r.transform, required: !!r.required, default_value: r.default_value || null };
       });
       this._oModel.setProperty("/selectedFMRules", rules);
       this._buildSourceTree();
@@ -306,7 +306,7 @@ sap.ui.define([
       aRules.forEach(function (r, idx) {
         var sourceKey = bSapSource ? r.sap_field : r.threepl_field;
         var targetVal = bSapSource ? r.threepl_field : r.sap_field;
-        if (sourceKey) ruleMap[sourceKey] = { targetField: targetVal || "", transform: r.transform || "DIRECT", required: !!r.required, _ruleIndex: idx };
+        if (sourceKey) ruleMap[sourceKey] = { targetField: targetVal || "", transform: r.transform || "DIRECT", required: !!r.required, defaultValue: r.default_value || null, _ruleIndex: idx };
       });
 
       var treeNodes = [];
@@ -336,6 +336,7 @@ sap.ui.define([
           _threepl: rule ? rule.targetField : "",
           _transform: rule ? rule.transform : "DIRECT",
           _required: rule ? !!rule.required : false,
+          _defaultValue: rule ? (rule.defaultValue || null) : null,
           _ruleIndex: rule ? rule._ruleIndex : -1
         };
       }
@@ -412,6 +413,7 @@ sap.ui.define([
       oTransform.addItem(new Item({ key: "TO_NUMBER", text: this._getText("fmToNumberRule") }));
       oTransform.addItem(new Item({ key: "TO_STRING", text: this._getText("fmToStringRule") }));
       var oRequired = new CheckBox({ selected: bEdit ? !!oExisting.required : false });
+      var oDefaultValue = new Input({ value: bEdit ? (oExisting.default_value || "") : "", placeholder: "TODAY, TODAY+5, TODAY-3" });
 
       var oForm = new SimpleForm({
         editable: true,
@@ -421,7 +423,8 @@ sap.ui.define([
           new Label({ text: this._getText("fmSAPField"), required: true }), oSapField,
           new Label({ text: this._getText("fm3PLField"), required: true }), o3plField,
           new Label({ text: this._getText("fmTransformRule") }), oTransform,
-          new Label({ text: this._getText("fmRequired") }), oRequired
+          new Label({ text: this._getText("fmRequired") }), oRequired,
+          new Label({ text: this._getText("fmDefaultValue") }), oDefaultValue
         ]
       });
 
@@ -437,7 +440,8 @@ sap.ui.define([
               sap_field: oSapField.getValue().trim(),
               threepl_field: o3plField.getValue().trim(),
               transform: oTransform.getSelectedKey(),
-              required: oRequired.getSelected()
+              required: oRequired.getSelected(),
+              default_value: oDefaultValue.getValue().trim() || null
             };
             if (!oRule.sap_field || !oRule.threepl_field) {
               MessageBox.error(that._getText("msgRequiredFields")); return;
@@ -670,7 +674,7 @@ sap.ui.define([
       if (!oFound) return;
 
       var cleanRules = aRules.map(function (r) {
-        return { sap_field: r.sap_field, threepl_field: r.threepl_field, transform: r.transform, required: !!r.required };
+        return { sap_field: r.sap_field, threepl_field: r.threepl_field, transform: r.transform, required: !!r.required, default_value: r.default_value || null };
       });
 
       var oCurrentSapJson = oFound.profile.sap_sample_json || {};

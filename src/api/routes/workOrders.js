@@ -12,6 +12,55 @@ function configKey(plantCode, warehouseCode, deliveryType) {
   return plantCode + '|' + warehouseCode + '|' + deliveryType;
 }
 
+// Gecersiz SAP tarihlerini temizle (00000000, null, undefined → '')
+function safeSapDate(val) {
+  if (!val || val === '00000000' || val === '0000-00-00') return '';
+  return val;
+}
+
+// Null-safe numeric donusum
+function safeNum(val) {
+  if (val === null || val === undefined || val === '') return 0;
+  const n = Number(val);
+  return isNaN(n) ? 0 : n;
+}
+
+// sap_raw_payload.HEADER alanlarini flat property olarak ekle (grid icin)
+function flattenHeader(wo) {
+  const hdr = wo.sap_raw_payload && wo.sap_raw_payload.HEADER || {};
+  wo.sap_customer_name = hdr.NAME1 || '';
+  wo.sap_city = hdr.ORT01 || '';
+  wo.sap_district = hdr.ORT02 || '';
+  wo.sap_street = hdr.STRAS || '';
+  wo.sap_phone = hdr.TELF1 || '';
+  wo.sap_stor_loc = hdr.LGORT || '';
+  wo.sap_goods_date = safeSapDate(hdr.WADAT);
+  // Ust seviye tarihleri de temizle
+  wo.sap_doc_date = safeSapDate(wo.sap_doc_date);
+  // Lines: eski is emirlerinde weight/volume yok ise raw payload'dan zenginlestir
+  const rawItems = wo.sap_raw_payload && wo.sap_raw_payload.ITEMS || [];
+  if (wo.lines && wo.lines.length > 0) {
+    wo.lines.forEach((line, idx) => {
+      // Null-safe: agirlik/hacim her zaman sayisal olsun
+      line.sap_gross_weight = safeNum(line.sap_gross_weight);
+      line.sap_volume = safeNum(line.sap_volume);
+      line.sap_weight_unit = line.sap_weight_unit || '';
+      line.sap_volume_unit = line.sap_volume_unit || '';
+      line.sap_requested_qty = safeNum(line.sap_requested_qty);
+      line.wms_picked_qty = safeNum(line.wms_picked_qty);
+      // Eski kayitlar icin raw payload'dan zenginlestir
+      if (line.sap_gross_weight === 0 && rawItems[idx]) {
+        const ri = rawItems[idx];
+        line.sap_gross_weight = safeNum(ri.BRGEW);
+        line.sap_weight_unit = ri.GEWEI || line.sap_weight_unit;
+        line.sap_volume = safeNum(ri.VOLUM);
+        line.sap_volume_unit = ri.VOLEH || line.sap_volume_unit;
+      }
+    });
+  }
+  return wo;
+}
+
 // GET /api/work-orders - List work orders
 router.get('/', async (req, res) => {
   try {
@@ -46,7 +95,12 @@ router.get('/', async (req, res) => {
       }
       // process_type_desc her zaman process_types tablosundan gelsin
       o.process_type_desc = ptMap[o.process_type] || '';
-      return o;
+      flattenHeader(o);
+      // Listelemede buyuk alanlari gonderme (performans)
+      // Shallow copy — DB objesini mutasyona ugratma
+      const { lines, sap_raw_payload, wms_raw_payload, ...rest } = o;
+      rest.line_count = (lines || []).length;
+      return rest;
     });
 
     // Sort by received_at desc
@@ -81,6 +135,18 @@ router.get('/:id', async (req, res) => {
     const processTypes = await ptStore.readAll();
     const pt = processTypes.find(p => p.code === item.process_type);
     item.process_type_desc = pt ? pt.name : '';
+    flattenHeader(item);
+
+    // Kalem sayfalama (skip/top)
+    const linesSkip = Number(req.query.lines_skip) || 0;
+    const linesTop = Math.min(Number(req.query.lines_top) || 100, 500);
+    const allLines = item.lines || [];
+    const totalLines = allLines.length;
+    item.lines = allLines.slice(linesSkip, linesSkip + linesTop);
+    item.lines_total = totalLines;
+    item.lines_skip = linesSkip;
+    item.lines_top = linesTop;
+    item.lines_has_more = (linesSkip + linesTop) < totalLines;
 
     res.json({ data: item });
   } catch (err) {

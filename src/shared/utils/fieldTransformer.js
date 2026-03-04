@@ -60,9 +60,28 @@ function applyTransform(value, transform) {
 }
 
 /**
+ * Tarih ifadesi cozumle: TODAY, TODAY+N, TODAY-N → YYYYMMDD
+ * Statik deger ise oldugu gibi don.
+ */
+function resolveExpression(expr) {
+  if (!expr || typeof expr !== 'string') return expr;
+  const trimmed = expr.trim().toUpperCase();
+  const match = trimmed.match(/^TODAY([+-]\d+)?$/);
+  if (match) {
+    const d = new Date();
+    if (match[1]) d.setDate(d.getDate() + parseInt(match[1], 10));
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + m + day;
+  }
+  return expr;
+}
+
+/**
  * Field rules uygula (SAP → 3PL request dönüşümü)
  * @param {Object} input - Kaynak JSON
- * @param {Array} rules - [{ sap_field, threepl_field, transform }]
+ * @param {Array} rules - [{ sap_field, threepl_field, transform, default_value }]
  * @returns {Object} Dönüştürülmüş JSON
  */
 function applyFieldRules(input, rules) {
@@ -73,8 +92,11 @@ function applyFieldRules(input, rules) {
 
   const output = {};
   validRules.forEach(rule => {
-    const value = getNestedValue(input, rule.sap_field);
-    if (value === undefined) return;
+    let value = getNestedValue(input, rule.sap_field);
+    if ((value === undefined || value === null || value === '') && rule.default_value) {
+      value = resolveExpression(rule.default_value);
+    }
+    if (value === undefined || value === null) return;
     const transformed = applyTransform(value, rule.transform);
     setNestedValue(output, rule.threepl_field, transformed);
   });
@@ -123,4 +145,4 @@ function validateRequiredFields(input, rules) {
   return { valid: missing.length === 0, missing };
 }
 
-module.exports = { applyFieldRules, applyResponseRules, validateRequiredFields, getNestedValue, setNestedValue, applyTransform };
+module.exports = { applyFieldRules, applyResponseRules, validateRequiredFields, resolveExpression, getNestedValue, setNestedValue, applyTransform };

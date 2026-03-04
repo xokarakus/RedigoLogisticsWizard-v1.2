@@ -351,6 +351,9 @@
                       <core:Item key="TO_NUMBER" text="TO_NUMBER" />
                       <core:Item key="TO_STRING" text="TO_STRING" />
                     </Select>
+                    <Text text="{cfg>_defaultValue}"
+                      visible="{= !!${cfg>_defaultValue}}"
+                      class="sapUiTinyMarginBegin sapThemeHighlight-asColor" />
                     <Button icon="sap-icon://edit" press="onEditFieldRule" type="Transparent"
                       tooltip="{i18n>fmEditRule}" />
                     <Button icon="sap-icon://delete" press="onDeleteFieldRule" type="Transparent"

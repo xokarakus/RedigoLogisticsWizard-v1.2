@@ -68,7 +68,7 @@
 
           <!-- TAB 2: Lines -->
           <IconTabFilter text="{i18n>wodLines}" icon="sap-icon://list" key="lines"
-            count="{detail>/lineCount}">
+            count="{= ${detail>/lineCount} + ' / ' + ${detail>/lines_total}}">
             <Table items="{detail>/lines}" autoPopinMode="true">
               <columns>
                 <Column importance="High"><Text text="{i18n>wodItem}" /></Column>
@@ -78,6 +78,10 @@
                 <Column importance="High" hAlign="End"><Text text="{i18n>wodPickedQty}" /></Column>
                 <Column importance="Low" hAlign="End" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>wodFinalQty}" /></Column>
                 <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>wodUoM}" /></Column>
+                <Column importance="Low" hAlign="End" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>wodGrossWeight}" /></Column>
+                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>wodWeightUnit}" /></Column>
+                <Column importance="Low" hAlign="End" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>wodVolume}" /></Column>
+                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>wodVolumeUnit}" /></Column>
                 <Column importance="Low" hAlign="Center" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>wodClosed}" /></Column>
                 <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>wodHUSerial}" /></Column>
               </columns>
@@ -94,6 +98,10 @@
                       state="{= ${detail>wms_picked_qty} &lt; ${detail>sap_requested_qty} ? 'Warning' : 'Success'}" />
                     <ObjectNumber number="{detail>sap_final_qty}" />
                     <Text text="{detail>wms_uom}" />
+                    <ObjectNumber number="{detail>sap_gross_weight}" />
+                    <Text text="{detail>sap_weight_unit}" />
+                    <ObjectNumber number="{detail>sap_volume}" />
+                    <Text text="{detail>sap_volume_unit}" />
                     <core:Icon src="{= ${detail>is_closed} ? 'sap-icon://accept' : 'sap-icon://border'}"
                       color="{= ${detail>is_closed} ? '#2b7c2b' : '#999'}" />
                     <Text text="{detail>hu_serial_info}" />
@@ -101,125 +109,13 @@
                 </ColumnListItem>
               </items>
             </Table>
+            <Button text="{i18n>wodLoadMore}" icon="sap-icon://navigation-down-arrow"
+              press="onLoadMoreLines" type="Transparent" width="100%"
+              visible="{detail>/lines_has_more}"
+              class="sapUiSmallMarginTop" />
           </IconTabFilter>
 
-          <!-- TAB 3: Islemler (Operations) - Uyarlama Tabanli -->
-          <IconTabFilter text="{i18n>wodOperations}" icon="sap-icon://action" key="operations"
-            count="{detail>/stepCount}">
-
-            <!-- Uyarlama bulunamadi mesaji -->
-            <MessageStrip
-              text="{i18n>opNoConfig}"
-              type="Warning"
-              showIcon="true"
-              class="sapUiSmallMargin"
-              visible="{= !${detail>/hasProcessConfig}}" />
-
-            <!-- Ana icerik: sol liste + sag detay -->
-            <l:Grid defaultSpan="XL5 L5 M12 S12" visible="{detail>/hasProcessConfig}">
-
-              <!-- SOL: Islem Adimlari Listesi -->
-              <Panel headerText="{i18n>opStepList}">
-                <List id="stepList" mode="MultiSelect" items="{detail>/processSteps}"
-                  selectionChange="onStepSelectionChange"
-                  itemPress="onStepPress">
-                  <items>
-                    <CustomListItem type="Active" press="onStepPress">
-                      <HBox class="sapUiTinyMargin" alignItems="Center">
-                        <VBox class="sapUiTinyMarginEnd" width="100%">
-                          <Title text="{detail>name}" level="H6" />
-                          <HBox alignItems="Center">
-                            <core:Icon src="sap-icon://arrow-right" size="0.75rem" color="#666" class="sapUiTinyMarginEnd" />
-                            <Text text="{detail>source_system}  \u2192  {detail>target_system}" class="sapUiTinyMarginEnd" />
-                          </HBox>
-                          <ObjectStatus
-                            text="{detail>status}"
-                            state="{= ${detail>status} === 'BASARILI' ? 'Success' : ${detail>status} === 'HATALI' ? 'Error' : ${detail>status} === 'ISLENIYOR' ? 'Information' : 'Warning'}"
-                            icon="{= ${detail>status} === 'BASARILI' ? 'sap-icon://accept' : ${detail>status} === 'HATALI' ? 'sap-icon://error' : ${detail>status} === 'ISLENIYOR' ? 'sap-icon://synchronize' : 'sap-icon://pending'}" />
-                        </VBox>
-                      </HBox>
-                    </CustomListItem>
-                  </items>
-                </List>
-              </Panel>
-
-              <!-- SAG: Secili Islem Detayi -->
-              <Panel headerText="{i18n>opSelectedDetail}">
-                <layoutData>
-                  <l:GridData span="XL7 L7 M12 S12" />
-                </layoutData>
-
-                <!-- Secim yapilmadi mesaji -->
-                <MessageStrip
-                  text="{i18n>opSelectStep}"
-                  type="Information"
-                  showIcon="true"
-                  class="sapUiSmallMargin"
-                  visible="{= !${detail>/selectedStep/name}}" />
-
-                <!-- Secili adim detayi -->
-                <VBox visible="{= !!${detail>/selectedStep/name}}">
-                  <f:SimpleForm editable="false" layout="ResponsiveGridLayout" columnsL="1" columnsM="1">
-                    <Label text="{i18n>opSource}" />
-                    <Text text="{detail>/selectedStep/source_system}" />
-                    <Label text="{i18n>opTarget}" />
-                    <Text text="{detail>/selectedStep/target_system}" />
-                    <Label text="{i18n>opDirection}" />
-                    <ObjectStatus text="{detail>/selectedStep/direction}"
-                      state="{= ${detail>/selectedStep/direction} === 'OUTBOUND' ? 'Information' : 'Success'}"
-                      icon="{= ${detail>/selectedStep/direction} === 'OUTBOUND' ? 'sap-icon://outbox' : 'sap-icon://inbox'}" />
-                    <Label text="{i18n>opCompany}" />
-                    <Text text="{detail>/selectedStep/company_name}" />
-                    <Label text="{i18n>opApiUrl}" />
-                    <Text text="{detail>/selectedStep/company_api_url}" />
-                    <Label text="{i18n>opBapi}" />
-                    <Text text="{detail>/selectedStep/bapi_name}" />
-                    <Label text="{i18n>opMvtType}" />
-                    <Text text="{detail>/selectedStep/mvt_type}" />
-                    <Label text="{i18n>opGmCode}" />
-                    <Text text="{detail>/selectedStep/gm_code}" />
-                    <Label text="{i18n>opStatus}" />
-                    <ObjectStatus
-                      text="{detail>/selectedStep/status}"
-                      state="{= ${detail>/selectedStep/status} === 'BASARILI' ? 'Success' : ${detail>/selectedStep/status} === 'HATALI' ? 'Error' : ${detail>/selectedStep/status} === 'ISLENIYOR' ? 'Information' : 'Warning'}" />
-                  </f:SimpleForm>
-
-                  <!-- Isle / Tumunu Isle butonlari -->
-                  <HBox class="sapUiSmallMargin">
-                    <Button text="{i18n>opProcess}" icon="sap-icon://initiative" press="onProcessSelected" type="Emphasized"
-                      class="sapUiTinyMarginEnd" />
-                    <Button text="{i18n>opProcessAll}" icon="sap-icon://batch-payments" press="onProcessAll" type="Attention" />
-                  </HBox>
-                </VBox>
-
-                <!-- Surec ozet bilgileri -->
-                <Panel headerText="{i18n>wodMvtInfo}" class="sapUiSmallMarginTop">
-                  <f:SimpleForm editable="false" layout="ResponsiveGridLayout" columnsL="2" columnsM="1">
-                    <Label text="{i18n>wodProcessType}" />
-                    <Text text="{detail>/process_type_desc}" />
-                    <Label text="{i18n>gmMvtType}" />
-                    <Text text="{detail>/mvt_type}" />
-                    <Label text="{i18n>woWarehouse}" />
-                    <Text text="{detail>/warehouse_code}" />
-                    <Label text="{i18n>cfgCompany}" />
-                    <Text text="{detail>/logistics_company}" />
-                  </f:SimpleForm>
-                </Panel>
-              </Panel>
-
-            </l:Grid>
-
-            <!-- Bilgi mesaji -->
-            <MessageStrip
-              text="{i18n>opStepsInfo}"
-              type="Information"
-              showIcon="true"
-              class="sapUiSmallMargin"
-              visible="{detail>/hasProcessConfig}" />
-
-          </IconTabFilter>
-
-          <!-- TAB 4: Transaction History -->
+          <!-- TAB 3: Transaction History -->
           <IconTabFilter text="{i18n>wodTransactions}" icon="sap-icon://activity-items" key="transactions"
             count="{detail>/txCount}">
             <Table items="{detail>/transactions}" autoPopinMode="true">

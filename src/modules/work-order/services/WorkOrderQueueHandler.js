@@ -56,6 +56,10 @@ async function handleCreateWorkOrder(job) {
     wms_picked_qty: 0,
     final_qty: 0,
     sap_uom: item.VRKME || item.uom || 'EA',
+    sap_gross_weight: safeNum(item.BRGEW),
+    sap_weight_unit: item.GEWEI || '',
+    sap_volume: safeNum(item.VOLUM),
+    sap_volume_unit: item.VOLEH || '',
     is_closed: false
   }));
 

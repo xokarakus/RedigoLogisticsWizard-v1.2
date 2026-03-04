@@ -60,7 +60,7 @@ sap.ui.define([
         var aData = (result.data || []).map(function (o) {
           o.received_at_fmt = o.received_at ? new Date(o.received_at).toLocaleString("tr-TR") : "";
           o.completed_at_fmt = o.completed_at ? new Date(o.completed_at).toLocaleString("tr-TR") : "";
-          o.line_count = (o.lines || []).length;
+          o.line_count = o.line_count || 0;
           return o;
         });
         that._oModel.setProperty("/data", aData);
@@ -131,11 +131,17 @@ sap.ui.define([
         }
       }
 
-      // Status filter
+      // Status filter (OPEN = acik is emirleri)
       var oStatusFilter = this.byId("statusFilter");
       if (oStatusFilter) {
         var sStatus = oStatusFilter.getSelectedKey();
-        if (sStatus && sStatus !== "ALL") {
+        if (sStatus === "OPEN") {
+          var aOpenStatuses = ["RECEIVED", "SENT_TO_WMS", "IN_PROGRESS", "PARTIALLY_DONE", "DISPATCH_FAILED"];
+          var aStatusFilters = aOpenStatuses.map(function (s) {
+            return new Filter("status", FilterOperator.EQ, s);
+          });
+          aFilters.push(new Filter({ filters: aStatusFilters, and: false }));
+        } else if (sStatus && sStatus !== "ALL") {
           aFilters.push(new Filter("status", FilterOperator.EQ, sStatus));
         }
       }
@@ -158,6 +164,24 @@ sap.ui.define([
         }
       }
 
+      // Date range filter (received_at)
+      var oDateRange = this.byId("dateRangeFilter");
+      if (oDateRange) {
+        var dFrom = oDateRange.getDateValue();
+        var dTo = oDateRange.getSecondDateValue();
+        if (dFrom && dTo) {
+          var dToEnd = new Date(dTo); dToEnd.setHours(23, 59, 59, 999);
+          aFilters.push(new Filter({
+            path: "received_at",
+            test: function (val) {
+              if (!val) return false;
+              var d = new Date(val);
+              return d >= dFrom && d <= dToEnd;
+            }
+          }));
+        }
+      }
+
       // Search filter (multi-field OR)
       if (this._sSearchQuery) {
         var sQ = this._sSearchQuery;
@@ -166,6 +190,8 @@ sap.ui.define([
             new Filter("sap_delivery_no", FilterOperator.Contains, sQ),
             new Filter("warehouse_code", FilterOperator.Contains, sQ),
             new Filter("sap_ship_to", FilterOperator.Contains, sQ),
+            new Filter("sap_customer_name", FilterOperator.Contains, sQ),
+            new Filter("sap_city", FilterOperator.Contains, sQ),
             new Filter("process_type", FilterOperator.Contains, sQ),
             new Filter("process_type_desc", FilterOperator.Contains, sQ)
           ],
@@ -273,35 +299,6 @@ sap.ui.define([
         };
         var oSheet = new Spreadsheet(oSettings);
         oSheet.build().finally(function () { oSheet.destroy(); });
-      });
-    },
-
-    /* ═══════════════════════════════════════════
-       SAP Trigger (per-row action button)
-       ═══════════════════════════════════════════ */
-
-    onTriggerFetchSAP: function (oEvent) {
-      var oCtx = oEvent.getSource().getBindingContext("workOrders");
-      if (!oCtx) { return; }
-      var oOrder = oCtx.getObject();
-      var that = this;
-
-      MessageBox.confirm(
-        oOrder.sap_delivery_no + " teslimat\u0131 SAP'den \u00e7ekilecek. Devam edilsin mi?", {
-        title: "SAP Senkronizasyon",
-        onClose: function (sAction) {
-          if (sAction === MessageBox.Action.OK) {
-            API.post("/api/trigger/fetch-from-sap", {
-              delivery_no: oOrder.sap_delivery_no,
-              plant_code: oOrder.plant_code || "1000",
-              warehouse_code: oOrder.warehouse_code,
-              delivery_type: oOrder.sap_delivery_type
-            }).then(function () {
-              MessageToast.show(that._getText("msgSuccess"));
-              that._loadData();
-            });
-          }
-        }
       });
     },
 
