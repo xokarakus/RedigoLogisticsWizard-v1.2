@@ -1,0 +1,171 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.AuditLog"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  xmlns:t="sap.ui.table">
+
+  <Page title="{i18n>auditTitle}" showNavButton="false" enableScrolling="false">
+
+    <content>
+      <t:Table
+        id="auditTable"
+        rows="{audit>/data}"
+        selectionMode="None"
+        visibleRowCountMode="Auto"
+        minAutoRowCount="5"
+        enableColumnReordering="true"
+        enableCellFilter="true"
+        enableColumnFreeze="true"
+        enableBusyIndicator="true"
+        alternateRowColors="true"
+        fixedColumnCount="1">
+
+        <t:rowSettingsTemplate>
+          <t:RowSettings highlight="{= ${audit>severity} === 'ERROR' ? 'Error' : ${audit>severity} === 'WARNING' ? 'Warning' : 'Success'}" />
+        </t:rowSettingsTemplate>
+
+        <t:extension>
+          <OverflowToolbar>
+            <SearchField id="auditSearch" width="250px" placeholder="{i18n>auditSearchPlaceholder}" liveChange="onSearch" />
+            <ToolbarSpacer />
+            <Label text="{i18n>auditFilterDate}" />
+            <DateRangeSelection id="auditDateRange" displayFormat="dd.MM.yyyy" change="onFilterChange" width="260px" />
+            <ToolbarSeparator />
+            <Label text="{i18n>auditFilterSeverity}" />
+            <Select id="auditSeverityFilter" change="onFilterChange" width="120px">
+              <core:Item key="" text="{i18n>auditAll}" />
+              <core:Item key="INFO" text="INFO" />
+              <core:Item key="WARNING" text="WARNING" />
+              <core:Item key="ERROR" text="ERROR" />
+            </Select>
+            <ToolbarSeparator />
+            <Label text="{i18n>auditFilterAction}" />
+            <Select id="auditActionFilter" change="onFilterChange" width="180px">
+              <core:Item key="" text="{i18n>auditAll}" />
+              <core:Item key="LOGIN" text="LOGIN" />
+              <core:Item key="LOGOUT" text="LOGOUT" />
+              <core:Item key="LOGIN_FAILED" text="LOGIN_FAILED" />
+              <core:Item key="ACCOUNT_LOCKED" text="ACCOUNT_LOCKED" />
+              <core:Item key="ACCOUNT_UNLOCKED" text="ACCOUNT_UNLOCKED" />
+              <core:Item key="CREATE" text="CREATE" />
+              <core:Item key="UPDATE" text="UPDATE" />
+              <core:Item key="DELETE" text="DELETE" />
+              <core:Item key="PASSWORD_CHANGE" text="PASSWORD_CHANGE" />
+              <core:Item key="PASSWORD_RESET_COMPLETED" text="PASSWORD_RESET_COMPLETED" />
+              <core:Item key="ADMIN_PASSWORD_RESET" text="ADMIN_PASSWORD_RESET" />
+              <core:Item key="IMPERSONATE_START" text="IMPERSONATE_START" />
+              <core:Item key="IMPERSONATE_STOP" text="IMPERSONATE_STOP" />
+              <core:Item key="SYSTEM_ERROR" text="SYSTEM_ERROR" />
+            </Select>
+            <ToolbarSeparator />
+            <Button icon="sap-icon://refresh" tooltip="{i18n>btnRefresh}" press="onRefresh" type="Transparent" />
+            <Button icon="sap-icon://excel-attachment" tooltip="{i18n>btnExport}" press="onExport" type="Transparent" />
+            <ToolbarSeparator />
+            <ObjectStatus text="{audit>/countText}" state="Information" />
+          </OverflowToolbar>
+        </t:extension>
+
+        <t:columns>
+          <!-- 1. Zaman (frozen first column) -->
+          <t:Column sortProperty="created_at" autoResizable="true" width="160px">
+            <Label text="{i18n>auditTimestamp}" />
+            <t:template>
+              <Text text="{audit>created_at_fmt}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- 2. Kullanici -->
+          <t:Column sortProperty="username" filterProperty="username" autoResizable="true" width="130px">
+            <Label text="{i18n>auditUser}" />
+            <t:template>
+              <ObjectIdentifier title="{audit>username}" />
+            </t:template>
+          </t:Column>
+
+          <!-- 3. Onem -->
+          <t:Column sortProperty="severity" filterProperty="severity" autoResizable="true" width="100px" hAlign="Center">
+            <Label text="{i18n>auditSeverity}" />
+            <t:template>
+              <ObjectStatus
+                text="{audit>severity}"
+                state="{= ${audit>severity} === 'ERROR' ? 'Error' : ${audit>severity} === 'WARNING' ? 'Warning' : 'Success'}"
+                icon="{= ${audit>severity} === 'ERROR' ? 'sap-icon://error' : ${audit>severity} === 'WARNING' ? 'sap-icon://alert' : 'sap-icon://sys-enter-2'}" />
+            </t:template>
+          </t:Column>
+
+          <!-- 4. Islem -->
+          <t:Column sortProperty="action" filterProperty="action" autoResizable="true" width="170px">
+            <Label text="{i18n>auditAction}" />
+            <t:template>
+              <ObjectStatus
+                text="{audit>action}"
+                state="{= ${audit>action} === 'DELETE' || ${audit>action} === 'LOGIN_FAILED' || ${audit>action} === 'ACCOUNT_LOCKED' || ${audit>action} === 'SYSTEM_ERROR' ? 'Error' : ${audit>action} === 'CREATE' || ${audit>action} === 'LOGIN' || ${audit>action} === 'ACCOUNT_UNLOCKED' ? 'Success' : 'Warning'}" />
+            </t:template>
+          </t:Column>
+
+          <!-- 5. Varlik Tipi -->
+          <t:Column sortProperty="entity_type" filterProperty="entity_type" autoResizable="true" width="120px">
+            <Label text="{i18n>auditEntity}" />
+            <t:template>
+              <Text text="{audit>entity_type}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- 6. Varlik ID -->
+          <t:Column sortProperty="entity_id" filterProperty="entity_id" autoResizable="true" width="200px">
+            <Label text="{i18n>auditEntityId}" />
+            <t:template>
+              <Text text="{audit>entity_id}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- 7. Detay -->
+          <t:Column sortProperty="detail" autoResizable="true" width="300px">
+            <Label text="{i18n>auditDetail}" />
+            <t:template>
+              <Text text="{audit>detail}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- 8. Eski Degerler -->
+          <t:Column autoResizable="true" width="250px">
+            <Label text="{i18n>auditOldValues}" />
+            <t:template>
+              <Text text="{audit>_oldValuesStr}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- 9. Yeni Degerler -->
+          <t:Column autoResizable="true" width="250px">
+            <Label text="{i18n>auditNewValues}" />
+            <t:template>
+              <Text text="{audit>_newValuesStr}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- 10. IP Adresi -->
+          <t:Column sortProperty="ip_address" filterProperty="ip_address" autoResizable="true" width="130px">
+            <Label text="{i18n>auditIpAddress}" />
+            <t:template>
+              <Text text="{audit>ip_address}" wrapping="false" />
+            </t:template>
+          </t:Column>
+        </t:columns>
+
+      </t:Table>
+    </content>
+
+    <footer>
+      <Toolbar>
+        <ToolbarSpacer />
+        <Button text="{i18n>auditPrevPage}" icon="sap-icon://navigation-left-arrow" press="onPrevPage" enabled="{audit>/hasPrev}" />
+        <Text text="{audit>/pageInfo}" class="sapUiSmallMarginBeginEnd" />
+        <Button text="{i18n>auditNextPage}" icon="sap-icon://navigation-right-arrow" iconFirst="false" press="onNextPage" enabled="{audit>/hasNext}" />
+        <ToolbarSpacer />
+      </Toolbar>
+    </footer>
+
+  </Page>
+
+</mvc:View>

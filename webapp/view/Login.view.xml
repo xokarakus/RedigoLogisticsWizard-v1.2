@@ -1,0 +1,70 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.Login"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:l="sap.ui.layout"
+  height="100%">
+
+  <Page showHeader="false" backgroundDesign="Solid" enableScrolling="false">
+    <content>
+      <FlexBox justifyContent="Center" alignItems="Center" class="sapUiLoginFlex">
+        <VBox width="360px" class="sapUiMediumMargin">
+
+          <FlexBox justifyContent="Center" class="sapUiMediumMarginBottom">
+            <VBox alignItems="Center">
+              <Title text="Redigo Logistics" level="H1" class="sapUiSmallMarginBottom" />
+              <Title text="{i18n>appDescription}" level="H5" titleStyle="H5" />
+            </VBox>
+          </FlexBox>
+
+          <l:VerticalLayout width="100%" class="sapUiContentPadding">
+            <MessageStrip
+              id="loginError"
+              type="Error"
+              showIcon="true"
+              visible="{login>/errorVisible}"
+              text="{login>/errorText}"
+              class="sapUiSmallMarginBottom" />
+
+            <Label text="{i18n>loginUsername}" required="true" />
+            <Input id="usernameInput"
+              value="{login>/username}"
+              placeholder="{i18n>loginUsername}"
+              width="100%"
+              class="sapUiSmallMarginBottom" />
+
+            <Label text="{i18n>loginPassword}" required="true" />
+            <Input id="passwordInput"
+              value="{login>/password}"
+              placeholder="{i18n>loginPassword}"
+              type="Password"
+              width="100%"
+              submit="onLogin"
+              class="sapUiSmallMarginBottom" />
+
+            <Link
+              text="{i18n>forgotPassword}"
+              press="onForgotPassword"
+              textAlign="End"
+              width="100%"
+              class="sapUiSmallMarginBottom" />
+
+            <Button
+              text="{i18n>loginButton}"
+              press="onLogin"
+              type="Emphasized"
+              width="100%"
+              class="sapUiSmallMarginTop"
+              busy="{login>/busy}" />
+          </l:VerticalLayout>
+
+          <FlexBox justifyContent="Center" class="sapUiMediumMarginTop">
+            <Text text="v1.2" class="sapUiTinyMargin" />
+          </FlexBox>
+
+        </VBox>
+      </FlexBox>
+    </content>
+  </Page>
+
+</mvc:View>

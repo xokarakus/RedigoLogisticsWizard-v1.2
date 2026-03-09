@@ -1,0 +1,77 @@
+{
+  "sap_delivery_no": "8000098765",
+  "sap_delivery_type": "UL",
+  "sap_doc_date": "2026-03-09",
+  "sap_ship_to": "Ankara Fabrika Deposu",
+  "order_type": "OUTBOUND",
+  "warehouse_code": "WH-01",
+  "plant_code": "1000",
+  "priority": "MEDIUM",
+  "lines": [
+    {
+      "POSNR": "10",
+      "MATNR": "FG-MOB-001",
+      "MAKTX": "Mobilya Aksesuar Seti",
+      "CHARG": "BATCH-TR-2026-10",
+      "LFIMG": 300,
+      "VRKME": "EA",
+      "BRGEW": 450.0,
+      "GEWEI": "KG"
+    },
+    {
+      "POSNR": "20",
+      "MATNR": "FG-MOB-002",
+      "MAKTX": "Montaj Vidasi Paketi",
+      "CHARG": "",
+      "LFIMG": 1500,
+      "VRKME": "EA",
+      "BRGEW": 120.0,
+      "GEWEI": "KG"
+    }
+  ],
+  "HEADER": {
+    "VBELN": "8000098765",
+    "LFART": "UL",
+    "ERDAT": "2026-03-09",
+    "WERKS": "1000",
+    "LGORT": "0001",
+    "UMWRK": "3000",
+    "UMLGO": "0001",
+    "VSTEL": "VS01",
+    "LIFNR": "",
+    "KUNNR": "",
+    "KUNAG": "",
+    "NAME1": "Ankara Fabrika Deposu",
+    "ORT01": "Ankara",
+    "ORT02": "Sincan",
+    "STRAS": "1. Organize Sanayi Bolgesi 5. Cadde",
+    "TELF1": "+90 312 555 6789",
+    "WADAT": "2026-03-11"
+  },
+  "ITEMS": [
+    {
+      "POSNR": "10",
+      "MATNR": "FG-MOB-001",
+      "MAKTX": "Mobilya Aksesuar Seti",
+      "CHARG": "BATCH-TR-2026-10",
+      "LFIMG": 300,
+      "VRKME": "EA",
+      "BRGEW": 450.0,
+      "GEWEI": "KG",
+      "VOLUM": 3.6,
+      "VOLEH": "M3"
+    },
+    {
+      "POSNR": "20",
+      "MATNR": "FG-MOB-002",
+      "MAKTX": "Montaj Vidasi Paketi",
+      "CHARG": "",
+      "LFIMG": 1500,
+      "VRKME": "EA",
+      "BRGEW": 120.0,
+      "GEWEI": "KG",
+      "VOLUM": 0.8,
+      "VOLEH": "M3"
+    }
+  ]
+}

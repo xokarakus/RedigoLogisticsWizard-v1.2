@@ -33,7 +33,12 @@ function flattenHeader(wo) {
   wo.sap_district = hdr.ORT02 || '';
   wo.sap_street = hdr.STRAS || '';
   wo.sap_phone = hdr.TELF1 || '';
-  wo.sap_stor_loc = hdr.LGORT || '';
+  // DB sütunlarından al, yoksa JSON'dan fallback
+  wo.sap_stor_loc = wo.sap_stor_loc || hdr.LGORT || '';
+  wo.sap_target_plant = wo.sap_target_plant || hdr.UMWRK || '';
+  wo.sap_target_stor_loc = wo.sap_target_stor_loc || hdr.UMLGO || '';
+  wo.sap_shipping_point = wo.sap_shipping_point || hdr.VSTEL || '';
+  wo.sap_vendor_no = wo.sap_vendor_no || hdr.LIFNR || '';
   wo.sap_goods_date = safeSapDate(hdr.WADAT);
   // Ust seviye tarihleri de temizle
   wo.sap_doc_date = safeSapDate(wo.sap_doc_date);

@@ -30,6 +30,10 @@ router.get('/', async (req, res) => {
       if (t.work_order_id && orderMap[t.work_order_id]) {
         t.delivery_no = orderMap[t.work_order_id].sap_delivery_no;
       }
+      // Fallback: sap_doc_number varsa delivery_no olarak kullan
+      if (!t.delivery_no && t.sap_doc_number) {
+        t.delivery_no = t.sap_doc_number;
+      }
       return t;
     });
 

@@ -124,12 +124,86 @@ sap.ui.define([
       });
     },
 
+    /* ── Timeline formatting helpers ── */
+
+    _ACTION_META: {
+      CREATE_WORK_ORDER:  { icon: "sap-icon://create",          color: "#1a73e8", tr: "\u0130\u015f Emri Olu\u015fturuldu" },
+      DISPATCH_TO_3PL:    { icon: "sap-icon://outbox",          color: "#e67700", tr: "3PL\u2019ye G\u00f6nderildi" },
+      FETCH_FROM_SAP:     { icon: "sap-icon://download",        color: "#0854A0", tr: "SAP\u2019den Veri \u00c7ekildi" },
+      QUERY_STATUS:       { icon: "sap-icon://inspection",      color: "#5b738b", tr: "Durum Sorguland\u0131" },
+      POST_PGI:           { icon: "sap-icon://shipping-status", color: "#0a6ed1", tr: "PGI Kaydedildi (BAPI)" },
+      POST_GR:            { icon: "sap-icon://inbox",           color: "#107e3e", tr: "Mal Giri\u015f Kaydedildi (BAPI)" },
+      PGI_POST:           { icon: "sap-icon://shipping-status", color: "#0a6ed1", tr: "PGI Kaydedildi" },
+      GR_POST:            { icon: "sap-icon://inbox",           color: "#107e3e", tr: "Mal Giri\u015f Kaydedildi" },
+      DELIVERY_UPDATE:    { icon: "sap-icon://edit",            color: "#5b738b", tr: "Teslimat G\u00fcncellendi" },
+      INV_MOVEMENT:       { icon: "sap-icon://inventory",       color: "#8b47d7", tr: "Stok Hareketi" },
+      STATUS_CHANGE:      { icon: "sap-icon://status-positive", color: "#107e3e", tr: "Durum De\u011fi\u015fikli\u011fi" }
+    },
+
+    _STATUS_META: {
+      SUCCESS:  { text: "Ba\u015far\u0131l\u0131",    state: "Success", icon: "sap-icon://accept" },
+      FAILED:   { text: "Hatal\u0131",       state: "Error",   icon: "sap-icon://error" },
+      DEAD:     { text: "\u00d6l\u00fc (DLQ)", state: "Error",   icon: "sap-icon://warning2" },
+      PENDING:  { text: "Bekliyor",    state: "Warning", icon: "sap-icon://pending" },
+      RETRYING: { text: "Tekrarlan\u0131yor", state: "Warning", icon: "sap-icon://refresh" }
+    },
+
+    _DIRECTION_LABELS: {
+      SAP_TO_WMS: "SAP \u2192 WMS",
+      WMS_TO_SAP: "WMS \u2192 SAP"
+    },
+
+    _relativeTime: function (sDate) {
+      if (!sDate) return "";
+      var diff = Date.now() - new Date(sDate).getTime();
+      var sec = Math.floor(diff / 1000);
+      if (sec < 60)    return sec + " sn \u00f6nce";
+      var min = Math.floor(sec / 60);
+      if (min < 60)    return min + " dk \u00f6nce";
+      var hr = Math.floor(min / 60);
+      if (hr < 24)     return hr + " saat \u00f6nce";
+      var day = Math.floor(hr / 24);
+      if (day < 30)    return day + " g\u00fcn \u00f6nce";
+      return new Date(sDate).toLocaleString("tr-TR");
+    },
+
+    _enrichTransaction: function (tx) {
+      var oAction = this._ACTION_META[tx.action];
+      // OUTBOUND_* dynamic actions (e.g. OUTBOUND_GI, OUTBOUND_GR)
+      if (!oAction && tx.action && tx.action.indexOf("OUTBOUND_") === 0) {
+        oAction = { icon: "sap-icon://outbox", color: "#e67700", tr: "3PL\u2019ye G\u00f6nderildi (" + tx.action.substring(9) + ")" };
+      }
+      oAction = oAction || { icon: "sap-icon://action", color: "#5b738b", tr: tx.action };
+      var oStatus = this._STATUS_META[tx.status] || { text: tx.status, state: "None", icon: "sap-icon://question-mark" };
+
+      tx._icon = oAction.icon;
+      tx._iconColor = oAction.color;
+      tx._actionText = oAction.tr;
+      tx._statusText = oStatus.text;
+      tx._statusState = oStatus.state;
+      tx._statusIcon = oStatus.icon;
+      tx._directionBadge = this._DIRECTION_LABELS[tx.direction] || "";
+      tx._relativeTime = this._relativeTime(tx.started_at);
+      tx._durationText = tx.duration_ms ? tx.duration_ms + " ms" : "";
+      tx._retryText = tx.retry_count > 0 ? tx.retry_count + " tekrar" : "";
+
+      // Subtitle: SAP function + doc number
+      var aParts = [];
+      if (tx.sap_function) aParts.push(tx.sap_function);
+      if (tx.sap_doc_number) aParts.push("Belge: " + tx.sap_doc_number);
+      if (tx.correlation_id) aParts.push("Ref: " + tx.correlation_id.substring(0, 8));
+      tx._subtitle = aParts.join("  \u00b7  ") || "";
+
+      tx._highlight = tx.status === "SUCCESS" ? "Success" : tx.status === "FAILED" || tx.status === "DEAD" ? "Error" : "Warning";
+
+      return tx;
+    },
+
     _loadTransactions: function (sOrderId) {
       var that = this;
       API.get("/api/transactions", { work_order_id: sOrderId, limit: 50 }).then(function (result) {
         var aTx = (result.data || []).map(function (tx) {
-          tx.started_at_fmt = tx.started_at ? new Date(tx.started_at).toLocaleString("tr-TR") : "";
-          return tx;
+          return that._enrichTransaction(tx);
         });
         that._oModel.setProperty("/transactions", aTx);
         that._oModel.setProperty("/txCount", aTx.length);

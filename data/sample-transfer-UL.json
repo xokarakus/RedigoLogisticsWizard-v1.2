@@ -1,0 +1,59 @@
+{
+  "HEADER": {
+    "VBELN": "8000012345",
+    "LFART": "UL",
+    "ERDAT": "2026-03-09",
+    "WERKS": "1000",
+    "LGORT": "0001",
+    "UMWRK": "2000",
+    "UMLGO": "0002",
+    "VSTEL": "VS01",
+    "LIFNR": "",
+    "KUNNR": "",
+    "KUNAG": "",
+    "NAME1": "Depolar Arasi Transfer",
+    "ORT01": "Istanbul",
+    "ORT02": "Pendik",
+    "STRAS": "Organize Sanayi Bolgesi",
+    "TELF1": "",
+    "WADAT": "2026-03-10"
+  },
+  "ITEMS": [
+    {
+      "POSNR": "10",
+      "MATNR": "MAT-TR-001",
+      "MAKTX": "Ambalaj Malzemesi A",
+      "CHARG": "BATCH-2026-001",
+      "LFIMG": 500,
+      "VRKME": "KG",
+      "BRGEW": 520.0,
+      "GEWEI": "KG",
+      "VOLUM": 2.5,
+      "VOLEH": "M3"
+    },
+    {
+      "POSNR": "20",
+      "MATNR": "MAT-TR-002",
+      "MAKTX": "Hammadde B",
+      "CHARG": "BATCH-2026-002",
+      "LFIMG": 1200,
+      "VRKME": "EA",
+      "BRGEW": 360.0,
+      "GEWEI": "KG",
+      "VOLUM": 4.8,
+      "VOLEH": "M3"
+    },
+    {
+      "POSNR": "30",
+      "MATNR": "MAT-TR-003",
+      "MAKTX": "Yari Mamul C",
+      "CHARG": "",
+      "LFIMG": 80,
+      "VRKME": "EA",
+      "BRGEW": 640.0,
+      "GEWEI": "KG",
+      "VOLUM": 6.4,
+      "VOLEH": "M3"
+    }
+  ]
+}

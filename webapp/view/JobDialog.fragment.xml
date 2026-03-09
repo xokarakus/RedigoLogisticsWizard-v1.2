@@ -1,0 +1,175 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  xmlns:l="sap.ui.layout">
+
+  <Dialog id="jobDialog"
+    title="{dialog>/title}"
+    contentWidth="540px"
+    verticalScrolling="true">
+
+    <content>
+      <IconTabBar id="jobTabBar" expandable="false" stretchContentHeight="false"
+        class="sapUiNoContentPadding">
+
+        <!-- ═══ Tab 1: Genel Bilgiler ═══ -->
+        <items>
+          <IconTabFilter text="{i18n>jobGeneral}" icon="sap-icon://detail-view" key="general">
+            <l:VerticalLayout class="sapUiSmallMargin" width="calc(100% - 2rem)">
+              <Label text="{i18n>jobName}" required="true" class="sapUiSmallMarginTop" />
+              <Input value="{dialog>/name}" width="100%" />
+
+              <Label text="{i18n>jobDescription}" class="sapUiSmallMarginTop" />
+              <TextArea value="{dialog>/description}" rows="2" width="100%" />
+
+              <Label text="{i18n>jobType}" required="true" class="sapUiSmallMarginTop" />
+              <Select selectedKey="{dialog>/job_type}" width="100%">
+                <core:Item key="FETCH_FROM_SAP" text="{i18n>jobTypeFetch}" />
+                <core:Item key="SEND_TO_3PL" text="{i18n>jobTypeSend}" />
+                <core:Item key="POST_GOODS_ISSUE" text="{i18n>jobTypePGI}" />
+                <core:Item key="POST_GOODS_RECEIPT" text="{i18n>jobTypePGR}" />
+                <core:Item key="QUERY_STATUS" text="{i18n>jobTypeQuery}" />
+                <core:Item key="RECONCILIATION" text="{i18n>jobTypeRecon}" />
+                <core:Item key="CLEANUP_LOGS" text="{i18n>jobTypeCleanup}" />
+              </Select>
+
+              <Label text="{i18n>jobClass}" class="sapUiSmallMarginTop" />
+              <Select selectedKey="{dialog>/job_class}" width="100%">
+                <core:Item key="A" text="A - Y&#xFC;ksek &#xD6;ncelik" />
+                <core:Item key="B" text="B - Orta &#xD6;ncelik" />
+                <core:Item key="C" text="C - D&#xFC;&#x15F;&#xFC;k &#xD6;ncelik" />
+              </Select>
+
+              <Label text="{i18n>jobConfigJson}" class="sapUiSmallMarginTop" />
+              <TextArea value="{dialog>/configJson}" rows="3" width="100%"
+                placeholder='&#x7B;"warehouse_code":"WH01","batch_size":50&#x7D;' />
+            </l:VerticalLayout>
+          </IconTabFilter>
+
+          <!-- ═══ Tab 2: Başlangıç Koşulu (SAP SM36 benzeri) ═══ -->
+          <IconTabFilter text="{i18n>jobSchedule}" icon="sap-icon://date-time" key="schedule">
+            <l:VerticalLayout class="sapUiSmallMargin" width="calc(100% - 2rem)">
+
+              <Label text="{i18n>jobStartCondition}" class="sapUiSmallMarginTop" />
+              <Select selectedKey="{dialog>/schedule_type}" width="100%"
+                change="onScheduleTypeChange">
+                <core:Item key="MANUAL" text="Manuel Ba&#x15F;latma" />
+                <core:Item key="IMMEDIATE" text="Hemen Ba&#x15F;lat" />
+                <core:Item key="ONCE" text="Tarih/Saat Belirle" />
+                <core:Item key="PERIODIC" text="Periyodik &#xC7;al&#x131;&#x15F;t&#x131;r" />
+              </Select>
+
+              <!-- Tarih/Saat (ONCE) -->
+              <Panel headerText="Planlanan Zaman"
+                visible="{= ${dialog>/schedule_type} === 'ONCE'}"
+                class="sapUiSmallMarginTop">
+                <l:VerticalLayout class="sapUiSmallMargin" width="calc(100% - 2rem)">
+                  <Label text="Tarih" />
+                  <DatePicker value="{dialog>/once_date}" displayFormat="dd.MM.yyyy"
+                    valueFormat="yyyy-MM-dd" width="100%" />
+                  <Label text="Saat" class="sapUiSmallMarginTop" />
+                  <TimePicker value="{dialog>/once_time}" valueFormat="HH:mm"
+                    displayFormat="HH:mm" width="100%" />
+                </l:VerticalLayout>
+              </Panel>
+
+              <!-- Periyodik (SAP Periyot Değerleri) -->
+              <Panel headerText="Periyot De&#x11F;erleri"
+                visible="{= ${dialog>/schedule_type} === 'PERIODIC'}"
+                class="sapUiSmallMarginTop">
+                <l:VerticalLayout class="sapUiSmallMargin" width="calc(100% - 2rem)">
+
+                  <Label text="Periyot Tipi" />
+                  <Select selectedKey="{dialog>/period_type}" width="100%"
+                    change="onPeriodTypeChange">
+                    <core:Item key="MINUTELY" text="Dakika Bazl&#x131;" />
+                    <core:Item key="HOURLY" text="Saatlik" />
+                    <core:Item key="DAILY" text="G&#xFC;nl&#xFC;k" />
+                    <core:Item key="WEEKLY" text="Haftal&#x131;k" />
+                    <core:Item key="MONTHLY" text="Ayl&#x131;k" />
+                  </Select>
+
+                  <!-- Dakika bazlı -->
+                  <HBox alignItems="Center" class="sapUiSmallMarginTop"
+                    visible="{= ${dialog>/period_type} === 'MINUTELY'}">
+                    <Label text="Her" class="sapUiTinyMarginEnd" />
+                    <Input value="{dialog>/period_minutes}" width="80px" type="Number" />
+                    <Label text="dakikada bir" class="sapUiTinyMarginBegin" />
+                  </HBox>
+
+                  <!-- Saatlik -->
+                  <HBox alignItems="Center" class="sapUiSmallMarginTop"
+                    visible="{= ${dialog>/period_type} === 'HOURLY'}">
+                    <Label text="Her" class="sapUiTinyMarginEnd" />
+                    <Input value="{dialog>/period_hours}" width="80px" type="Number" />
+                    <Label text="saatte bir" class="sapUiTinyMarginBegin" />
+                  </HBox>
+
+                  <!-- Günlük -->
+                  <HBox alignItems="Center" class="sapUiSmallMarginTop"
+                    visible="{= ${dialog>/period_type} === 'DAILY'}">
+                    <Label text="Her g&#xFC;n saat" class="sapUiTinyMarginEnd" />
+                    <TimePicker value="{dialog>/daily_time}" valueFormat="HH:mm"
+                      displayFormat="HH:mm" width="120px" />
+                  </HBox>
+
+                  <!-- Haftalık -->
+                  <l:VerticalLayout class="sapUiSmallMarginTop"
+                    visible="{= ${dialog>/period_type} === 'WEEKLY'}">
+                    <Label text="G&#xFC;nler" />
+                    <HBox class="sapUiSmallMarginTop" wrap="Wrap">
+                      <CheckBox text="Pzt" selected="{dialog>/week_mon}" />
+                      <CheckBox text="Sal" selected="{dialog>/week_tue}" />
+                      <CheckBox text="&#xC7;ar" selected="{dialog>/week_wed}" />
+                      <CheckBox text="Per" selected="{dialog>/week_thu}" />
+                      <CheckBox text="Cum" selected="{dialog>/week_fri}" />
+                      <CheckBox text="Cmt" selected="{dialog>/week_sat}" />
+                      <CheckBox text="Paz" selected="{dialog>/week_sun}" />
+                    </HBox>
+                    <HBox alignItems="Center" class="sapUiSmallMarginTop">
+                      <Label text="Saat" class="sapUiTinyMarginEnd" />
+                      <TimePicker value="{dialog>/weekly_time}" valueFormat="HH:mm"
+                        displayFormat="HH:mm" width="120px" />
+                    </HBox>
+                  </l:VerticalLayout>
+
+                  <!-- Aylık -->
+                  <l:VerticalLayout class="sapUiSmallMarginTop"
+                    visible="{= ${dialog>/period_type} === 'MONTHLY'}">
+                    <HBox alignItems="Center">
+                      <Label text="Ay&#x131;n" class="sapUiTinyMarginEnd" />
+                      <Input value="{dialog>/monthly_day}" width="60px" type="Number" />
+                      <Label text=". g&#xFC;n&#xFC;" class="sapUiTinyMarginBegin" />
+                    </HBox>
+                    <HBox alignItems="Center" class="sapUiSmallMarginTop">
+                      <Label text="Saat" class="sapUiTinyMarginEnd" />
+                      <TimePicker value="{dialog>/monthly_time}" valueFormat="HH:mm"
+                        displayFormat="HH:mm" width="120px" />
+                    </HBox>
+                  </l:VerticalLayout>
+
+                  <!-- Oluşan Cron İfadesi (readonly) -->
+                  <Label text="Cron &#x130;fadesi" class="sapUiMediumMarginTop" />
+                  <Input value="{dialog>/cron_expression}" width="100%" editable="false"
+                    valueState="{= ${dialog>/cron_expression} ? 'None' : 'Warning'}" />
+
+                </l:VerticalLayout>
+              </Panel>
+
+            </l:VerticalLayout>
+          </IconTabFilter>
+        </items>
+
+      </IconTabBar>
+    </content>
+
+    <beginButton>
+      <Button text="{i18n>cfgSave}" type="Emphasized" press="onDialogSave" />
+    </beginButton>
+    <endButton>
+      <Button text="{i18n>cfgCancel}" press="onDialogCancel" />
+    </endButton>
+
+  </Dialog>
+
+</core:FragmentDefinition>

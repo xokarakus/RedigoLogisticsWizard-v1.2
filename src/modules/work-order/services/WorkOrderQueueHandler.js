@@ -44,6 +44,11 @@ async function handleCreateWorkOrder(job) {
   const shipTo = header.KUNNR || original.KUNNR || null;
   const soldTo = header.KUNAG || original.KUNAG || null;
   const docDate = header.ERDAT || original.ERDAT || null;
+  const storLoc = header.LGORT || original.LGORT || null;
+  const targetPlant = header.UMWRK || original.UMWRK || null;
+  const targetStorLoc = header.UMLGO || original.UMLGO || null;
+  const shippingPoint = header.VSTEL || original.VSTEL || null;
+  const vendorNo = header.LIFNR || original.LIFNR || null;
 
   // ITEMS → lines (WorkOrderDetail.view.xml formatına uyumlu)
   const items = original.ITEMS || original.items || [];
@@ -82,6 +87,11 @@ async function handleCreateWorkOrder(job) {
     workOrder = await workOrderStore.update(workOrder.id, {
       sap_delivery_type: deliveryType || workOrder.sap_delivery_type,
       plant_code: plantCode,
+      sap_stor_loc: storLoc || workOrder.sap_stor_loc,
+      sap_target_plant: targetPlant || workOrder.sap_target_plant,
+      sap_target_stor_loc: targetStorLoc || workOrder.sap_target_stor_loc,
+      sap_shipping_point: shippingPoint || workOrder.sap_shipping_point,
+      sap_vendor_no: vendorNo || workOrder.sap_vendor_no,
       process_type: processType || workOrder.process_type,
       lines: lines.length > 0 ? lines : workOrder.lines,
       sap_raw_payload: original,
@@ -106,6 +116,11 @@ async function handleCreateWorkOrder(job) {
       status: 'RECEIVED',
       warehouse_code: mapping.warehouse_code || null,
       plant_code: plantCode,
+      sap_stor_loc: storLoc,
+      sap_target_plant: targetPlant,
+      sap_target_stor_loc: targetStorLoc,
+      sap_shipping_point: shippingPoint,
+      sap_vendor_no: vendorNo,
       correlation_id: job.correlation_id,
       priority: 'MEDIUM',
       received_at: new Date().toISOString(),

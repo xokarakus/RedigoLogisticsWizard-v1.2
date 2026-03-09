@@ -3,43 +3,108 @@
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m"
   xmlns:core="sap.ui.core"
+  xmlns:tnt="sap.tnt"
   height="100%">
 
-  <SplitApp id="splitApp">
-    <masterPages>
-      <Page title="{i18n>appTitle}">
-        <List id="navList" itemPress="onNavSelect">
-          <StandardListItem title="{i18n>navDashboard}" icon="sap-icon://home" type="Active">
-            <customData><core:CustomData key="target" value="dashboard" /></customData>
-          </StandardListItem>
-          <StandardListItem title="{i18n>navWorkOrders}" icon="sap-icon://shipping-status" type="Active">
-            <customData><core:CustomData key="target" value="workOrders" /></customData>
-          </StandardListItem>
-          <StandardListItem title="{i18n>navInventory}" icon="sap-icon://inventory" type="Active">
-            <customData><core:CustomData key="target" value="inventory" /></customData>
-          </StandardListItem>
-          <StandardListItem title="{i18n>navTransactions}" icon="sap-icon://activity-items" type="Active">
-            <customData><core:CustomData key="target" value="transactionLog" /></customData>
-          </StandardListItem>
-          <StandardListItem title="{i18n>navDLQ}" icon="sap-icon://warning2" type="Active">
-            <customData><core:CustomData key="target" value="dlq" /></customData>
-          </StandardListItem>
-          <StandardListItem title="{i18n>navReconciliation}" icon="sap-icon://compare-2" type="Active">
-            <customData><core:CustomData key="target" value="reconciliation" /></customData>
-          </StandardListItem>
-          <StandardListItem title="{i18n>navConfiguration}" icon="sap-icon://action-settings" type="Active">
-            <customData><core:CustomData key="target" value="configuration" /></customData>
-          </StandardListItem>
-        </List>
-      </Page>
-    </masterPages>
-    <detailPages>
-      <Page id="emptyPage" showHeader="false">
-        <content>
-          <BusyIndicator size="44px" class="sapUiMediumMarginTop" />
-        </content>
-      </Page>
-    </detailPages>
-  </SplitApp>
+  <tnt:ToolPage id="toolPage" sideExpanded="true">
+
+    <!-- ═══ Top Header Bar ═══ -->
+    <tnt:header>
+      <tnt:ToolHeader>
+        <Button id="menuToggle" icon="sap-icon://menu2" press="onMenuToggle" type="Transparent"
+          tooltip="{i18n>navToggleMenu}" />
+        <Title text="{i18n>appTitle}" level="H5" />
+        <ToolbarSpacer />
+
+        <!-- Impersonation uyarisi -->
+        <ObjectStatus text="{appState>/impersonatingTenant}" state="Warning"
+          icon="sap-icon://visits" visible="{appState>/isImpersonating}"
+          class="sapUiTinyMarginEnd" inverted="true" />
+        <Button icon="sap-icon://undo" tooltip="{i18n>stopImpersonation}"
+          press="onStopImpersonation" type="Reject"
+          visible="{appState>/isImpersonating}" />
+
+        <ToolbarSeparator visible="{appState>/isImpersonating}" />
+
+        <!-- User bilgisi -->
+        <core:Icon src="sap-icon://factory" class="sapUiTinyMarginEnd"
+          visible="{= !${appState>/isImpersonating} &amp;&amp; !!${appState>/tenantName} }" />
+        <Text text="{appState>/tenantName}" class="sapUiTinyMarginEnd"
+          visible="{= !${appState>/isImpersonating} &amp;&amp; !!${appState>/tenantName} }" />
+        <core:Icon src="sap-icon://person-placeholder" class="sapUiTinyMarginEnd"
+          visible="{= !${appState>/isImpersonating} }" />
+        <Title text="{appState>/displayName}" level="H6"
+          visible="{= !${appState>/isImpersonating} }" />
+
+        <!-- Sirket degistir -->
+        <Button icon="sap-icon://building" tooltip="{i18n>switchCompany}"
+          press="onSwitchCompany" type="Transparent"
+          visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }" />
+
+        <ToolbarSeparator />
+
+        <!-- Tema secimi -->
+        <Select id="themeSelect" selectedKey="{appState>/theme}" change="onThemeChange" width="110px">
+          <core:Item key="auto" text="{i18n>themeAuto}" />
+          <core:Item key="light" text="{i18n>themeLight}" />
+          <core:Item key="dark" text="{i18n>themeDark}" />
+        </Select>
+
+        <!-- Cikis -->
+        <Button icon="sap-icon://log" tooltip="{i18n>logout}" press="onLogout" type="Transparent" />
+      </tnt:ToolHeader>
+    </tnt:header>
+
+    <!-- ═══ Side Navigation ═══ -->
+    <tnt:sideContent>
+      <tnt:SideNavigation id="sideNav" itemSelect="onNavSelect" selectedKey="dashboard">
+
+        <tnt:NavigationList>
+          <!-- Ana Islemler -->
+          <tnt:NavigationListItem text="{i18n>navDashboard}" icon="sap-icon://home" key="dashboard"
+            visible="{appState>/perm/dashboard_view}" />
+          <tnt:NavigationListItem text="{i18n>navWorkOrders}" icon="sap-icon://shipping-status" key="workOrders"
+            visible="{appState>/perm/work_orders_view}" />
+          <tnt:NavigationListItem text="{i18n>navInventory}" icon="sap-icon://inventory" key="inventory"
+            visible="{appState>/perm/inventory_view}" />
+          <tnt:NavigationListItem text="{i18n>navReconciliation}" icon="sap-icon://compare-2" key="reconciliation"
+            visible="{appState>/perm/reconciliation_view}" />
+
+          <!-- Yonetim -->
+          <tnt:NavigationListItem text="{i18n>navConfiguration}" icon="sap-icon://action-settings"
+            key="configuration" visible="{appState>/perm/config_view}" />
+          <tnt:NavigationListItem text="{i18n>navAdministration}" icon="sap-icon://employee"
+            key="administration" visible="{appState>/perm/users_view}" />
+          <tnt:NavigationListItem text="{i18n>navAuditLog}" icon="sap-icon://history"
+            key="auditLog" visible="{appState>/perm/audit_view}" />
+          <tnt:NavigationListItem text="{i18n>navJobs}" icon="sap-icon://date-time"
+            key="jobManagement" visible="{appState>/perm/config_edit}" />
+
+          <!-- Sistem (super_admin) -->
+          <tnt:NavigationListItem text="{i18n>navTenants}" icon="sap-icon://building"
+            key="tenantManagement" visible="{appState>/perm/tenants_manage}" />
+        </tnt:NavigationList>
+
+        <tnt:fixedItem>
+          <tnt:NavigationList>
+            <tnt:NavigationListItem text="{i18n>logout}" icon="sap-icon://log" key="_logout" />
+          </tnt:NavigationList>
+        </tnt:fixedItem>
+
+      </tnt:SideNavigation>
+    </tnt:sideContent>
+
+    <!-- ═══ Main Content ═══ -->
+    <tnt:mainContents>
+      <NavContainer id="navContainer">
+        <Page id="emptyPage" showHeader="false">
+          <content>
+            <BusyIndicator size="44px" class="sapUiMediumMarginTop" />
+          </content>
+        </Page>
+      </NavContainer>
+    </tnt:mainContents>
+
+  </tnt:ToolPage>
 
 </mvc:View>

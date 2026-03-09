@@ -8,6 +8,7 @@ const sapClient = require('./shared/sap/client');
 const { setupAuth, authenticate, requireScope } = require('./shared/middleware/auth');
 const pgQueue = require('./shared/queue/pgQueue');
 const queueHandlers = require('./modules/work-order/services/WorkOrderQueueHandler');
+const jobScheduler = require('./shared/services/jobScheduler');
 
 const app = express();
 
@@ -37,6 +38,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', version: '1.2.0', uptime: process.uptime() });
 });
 
+// ── Auth route'ları (kendi JWT auth'u var) ──
+app.use('/api/auth', require('./api/routes/auth'));
+
 // ── Webhook route'ları (auth yok — harici sistemler çağırır) ──
 app.use('/api/wms', require('./api/routes/wmsWebhook'));
 app.use('/api/inbound', require('./api/routes/inbound'));
@@ -48,6 +52,9 @@ app.use('/api/dashboard', authenticate, require('./api/routes/dashboard'));
 app.use('/api/reconciliation', authenticate, require('./api/routes/reconciliation'));
 app.use('/api/inventory', authenticate, require('./api/routes/inventory'));
 app.use('/api/config', authenticate, require('./api/routes/config'));
+app.use('/api/trigger', authenticate, require('./api/routes/trigger'));
+app.use('/api/goods-movement', authenticate, require('./api/routes/goodsMovement'));
+app.use('/api/scheduled-jobs', authenticate, require('./api/routes/scheduledJobs'));
 
 // ── Queue API (kuyruk yönetimi) ──
 app.get('/api/queue/stats', authenticate, async (req, res) => {
@@ -106,6 +113,9 @@ async function start() {
   // PostgreSQL Queue Worker başlat
   pgQueue.startWorker(queueHandlers);
 
+  // Scheduled Jobs yükle
+  jobScheduler.loadActiveJobs();
+
   app.listen(config.port, () => {
     logger.info(`Redigo Logistics Cockpit v1.2 running on port ${config.port}`);
     logger.info(`Environment: ${config.env}`);
@@ -119,8 +129,9 @@ start().catch((err) => {
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, stopping queue worker...');
+  logger.info('SIGTERM received, stopping workers...');
   pgQueue.stopWorker();
+  jobScheduler.stopAll();
   process.exit(0);
 });
 

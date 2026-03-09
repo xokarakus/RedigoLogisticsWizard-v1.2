@@ -1,0 +1,77 @@
+{
+  "sap_delivery_no": "1800056789",
+  "sap_delivery_type": "EL",
+  "sap_doc_date": "2026-03-09",
+  "sap_ship_to": "Tedarikci ABC Kimya Ltd.",
+  "order_type": "INBOUND",
+  "warehouse_code": "WH-01",
+  "plant_code": "1000",
+  "priority": "HIGH",
+  "lines": [
+    {
+      "POSNR": "10",
+      "MATNR": "RM-KIM-001",
+      "MAKTX": "Polietilen Granul",
+      "CHARG": "BATCH-IMP-2026-01",
+      "LFIMG": 5000,
+      "VRKME": "KG",
+      "BRGEW": 5100.0,
+      "GEWEI": "KG"
+    },
+    {
+      "POSNR": "20",
+      "MATNR": "RM-KIM-002",
+      "MAKTX": "Pigment Katkisi Mavi",
+      "CHARG": "BATCH-IMP-2026-02",
+      "LFIMG": 200,
+      "VRKME": "KG",
+      "BRGEW": 210.0,
+      "GEWEI": "KG"
+    }
+  ],
+  "HEADER": {
+    "VBELN": "1800056789",
+    "LFART": "EL",
+    "ERDAT": "2026-03-09",
+    "WERKS": "1000",
+    "LGORT": "0003",
+    "UMWRK": "",
+    "UMLGO": "",
+    "VSTEL": "VS02",
+    "LIFNR": "VND-00450",
+    "KUNNR": "",
+    "KUNAG": "",
+    "NAME1": "ABC Kimya Ltd.",
+    "ORT01": "Gebze",
+    "ORT02": "Kocaeli",
+    "STRAS": "GOSB Ihsan Dede Cad. No:15",
+    "TELF1": "+90 262 555 1234",
+    "WADAT": "2026-03-10"
+  },
+  "ITEMS": [
+    {
+      "POSNR": "10",
+      "MATNR": "RM-KIM-001",
+      "MAKTX": "Polietilen Granul",
+      "CHARG": "BATCH-IMP-2026-01",
+      "LFIMG": 5000,
+      "VRKME": "KG",
+      "BRGEW": 5100.0,
+      "GEWEI": "KG",
+      "VOLUM": 8.5,
+      "VOLEH": "M3"
+    },
+    {
+      "POSNR": "20",
+      "MATNR": "RM-KIM-002",
+      "MAKTX": "Pigment Katkisi Mavi",
+      "CHARG": "BATCH-IMP-2026-02",
+      "LFIMG": 200,
+      "VRKME": "KG",
+      "BRGEW": 210.0,
+      "GEWEI": "KG",
+      "VOLUM": 0.4,
+      "VOLEH": "M3"
+    }
+  ]
+}

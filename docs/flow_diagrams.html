@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redigo Logistics Cockpit v1.2 - Akis Diyagramlari</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0e1a;
+      color: #f1f5f9;
+      line-height: 1.6
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, .08) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, .06) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(6, 182, 212, .05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 14, 26, .85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(59, 130, 246, .15)
+    }
+
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text
+    }
+
+    .header .version {
+      font-size: .75rem;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 100px;
+      background: rgba(59, 130, 246, .12);
+      color: #3b82f6;
+      border: 1px solid rgba(59, 130, 246, .2)
+    }
+
+    .nav-bar {
+      position: sticky;
+      top: 68px;
+      z-index: 99;
+      background: rgba(17, 24, 39, .9);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid #1e293b;
+      overflow-x: auto;
+      scrollbar-width: none
+    }
+
+    .nav-bar::-webkit-scrollbar {
+      display: none
+    }
+
+    .nav-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 40px;
+      display: flex;
+      gap: 4px
+    }
+
+    .nav-btn {
+      padding: 12px 18px;
+      font-size: .8rem;
+      font-weight: 500;
+      color: #64748b;
+      background: none;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: all .25s;
+      font-family: inherit
+    }
+
+    .nav-btn:hover {
+      color: #94a3b8;
+      background: rgba(255, 255, 255, .03)
+    }
+
+    .nav-btn.active {
+      color: #3b82f6;
+      border-bottom-color: #3b82f6
+    }
+
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px;
+      position: relative;
+      z-index: 1
+    }
+
+    .section {
+      margin-bottom: 60px;
+      opacity: 0;
+      height: 0;
+      overflow: hidden;
+      transition: opacity .3s
+    }
+
+    .section.active {
+      opacity: 1;
+      height: auto;
+      overflow: visible
+    }
+
+    .section-number {
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: #06b6d4;
+      margin-bottom: 8px
+    }
+
+    .section-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      margin-bottom: 8px
+    }
+
+    .section-desc {
+      font-size: .9rem;
+      color: #94a3b8;
+      max-width: 700px;
+      line-height: 1.7;
+      margin-bottom: 24px
+    }
+
+    .card {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 16px;
+      padding: 40px;
+      margin-bottom: 24px;
+      overflow-x: auto;
+      transition: border-color .3s, box-shadow .3s
+    }
+
+    .card:hover {
+      border-color: rgba(59, 130, 246, .25);
+      box-shadow: 0 0 40px rgba(59, 130, 246, .05)
+    }
+
+    .mermaid {
+      text-align: center
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 24px
+    }
+
+    .info-box {
+      border-radius: 12px;
+      padding: 20px
+    }
+
+    .info-box h4 {
+      font-size: .85rem;
+      font-weight: 600;
+      margin-bottom: 8px
+    }
+
+    .info-box p {
+      font-size: .82rem;
+      color: #94a3b8;
+      line-height: 1.6
+    }
+
+    .ib {
+      background: rgba(59, 130, 246, .05);
+      border: 1px solid rgba(59, 130, 246, .12)
+    }
+
+    .ib h4 {
+      color: #3b82f6
+    }
+
+    .ig {
+      background: rgba(16, 185, 129, .05);
+      border: 1px solid rgba(16, 185, 129, .12)
+    }
+
+    .ig h4 {
+      color: #10b981
+    }
+
+    .io {
+      background: rgba(245, 158, 11, .05);
+      border: 1px solid rgba(245, 158, 11, .12)
+    }
+
+    .io h4 {
+      color: #f59e0b
+    }
+
+    .ip {
+      background: rgba(139, 92, 246, .05);
+      border: 1px solid rgba(139, 92, 246, .12)
+    }
+
+    .ip h4 {
+      color: #8b5cf6
+    }
+
+    .ir {
+      background: rgba(239, 68, 68, .05);
+      border: 1px solid rgba(239, 68, 68, .12)
+    }
+
+    .ir h4 {
+      color: #ef4444
+    }
+
+    .ic {
+      background: rgba(6, 182, 212, .05);
+      border: 1px solid rgba(6, 182, 212, .12)
+    }
+
+    .ic h4 {
+      color: #06b6d4
+    }
+
+    table.st {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 20px;
+      font-size: .82rem
+    }
+
+    .st th {
+      text-align: left;
+      padding: 12px 16px;
+      font-weight: 600;
+      color: #64748b;
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      border-bottom: 1px solid #1e293b
+    }
+
+    .st td {
+      padding: 12px 16px;
+      color: #94a3b8;
+      border-bottom: 1px solid rgba(30, 41, 59, .5)
+    }
+
+    .st tr:hover td {
+      background: rgba(255, 255, 255, .02)
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: .7rem;
+      font-weight: 600
+    }
+
+    .bb {
+      background: rgba(59, 130, 246, .15);
+      color: #60a5fa
+    }
+
+    .bg {
+      background: rgba(16, 185, 129, .15);
+      color: #34d399
+    }
+
+    .bo {
+      background: rgba(245, 158, 11, .15);
+      color: #fbbf24
+    }
+
+    .br {
+      background: rgba(239, 68, 68, .15);
+      color: #f87171
+    }
+
+    .bp {
+      background: rgba(139, 92, 246, .15);
+      color: #a78bfa
+    }
+
+    .bc {
+      background: rgba(6, 182, 212, .15);
+      color: #22d3ee
+    }
+
+    .footer {
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+      font-size: .78rem;
+      border-top: 1px solid #1e293b;
+      margin-top: 60px
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <div class="header-inner">
+      <h1>Redigo Logistics Cockpit - Akis Diyagramlari</h1>
+      <span class="version">v1.2</span>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <div class="nav-inner" id="navInner"></div>
+  </div>
+
+  <div class="main" id="mainContent"></div>
+
+  <div class="footer">Redigo Logistics Cockpit v1.2 | Mart 2026</div>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.esm.min.mjs';
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background: '#111827',
+        primaryColor: '#3b82f6',
+        primaryTextColor: '#f1f5f9',
+        primaryBorderColor: '#1e40af',
+        lineColor: '#64748b',
+        secondaryColor: '#1e293b',
+        tertiaryColor: '#0f172a',
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '13px'
+      },
+      flowchart: { curve: 'basis', padding: 20 },
+      sequence: { mirrorActors: false, actorMargin: 50 }
+    });
+
+    const sections = [
+      {
+        id: 's1', tab: 'Genel Mimari', num: '01', title: 'Genel Mimari',
+        desc: 'SAP ERP, Backend ve 3PL/WMS arasindaki mimari yapi.',
+        diagrams: [`graph TB
+    subgraph EXT["Dis Sistemler"]
+        SAP["SAP ERP - RFC BAPI"]
+        WMS["3PL WMS - REST API"]
+    end
+    subgraph BTP["SAP BTP Cloud Platform"]
+        subgraph FE["Frontend SAPUI5 Fiori"]
+            UI["SplitApp Cockpit UI"]
+        end
+        subgraph BE["Backend Node.js Express"]
+            API["REST API Express Router"]
+            AUTH["XSUAA JWT Auth"]
+            QUEUE["pgQueue Job Worker"]
+            TRANS["Field Transformer"]
+            SAPCONN["SAP RFC Client"]
+        end
+        subgraph DL["Veri Katmani"]
+            PG["PostgreSQL Database"]
+            JS["JSON Store"]
+        end
+    end
+    SAP -- "RFC BAPI" --> SAPCONN
+    SAP -- "POST inbound" --> API
+    WMS -- "POST confirmation" --> API
+    UI -- "REST API" --> API
+    API --> AUTH
+    API --> TRANS
+    API --> QUEUE
+    QUEUE --> SAPCONN
+    QUEUE -- "HTTP dispatch" --> WMS
+    SAPCONN --> SAP
+    API --> PG
+    API --> JS
+    QUEUE --> PG
+    style SAP fill:#e8a838,stroke:#d4942a,color:#000
+    style WMS fill:#4fc3f7,stroke:#29b6f6,color:#000
+    style UI fill:#66bb6a,stroke:#43a047,color:#fff
+    style API fill:#7e57c2,stroke:#5e35b1,color:#fff
+    style AUTH fill:#ef5350,stroke:#e53935,color:#fff
+    style QUEUE fill:#ff7043,stroke:#f4511e,color:#fff
+    style TRANS fill:#26c6da,stroke:#00acc1,color:#000
+    style SAPCONN fill:#e8a838,stroke:#d4942a,color:#000
+    style PG fill:#42a5f5,stroke:#1e88e5,color:#fff
+    style JS fill:#78909c,stroke:#546e7a,color:#fff`],
+        extra: `<div class="info-grid">
+      <div class="info-box ib"><h4>SAP ERP</h4><p>node-rfc BAPI: BAPI_OUTB_DELIVERY_CHANGE, WS_DELIVERY_UPDATE, BAPI_GOODSMVT_CREATE</p></div>
+      <div class="info-box ig"><h4>Frontend</h4><p>SAPUI5 Fiori SplitApp. 7 nav + 1 detay ekrani. XMLView.create ile dinamik view.</p></div>
+      <div class="info-box io"><h4>pgQueue</h4><p>PostgreSQL SKIP LOCKED is kuyrugu. CREATE_WORK_ORDER, DISPATCH_TO_3PL is tipleri.</p></div>
+      <div class="info-box ip"><h4>Guvenlik</h4><p>XSUAA JWT. Webhook endpointleri auth gerektirmez. Korumali API JWT + scope kontrolu.</p></div>
+    </div>`
+      },
+      {
+        id: 's2', tab: 'Veri Akisi', num: '02', title: 'SAP - Kokpit - 3PL Veri Akisi',
+        desc: 'SAP den gelen verinin Inbound endpoint e dusmesinden 3PL e dispatch edilmesine kadar.',
+        diagrams: [`sequenceDiagram
+    participant SAP as SAP ERP
+    participant IB as Inbound API
+    participant FM as Field Mappings
+    participant FT as Field Transformer
+    participant TX as Transaction Log
+    participant Q as pgQueue
+    participant WH as WO Handler
+    participant WO as Work Orders DB
+    participant D3 as Dispatch 3PL
+    participant WMS as 3PL WMS
+    SAP->>IB: POST inbound
+    IB->>FM: URL eslestir
+    FM-->>IB: mapping + field_rules
+    IB->>FT: validateRequiredFields
+    FT-->>IB: valid true
+    IB->>FT: applyFieldRules
+    FT-->>IB: transformed payload
+    IB->>TX: INBOUND transaction SUCCESS
+    alt WORK_ORDER
+        IB->>Q: enqueue CREATE_WORK_ORDER
+        Q->>WH: handleCreateWorkOrder
+        WH->>WO: is emri olustur
+        WH->>Q: enqueue DISPATCH_TO_3PL
+    else MASTER_DATA
+        IB->>Q: enqueue DISPATCH_TO_3PL
+    end
+    Q->>D3: handleDispatchTo3PL
+    D3->>WMS: HTTP POST payload
+    WMS-->>D3: Response
+    D3->>FT: applyResponseRules
+    D3->>TX: OUTBOUND transaction log
+    D3->>WO: status SENT_TO_WMS
+    IB-->>SAP: 200 correlation_id`]
+      },
+      {
+        id: 's3', tab: 'Is Emri Durumlari', num: '03', title: 'Is Emri Yasam Dongusu',
+        desc: 'Bir is emrinin alinmasindan tamamlanmasina kadar durum gecisleri.',
+        diagrams: [`graph TD
+    START((" ")) --> RECEIVED["RECEIVED"]
+    RECEIVED --> SENT["SENT_TO_WMS"]
+    SENT --> PROG["IN_PROGRESS"]
+    PROG --> PARTIAL["PARTIALLY_DONE"]
+    PROG --> PGI["PGI_POSTED"]
+    PROG --> GR["GR_POSTED"]
+    PARTIAL --> PGI
+    PGI --> DONE["COMPLETED"]
+    GR --> DONE
+    RECEIVED --> FAIL["FAILED"]
+    SENT --> FAIL
+    PROG --> FAIL
+    FAIL -.-> RECEIVED
+    style RECEIVED fill:#3b82f6,stroke:#1d4ed8,color:#fff
+    style SENT fill:#06b6d4,stroke:#0891b2,color:#fff
+    style PROG fill:#f59e0b,stroke:#d97706,color:#000
+    style PARTIAL fill:#f97316,stroke:#ea580c,color:#fff
+    style PGI fill:#10b981,stroke:#059669,color:#fff
+    style GR fill:#10b981,stroke:#059669,color:#fff
+    style DONE fill:#22c55e,stroke:#16a34a,color:#fff
+    style FAIL fill:#ef4444,stroke:#dc2626,color:#fff`],
+        extra: `<table class="st"><thead><tr><th>Durum</th><th>Aciklama</th><th>Tetikleyen</th><th>Tip</th></tr></thead><tbody>
+      <tr><td><span class="badge bb">RECEIVED</span></td><td>SAP den alindi</td><td>POST /api/inbound</td><td>Baslangic</td></tr>
+      <tr><td><span class="badge bc">SENT_TO_WMS</span></td><td>3PL e dispatch edildi</td><td>DISPATCH_TO_3PL basarili</td><td>Ilerleme</td></tr>
+      <tr><td><span class="badge bo">IN_PROGRESS</span></td><td>WMS isleme aldi</td><td>WMS confirmation</td><td>Ilerleme</td></tr>
+      <tr><td><span class="badge bo">PARTIALLY_DONE</span></td><td>Kismi toplama</td><td>Partial pick</td><td>Ilerleme</td></tr>
+      <tr><td><span class="badge bg">PGI_POSTED</span></td><td>Mal cikis kaydedildi</td><td>WS_DELIVERY_UPDATE</td><td>Cikis</td></tr>
+      <tr><td><span class="badge bg">GR_POSTED</span></td><td>Mal giris kaydedildi</td><td>BAPI_GOODSMVT_CREATE</td><td>Giris</td></tr>
+      <tr><td><span class="badge bg">COMPLETED</span></td><td>Tamamlandi</td><td>Son adim basarili</td><td>Final</td></tr>
+      <tr><td><span class="badge br">FAILED</span></td><td>Hata olustu</td><td>Herhangi bir hata</td><td>Hata</td></tr>
+    </tbody></table>`
+      },
+      {
+        id: 's4', tab: 'WMS Confirmation', num: '04', title: 'WMS Confirmation Akisi',
+        desc: '3PL den gelen toplama / teslim alma onayinin islenmesi.',
+        diagrams: [`sequenceDiagram
+    participant WMS as 3PL WMS
+    participant WH as wms confirmation
+    participant VAL as Zod Validator
+    participant DB as PostgreSQL
+    participant DES as DeliveryExecution
+    participant SAP as SAP ERP
+    participant TX as Transaction Log
+    WMS->>WH: POST confirmation
+    WH->>VAL: safeParse
+    VAL-->>WH: valid
+    WH->>DB: SELECT work_order
+    DB-->>WH: workOrder
+    alt OUTBOUND
+        WH->>DES: processOutbound
+        DES->>DB: update quantities
+        DES->>TX: OUTBOUND_CONFIRM log
+        opt Partial pick
+            DES->>SAP: BAPI_OUTB_DELIVERY_CHANGE
+            SAP-->>DES: RETURN
+        end
+        DES->>SAP: WS_DELIVERY_UPDATE PGI
+        SAP-->>DES: RETURN
+        DES->>SAP: BAPI_TRANSACTION_COMMIT
+        DES->>DB: status PGI_POSTED
+    else INBOUND
+        WH->>DES: processInbound
+        DES->>DB: update quantities
+        DES->>DES: validateOverDelivery
+        DES->>SAP: BAPI_GOODSMVT_CREATE
+        SAP-->>DES: MAT_DOC
+        DES->>SAP: BAPI_TRANSACTION_COMMIT
+        DES->>DB: status GR_POSTED
+    end
+    DES-->>WH: result
+    WH-->>WMS: 200 OK`]
+      },
+      {
+        id: 's5', tab: 'Frontend Yapisi', num: '05', title: 'Frontend Navigasyon',
+        desc: 'SAPUI5 SplitApp arayuz yapisi. 7 navigasyon + Is Emri Detayi 5 tab.',
+        diagrams: [`graph LR
+    subgraph M["Master Panel"]
+        NAV["Navigasyon"]
+    end
+    subgraph D["Detail Panel"]
+        DASH["Dashboard"]
+        WO["Is Emirleri"]
+        WOD["Is Emri Detayi"]
+        INV["Stok Hareketleri"]
+        TXL["Islem Gecmisi"]
+        DLQ["Hata Kuyrugu"]
+        REC["Mutabakat"]
+        CFG["Yapilandirma"]
+    end
+    NAV --> DASH
+    NAV --> WO
+    NAV --> INV
+    NAV --> TXL
+    NAV --> DLQ
+    NAV --> REC
+    NAV --> CFG
+    WO -->|"secim"| WOD
+    style DASH fill:#4caf50,stroke:#388e3c,color:#fff
+    style WO fill:#2196f3,stroke:#1976d2,color:#fff
+    style WOD fill:#1565c0,stroke:#0d47a1,color:#fff
+    style INV fill:#ff9800,stroke:#f57c00,color:#fff
+    style TXL fill:#9c27b0,stroke:#7b1fa2,color:#fff
+    style DLQ fill:#f44336,stroke:#d32f2f,color:#fff
+    style REC fill:#00bcd4,stroke:#0097a7,color:#fff
+    style CFG fill:#607d8b,stroke:#455a64,color:#fff`,
+          `graph TB
+    subgraph TABS["WorkOrderDetail 5 Tab"]
+        T1["Ozet"]
+        T2["Kalemler"]
+        T3["Islemler"]
+        T4["Islem Gecmisi"]
+        T5["Ham Veri"]
+    end
+    subgraph DT["Islemler Tab"]
+        LP["Sol: MultiSelect Listesi"]
+        RP["Sag: Adim Detayi"]
+        BTN["Secilenleri Isle / Tumunu Isle"]
+    end
+    T3 --> LP
+    T3 --> RP
+    T3 --> BTN
+    style T1 fill:#1e3a5f,stroke:#1565c0,color:#e3f2fd
+    style T2 fill:#1b5e20,stroke:#2e7d32,color:#e8f5e9
+    style T3 fill:#e65100,stroke:#ef6c00,color:#fff3e0
+    style T4 fill:#4a148c,stroke:#7b1fa2,color:#f3e5f5
+    style T5 fill:#37474f,stroke:#546e7a,color:#eceff1`]
+      },
+      {
+        id: 's6', tab: 'Inbound Pipeline', num: '06', title: 'Inbound Pipeline',
+        desc: 'SAP den gelen ham verinin field_mappings tabanli donusturulmesi.',
+        diagrams: [`flowchart TD
+    A["SAP POST inbound"] --> B{"URL esleme\nvar mi?"}
+    B -->|Hayir| B1["404"]
+    B -->|Evet| C["Mapping bulundu"]
+    C --> D{"Kategori"}
+    D -->|WORK_ORDER| D1{"Duplike\nkontrol"}
+    D -->|MASTER_DATA| E
+    D1 -->|Duplike| D2["409 Zaten isleniyor"]
+    D1 -->|Yeni| E
+    E["validateRequiredFields"] --> F{"Zorunlu\nalanlar OK?"}
+    F -->|Eksik| F1["400 Eksik alanlar"]
+    F -->|Tamam| G["applyFieldRules"]
+    G --> H{"Transform OK?"}
+    H -->|Hata| H1["400 Transform error"]
+    H -->|OK| I["INBOUND TX log"]
+    I --> J{"Kategori"}
+    J -->|WORK_ORDER| K["CREATE_WORK_ORDER"]
+    J -->|MASTER_DATA api| L["DISPATCH_TO_3PL"]
+    J -->|MASTER_DATA no api| MM["Sadece log"]
+    K --> N["200 Response"]
+    L --> N
+    MM --> N
+    style A fill:#e8a838,stroke:#d4942a,color:#000
+    style G fill:#26c6da,stroke:#00acc1,color:#000
+    style K fill:#ff7043,stroke:#f4511e,color:#fff
+    style L fill:#ff7043,stroke:#f4511e,color:#fff
+    style N fill:#66bb6a,stroke:#43a047,color:#fff
+    style B1 fill:#ef5350,stroke:#e53935,color:#fff
+    style D2 fill:#ef5350,stroke:#e53935,color:#fff
+    style F1 fill:#ef5350,stroke:#e53935,color:#fff
+    style H1 fill:#ef5350,stroke:#e53935,color:#fff`]
+      },
+      {
+        id: 's7', tab: 'Kuyruk Isleme', num: '07', title: 'Kuyruk Isleme - pgQueue',
+        desc: 'PostgreSQL SKIP LOCKED tabanli is kuyrugu. Poll, backoff, DLQ.',
+        diagrams: [`flowchart TD
+    E1["enqueue"] --> DB1["INSERT job_queue PENDING"]
+    W2["tick"] --> W3["pollAndProcess"]
+    W3 --> W4["SELECT FOR UPDATE SKIP LOCKED"]
+    W4 --> W5{"Is var mi?"}
+    W5 -->|Hayir| W6["1sn bekle"] --> W2
+    W5 -->|Evet| W7["PROCESSING"]
+    W7 --> W8{"job_type"}
+    W8 -->|CREATE_WO| H1["handleCreateWorkOrder"]
+    W8 -->|DISPATCH| H2["handleDispatchTo3PL"]
+    H1 --> W9{"Basarili?"}
+    H2 --> W9
+    W9 -->|Evet| W10["DONE"]
+    W9 -->|Hayir| W11["markFailed"]
+    W11 --> W12{"retry?"}
+    W12 -->|Evet| W13["PENDING + backoff"]
+    W12 -->|Hayir| W14["DEAD"]
+    W10 --> W2
+    W13 --> W2
+    style W7 fill:#ff9800,stroke:#f57c00,color:#000
+    style W10 fill:#4caf50,stroke:#388e3c,color:#fff
+    style W14 fill:#f44336,stroke:#d32f2f,color:#fff
+    style W13 fill:#ff9800,stroke:#f57c00,color:#000`],
+        extra: `<div class="info-grid">
+      <div class="info-box ic"><h4>Poll Interval</h4><p>1 saniye aralikla kuyruk kontrol edilir.</p></div>
+      <div class="info-box io"><h4>Exponential Backoff</h4><p>Basarisiz isler icin ustel geri cekilme. Min 1dk, max 30dk.</p></div>
+      <div class="info-box ir"><h4>Dead Letter Queue</h4><p>Max attempts asildiginda DEAD durumuna tasinir. Manuel retry ile kurtarilabilir.</p></div>
+      <div class="info-box ig"><h4>SKIP LOCKED</h4><p>Coklu worker destegi. Kilitli satirlar atlanarak paralel isleme.</p></div>
+    </div>`
+      },
+      {
+        id: 's8', tab: 'API Haritasi', num: '08', title: 'Backend API Endpoint Haritasi',
+        desc: 'Tum API endpointlerinin guvenlik seviyelerine gore siniflandirmasi.',
+        diagrams: [`graph TD
+    subgraph WB["Webhook - Auth Yok"]
+        W1["/api/wms/confirmation POST"]
+        W2["/api/inbound ALL"]
+    end
+    subgraph PR["Korumali API - JWT"]
+        P1["/api/work-orders GET POST"]
+        P2["/api/transactions GET"]
+        P3["/api/dashboard GET"]
+        P4["/api/reconciliation GET"]
+        P5["/api/inventory GET"]
+        P6["/api/config CRUD"]
+    end
+    subgraph QA["Kuyruk API"]
+        Q1["/api/queue/stats GET"]
+        Q2["/api/queue/jobs GET"]
+        Q3["/api/queue/retry POST"]
+    end
+    subgraph CS["Config Sub-endpoints"]
+        P6 --> C1["/warehouses"]
+        P6 --> C2["/mappings"]
+        P6 --> C3["/process-configs"]
+        P6 --> C4["/process-types"]
+        P6 --> C5["/field-mappings"]
+        P6 --> C6["/security-profiles"]
+        P6 --> C7["/process-steps"]
+    end
+    style W1 fill:#ff7043,stroke:#f4511e,color:#fff
+    style W2 fill:#ff7043,stroke:#f4511e,color:#fff
+    style P1 fill:#42a5f5,stroke:#1e88e5,color:#fff
+    style P6 fill:#607d8b,stroke:#455a64,color:#fff`]
+      },
+      {
+        id: 's9', tab: 'Veritabani ER', num: '09', title: 'Veritabani Tablo Iliskileri',
+        desc: 'PostgreSQL veritabanindaki ana tablolar ve iliskileri.',
+        diagrams: [`erDiagram
+    WORK_ORDERS {
+        uuid id PK
+        string sap_delivery_no
+        string order_type
+        string warehouse_code
+        string status
+        string process_type
+        string correlation_id
+    }
+    PROCESS_CONFIGS {
+        uuid id PK
+        string plant_code
+        string warehouse_code
+        string delivery_type
+        string process_type
+    }
+    PROCESS_TYPES {
+        uuid id PK
+        string code
+        string name
+    }
+    FIELD_MAPPINGS {
+        uuid id PK
+        string source_api_endpoint
+        string process_type
+        string company_code
+        string category
+    }
+    WAREHOUSES {
+        uuid id PK
+        string code
+        string name
+    }
+    SECURITY_PROFILES {
+        uuid id PK
+        string name
+        string auth_type
+    }
+    TRANSACTION_LOGS {
+        uuid id PK
+        string correlation_id
+        string direction
+        string status
+    }
+    JOB_QUEUE {
+        uuid id PK
+        string job_type
+        string correlation_id
+        string status
+    }
+    WORK_ORDERS ||--o{ TRANSACTION_LOGS : "correlation"
+    WORK_ORDERS }o--|| WAREHOUSES : "warehouse"
+    PROCESS_CONFIGS }o--|| PROCESS_TYPES : "process"
+    FIELD_MAPPINGS }o--|| PROCESS_TYPES : "process"
+    JOB_QUEUE ||--o{ TRANSACTION_LOGS : "correlation"`]
+      },
+      {
+        id: 's10', tab: 'Surec Tipleri', num: '10', title: 'Surec Tipleri ve Adimlari',
+        desc: 'Her lojistik surec tipinin adimlari.',
+        diagrams: [`graph LR
+    subgraph GI["GI Mal Cikis"]
+        GI1["SAP Cek"] --> GI2["3PL Gonder"] --> GI3["PGI Kaydet"] --> GI4["Durum Sorgula"]
+    end
+    subgraph GR["GR Mal Giris"]
+        GR1["SAP Cek"] --> GR2["3PL Bildir"] --> GR3["GR Kaydet"]
+    end
+    subgraph RT["RETURN Iade"]
+        RT1["SAP Cek"] --> RT2["3PL Bildir"] --> RT3["Iade Kaydet"]
+    end
+    subgraph FS["FASON"]
+        FS1["SAP Cek"] --> FS2["3PL Gonder"] --> FS3["Fason Kaydet"]
+    end
+    subgraph TR["TRANSFER"]
+        TR1["SAP Cek"] --> TR2["Hedef 3PL"] --> TR3["Transfer Kaydet"]
+    end
+    style GI1 fill:#1e3a5f,stroke:#1565c0,color:#e3f2fd
+    style GI2 fill:#1e3a5f,stroke:#1565c0,color:#e3f2fd
+    style GI3 fill:#1e3a5f,stroke:#1565c0,color:#e3f2fd
+    style GI4 fill:#1e3a5f,stroke:#1565c0,color:#e3f2fd
+    style GR1 fill:#1b5e20,stroke:#2e7d32,color:#e8f5e9
+    style GR2 fill:#1b5e20,stroke:#2e7d32,color:#e8f5e9
+    style GR3 fill:#1b5e20,stroke:#2e7d32,color:#e8f5e9
+    style RT1 fill:#b71c1c,stroke:#c62828,color:#fce4ec
+    style RT2 fill:#b71c1c,stroke:#c62828,color:#fce4ec
+    style RT3 fill:#b71c1c,stroke:#c62828,color:#fce4ec
+    style FS1 fill:#e65100,stroke:#ef6c00,color:#fff3e0
+    style FS2 fill:#e65100,stroke:#ef6c00,color:#fff3e0
+    style FS3 fill:#e65100,stroke:#ef6c00,color:#fff3e0
+    style TR1 fill:#4a148c,stroke:#7b1fa2,color:#f3e5f5
+    style TR2 fill:#4a148c,stroke:#7b1fa2,color:#f3e5f5
+    style TR3 fill:#4a148c,stroke:#7b1fa2,color:#f3e5f5`],
+        extra: `<table class="st"><thead><tr><th>Surec</th><th>Tip</th><th>Adim</th><th>SAP BAPI</th></tr></thead><tbody>
+      <tr><td><span class="badge bb">GI</span></td><td>Mal Cikis OUTBOUND</td><td>4</td><td>WS_DELIVERY_UPDATE</td></tr>
+      <tr><td><span class="badge bg">GR</span></td><td>Mal Giris INBOUND</td><td>3</td><td>BAPI_GOODSMVT_CREATE</td></tr>
+      <tr><td><span class="badge br">RETURN</span></td><td>Iade</td><td>3</td><td>BAPI_GOODSMVT_CREATE</td></tr>
+      <tr><td><span class="badge bo">FASON</span></td><td>Fason GR/GI</td><td>3</td><td>Karma</td></tr>
+      <tr><td><span class="badge bp">TRANSFER</span></td><td>Depo Transferi</td><td>3</td><td>BAPI_GOODSMVT_CREATE 301</td></tr>
+    </tbody></table>`
+      },
+      {
+        id: 's11', tab: 'Frontend-Backend', num: '11', title: 'Frontend Backend Iletisim',
+        desc: 'SAPUI5 Frontend den API.js ile Express Backend e yapilan REST cagrilari.',
+        diagrams: [`sequenceDiagram
+    participant UI as SAPUI5 Frontend
+    participant AJ as API.js
+    participant EX as Express Backend
+    participant AU as XSUAA Auth
+    participant DB as Database
+    UI->>AJ: API.get work-orders
+    AJ->>EX: GET /api/work-orders
+    EX->>AU: authenticate
+    AU-->>EX: JWT valid
+    EX->>DB: store.readAll
+    DB-->>EX: work_orders
+    EX->>EX: flattenHeader enrich
+    EX-->>AJ: data + count
+    AJ-->>UI: JSONModel update
+    UI->>AJ: API.post config/warehouses
+    AJ->>EX: POST /api/config/warehouses
+    EX->>AU: authenticate adminOnly
+    AU-->>EX: JWT + admin scope
+    EX->>DB: store.create
+    DB-->>EX: new record
+    EX-->>AJ: 201 data
+    AJ-->>UI: show result`]
+      },
+      {
+        id: 's12', tab: 'Dosya Yapisi', num: '12', title: 'Dosya Yapisi',
+        desc: 'Proje dosyalarinin birbirleriyle olan bagimliliklari.',
+        diagrams: [`graph TD
+    subgraph FE["webapp Frontend"]
+        IX["index.html"]
+        CO["Component.js"]
+        AV["App.view.xml"]
+        AC["App.controller.js"]
+        VW["8 View"]
+        CT["8 Controller"]
+        AP["API.js"]
+        I1["i18n"]
+    end
+    subgraph BK["src Backend"]
+        MN["index.js Express"]
+        RT["api/routes 8 files"]
+        MD["modules work-order"]
+        SH["shared"]
+        DT["data 10 JSON"]
+    end
+    IX --> CO --> AV --> AC --> VW --> CT
+    CT --> AP
+    CT --> I1
+    MN --> RT
+    MN --> MD
+    MN --> SH
+    RT --> SH
+    MD --> SH
+    SH --> DT
+    AP -.->|"HTTP REST"| RT
+    style IX fill:#66bb6a,stroke:#43a047,color:#fff
+    style MN fill:#7e57c2,stroke:#5e35b1,color:#fff
+    style AP fill:#26c6da,stroke:#00acc1,color:#000
+    style RT fill:#42a5f5,stroke:#1e88e5,color:#fff`]
+      }
+    ];
+
+    // Build nav
+    const navEl = document.getElementById('navInner');
+    const mainEl = document.getElementById('mainContent');
+
+    sections.forEach((s, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'nav-btn' + (idx === 0 ? ' active' : '');
+      btn.textContent = s.tab;
+      btn.onclick = () => {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(s.id).classList.add('active');
+      };
+      navEl.appendChild(btn);
+    });
+
+    // Build sections & render mermaid
+    for (const s of sections) {
+      const sec = document.createElement('div');
+      sec.id = s.id;
+      sec.className = 'section' + (s.id === 's1' ? ' active' : '');
+
+      let html = `<div class="section-number">Diyagram ${s.num}</div>
+    <h2 class="section-title">${s.title}</h2>
+    <p class="section-desc">${s.desc}</p>`;
+
+      for (let i = 0; i < s.diagrams.length; i++) {
+        const dId = s.id + '_d' + i;
+        try {
+          const { svg } = await mermaid.render(dId, s.diagrams[i]);
+          html += `<div class="card">${svg}</div>`;
+        } catch (e) {
+          html += `<div class="card" style="color:#f87171;padding:20px">Diagram render error: ${e.message}</div>`;
+        }
+      }
+
+      if (s.extra) html += s.extra;
+      sec.innerHTML = html;
+      mainEl.appendChild(sec);
+    }
+  </script>
+</body>
+
+</html>

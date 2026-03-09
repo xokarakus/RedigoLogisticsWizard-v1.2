@@ -38,7 +38,7 @@
         "sap.ui.layout": {},
         "sap.ui.table": {},
         "sap.ui.unified": {},
-        "sap.ui.export": {}
+        "sap.tnt": {}
       }
     },
     "contentDensities": {

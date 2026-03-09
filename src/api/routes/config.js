@@ -4,8 +4,10 @@ const DbStore = require('../../shared/database/dbStore');
 const { requireScope } = require('../../shared/middleware/auth');
 const logger = require('../../shared/utils/logger');
 const { maskCredentials, isMasked, SENSITIVE_KEYS } = require('../../shared/utils/securityUtils');
+const { logAudit } = require('../../shared/middleware/auditLog');
 
 const adminOnly = requireScope('Admin');
+const { tenantFilter } = require('../../shared/middleware/auth');
 
 const configStore = new DbStore('process_configs');
 const typeStore = new DbStore('process_types');
@@ -15,6 +17,14 @@ const fieldMappingStore = new DbStore('field_mappings');
 const securityStore = new DbStore('security_profiles');
 const aliasStore = new DbStore('sap_field_aliases');
 
+/**
+ * Tenant-scoped filter helper.
+ * Super admin tum tenant'lari gorur, diger kullanicilar sadece kendi tenant'larini.
+ */
+function tf(req) {
+  return tenantFilter(req);
+}
+
 /* ═══════════════════════════════════════════
    Depolar (Warehouses) CRUD
    ═══════════════════════════════════════════ */
@@ -22,7 +32,7 @@ const aliasStore = new DbStore('sap_field_aliases');
 router.get('/warehouses', async (req, res) => {
   try {
     const { limit, offset } = req.query;
-    const opts = {};
+    const opts = { filter: tf(req) };
     if (limit) opts.limit = Number(limit);
     if (offset) opts.offset = Number(offset);
     res.json({ data: await warehouseStore.readAll(opts) });
@@ -34,7 +44,8 @@ router.get('/warehouses', async (req, res) => {
 
 router.post('/warehouses', adminOnly, async (req, res) => {
   try {
-    const item = await warehouseStore.create(req.body);
+    const item = await warehouseStore.create({ ...req.body, tenant_id: req.tenantId });
+    logAudit(req, 'warehouse', item.id, 'CREATE', null, item);
     res.status(201).json({ data: item });
   } catch (err) {
     logger.error('POST /config/warehouses error', { error: err.message });
@@ -44,8 +55,10 @@ router.post('/warehouses', adminOnly, async (req, res) => {
 
 router.put('/warehouses/:id', adminOnly, async (req, res) => {
   try {
+    const old = await warehouseStore.findById(req.params.id);
     const updated = await warehouseStore.update(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    logAudit(req, 'warehouse', req.params.id, 'UPDATE', old, updated);
     res.json({ data: updated });
   } catch (err) {
     logger.error('PUT /config/warehouses error', { error: err.message, id: req.params.id });
@@ -55,8 +68,10 @@ router.put('/warehouses/:id', adminOnly, async (req, res) => {
 
 router.delete('/warehouses/:id', adminOnly, async (req, res) => {
   try {
-    const ok = await warehouseStore.remove(req.params.id);
-    if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    const old = await warehouseStore.findById(req.params.id);
+    if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    await warehouseStore.remove(req.params.id);
+    logAudit(req, 'warehouse', req.params.id, 'DELETE', old, null);
     res.json({ success: true });
   } catch (err) {
     res.status(409).json({ error: err.message });
@@ -70,7 +85,7 @@ router.delete('/warehouses/:id', adminOnly, async (req, res) => {
 router.get('/mappings', async (req, res) => {
   try {
     const { limit, offset } = req.query;
-    const opts = {};
+    const opts = { filter: tf(req) };
     if (limit) opts.limit = Number(limit);
     if (offset) opts.offset = Number(offset);
     res.json({ data: await mappingStore.readAll(opts) });
@@ -82,7 +97,8 @@ router.get('/mappings', async (req, res) => {
 
 router.post('/mappings', adminOnly, async (req, res) => {
   try {
-    const item = await mappingStore.create(req.body);
+    const item = await mappingStore.create({ ...req.body, tenant_id: req.tenantId });
+    logAudit(req, 'movement_mapping', item.id, 'CREATE', null, item);
     res.status(201).json({ data: item });
   } catch (err) {
     logger.error('POST /config/mappings error', { error: err.message });
@@ -92,8 +108,10 @@ router.post('/mappings', adminOnly, async (req, res) => {
 
 router.put('/mappings/:id', adminOnly, async (req, res) => {
   try {
+    const old = await mappingStore.findById(req.params.id);
     const updated = await mappingStore.update(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    logAudit(req, 'movement_mapping', req.params.id, 'UPDATE', old, updated);
     res.json({ data: updated });
   } catch (err) {
     logger.error('PUT /config/mappings error', { error: err.message, id: req.params.id });
@@ -103,8 +121,10 @@ router.put('/mappings/:id', adminOnly, async (req, res) => {
 
 router.delete('/mappings/:id', adminOnly, async (req, res) => {
   try {
-    const ok = await mappingStore.remove(req.params.id);
-    if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    const old = await mappingStore.findById(req.params.id);
+    if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    await mappingStore.remove(req.params.id);
+    logAudit(req, 'movement_mapping', req.params.id, 'DELETE', old, null);
     res.json({ success: true });
   } catch (err) {
     res.status(409).json({ error: err.message });
@@ -118,7 +138,7 @@ router.delete('/mappings/:id', adminOnly, async (req, res) => {
 router.get('/process-configs', async (req, res) => {
   try {
     const { limit, offset } = req.query;
-    const opts = {};
+    const opts = { filter: tf(req) };
     if (limit) opts.limit = Number(limit);
     if (offset) opts.offset = Number(offset);
     res.json({ data: await configStore.readAll(opts) });
@@ -130,7 +150,8 @@ router.get('/process-configs', async (req, res) => {
 
 router.post('/process-configs', adminOnly, async (req, res) => {
   try {
-    const item = await configStore.create(req.body);
+    const item = await configStore.create({ ...req.body, tenant_id: req.tenantId });
+    logAudit(req, 'process_config', item.id, 'CREATE', null, item);
     res.status(201).json({ data: item });
   } catch (err) {
     logger.error('POST /config/process-configs error', { error: err.message });
@@ -140,8 +161,10 @@ router.post('/process-configs', adminOnly, async (req, res) => {
 
 router.put('/process-configs/:id', adminOnly, async (req, res) => {
   try {
+    const old = await configStore.findById(req.params.id);
     const updated = await configStore.update(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    logAudit(req, 'process_config', req.params.id, 'UPDATE', old, updated);
     res.json({ data: updated });
   } catch (err) {
     logger.error('PUT /config/process-configs error', { error: err.message, id: req.params.id });
@@ -151,8 +174,10 @@ router.put('/process-configs/:id', adminOnly, async (req, res) => {
 
 router.delete('/process-configs/:id', adminOnly, async (req, res) => {
   try {
-    const ok = await configStore.remove(req.params.id);
-    if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    const old = await configStore.findById(req.params.id);
+    if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    await configStore.remove(req.params.id);
+    logAudit(req, 'process_config', req.params.id, 'DELETE', old, null);
     res.json({ success: true });
   } catch (err) {
     res.status(409).json({ error: err.message });
@@ -166,7 +191,7 @@ router.delete('/process-configs/:id', adminOnly, async (req, res) => {
 router.get('/process-types', async (req, res) => {
   try {
     const { limit, offset } = req.query;
-    const opts = {};
+    const opts = { filter: tf(req) };
     if (limit) opts.limit = Number(limit);
     if (offset) opts.offset = Number(offset);
     res.json({ data: await typeStore.readAll(opts) });
@@ -178,7 +203,8 @@ router.get('/process-types', async (req, res) => {
 
 router.post('/process-types', adminOnly, async (req, res) => {
   try {
-    const item = await typeStore.create(req.body);
+    const item = await typeStore.create({ ...req.body, tenant_id: req.tenantId });
+    logAudit(req, 'process_type', item.id, 'CREATE', null, item);
     res.status(201).json({ data: item });
   } catch (err) {
     logger.error('POST /config/process-types error', { error: err.message });
@@ -188,8 +214,10 @@ router.post('/process-types', adminOnly, async (req, res) => {
 
 router.put('/process-types/:id', adminOnly, async (req, res) => {
   try {
+    const old = await typeStore.findById(req.params.id);
     const updated = await typeStore.update(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    logAudit(req, 'process_type', req.params.id, 'UPDATE', old, updated);
     res.json({ data: updated });
   } catch (err) {
     logger.error('PUT /config/process-types error', { error: err.message, id: req.params.id });
@@ -199,8 +227,10 @@ router.put('/process-types/:id', adminOnly, async (req, res) => {
 
 router.delete('/process-types/:id', adminOnly, async (req, res) => {
   try {
-    const ok = await typeStore.remove(req.params.id);
-    if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    const old = await typeStore.findById(req.params.id);
+    if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    await typeStore.remove(req.params.id);
+    logAudit(req, 'process_type', req.params.id, 'DELETE', old, null);
     res.json({ success: true });
   } catch (err) {
     res.status(409).json({ error: err.message });
@@ -214,8 +244,8 @@ router.delete('/process-types/:id', adminOnly, async (req, res) => {
 router.get('/field-mappings', async (req, res) => {
   try {
     const { company_code, limit, offset } = req.query;
-    const opts = {};
-    if (company_code) opts.filter = { company_code };
+    const opts = { filter: { ...tf(req) } };
+    if (company_code) opts.filter.company_code = company_code;
     if (limit) opts.limit = Number(limit);
     if (offset) opts.offset = Number(offset);
     const data = await fieldMappingStore.readAll(opts);
@@ -228,7 +258,8 @@ router.get('/field-mappings', async (req, res) => {
 
 router.post('/field-mappings', adminOnly, async (req, res) => {
   try {
-    const item = await fieldMappingStore.create(req.body);
+    const item = await fieldMappingStore.create({ ...req.body, tenant_id: req.tenantId });
+    logAudit(req, 'field_mapping', item.id, 'CREATE', null, item);
     res.status(201).json({ data: item });
   } catch (err) {
     logger.error('POST /config/field-mappings error', { error: err.message });
@@ -238,8 +269,10 @@ router.post('/field-mappings', adminOnly, async (req, res) => {
 
 router.put('/field-mappings/:id', adminOnly, async (req, res) => {
   try {
+    const old = await fieldMappingStore.findById(req.params.id);
     const updated = await fieldMappingStore.update(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    logAudit(req, 'field_mapping', req.params.id, 'UPDATE', old, updated);
     res.json({ data: updated });
   } catch (err) {
     logger.error('PUT /config/field-mappings error', { error: err.message, id: req.params.id });
@@ -249,8 +282,10 @@ router.put('/field-mappings/:id', adminOnly, async (req, res) => {
 
 router.delete('/field-mappings/:id', adminOnly, async (req, res) => {
   try {
-    const ok = await fieldMappingStore.remove(req.params.id);
-    if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    const old = await fieldMappingStore.findById(req.params.id);
+    if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    await fieldMappingStore.remove(req.params.id);
+    logAudit(req, 'field_mapping', req.params.id, 'DELETE', old, null);
     res.json({ success: true });
   } catch (err) {
     res.status(409).json({ error: err.message });
@@ -264,8 +299,8 @@ router.delete('/field-mappings/:id', adminOnly, async (req, res) => {
 router.get('/security-profiles', async (req, res) => {
   try {
     const { company_code, limit, offset } = req.query;
-    const opts = {};
-    if (company_code) opts.filter = { company_code };
+    const opts = { filter: { ...tf(req) } };
+    if (company_code) opts.filter.company_code = company_code;
     if (limit) opts.limit = Number(limit);
     if (offset) opts.offset = Number(offset);
     const data = await securityStore.readAll(opts);
@@ -278,7 +313,8 @@ router.get('/security-profiles', async (req, res) => {
 
 router.post('/security-profiles', adminOnly, async (req, res) => {
   try {
-    const item = await securityStore.create(req.body);
+    const item = await securityStore.create({ ...req.body, tenant_id: req.tenantId });
+    logAudit(req, 'security_profile', item.id, 'CREATE', null, maskCredentials(item));
     res.status(201).json({ data: maskCredentials(item) });
   } catch (err) {
     logger.error('POST /config/security-profiles error', { error: err.message });
@@ -288,6 +324,7 @@ router.post('/security-profiles', adminOnly, async (req, res) => {
 
 router.put('/security-profiles/:id', adminOnly, async (req, res) => {
   try {
+    const old = await securityStore.findById(req.params.id);
     const payload = { ...req.body };
 
     // Merge: masked ("******") credential → preserve existing DB value
@@ -295,12 +332,11 @@ router.put('/security-profiles/:id', adminOnly, async (req, res) => {
       const hasMasked = Object.entries(payload.config)
         .some(([k, v]) => SENSITIVE_KEYS.has(k) && isMasked(v));
       if (hasMasked) {
-        const existing = await securityStore.findById(req.params.id);
-        if (existing && existing.config) {
+        if (old && old.config) {
           const merged = { ...payload.config };
           for (const key of SENSITIVE_KEYS) {
-            if (isMasked(merged[key]) && existing.config[key] !== undefined) {
-              merged[key] = existing.config[key];
+            if (isMasked(merged[key]) && old.config[key] !== undefined) {
+              merged[key] = old.config[key];
             }
           }
           payload.config = merged;
@@ -310,6 +346,7 @@ router.put('/security-profiles/:id', adminOnly, async (req, res) => {
 
     const updated = await securityStore.update(req.params.id, payload);
     if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    logAudit(req, 'security_profile', req.params.id, 'UPDATE', maskCredentials(old), maskCredentials(updated));
     res.json({ data: maskCredentials(updated) });
   } catch (err) {
     logger.error('PUT /config/security-profiles error', { error: err.message, id: req.params.id });
@@ -319,8 +356,10 @@ router.put('/security-profiles/:id', adminOnly, async (req, res) => {
 
 router.delete('/security-profiles/:id', adminOnly, async (req, res) => {
   try {
-    const ok = await securityStore.remove(req.params.id);
-    if (!ok) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    const old = await securityStore.findById(req.params.id);
+    if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    await securityStore.remove(req.params.id);
+    logAudit(req, 'security_profile', req.params.id, 'DELETE', maskCredentials(old), null);
     res.json({ success: true });
   } catch (err) {
     res.status(409).json({ error: err.message });
@@ -338,7 +377,7 @@ router.get('/process-steps', async (req, res) => {
       return res.status(400).json({ error: 'plant_code, warehouse_code, delivery_type zorunlu' });
     }
 
-    const configs = await configStore.readAll();
+    const configs = await configStore.readAll({ filter: tf(req) });
     const config = configs.find(c =>
       c.plant_code === plant_code &&
       c.warehouse_code === warehouse_code &&
@@ -349,7 +388,7 @@ router.get('/process-steps', async (req, res) => {
       return res.status(404).json({ error: 'Bu kombinasyon icin uyarlama bulunamadi' });
     }
 
-    const types = await typeStore.readAll();
+    const types = await typeStore.readAll({ filter: tf(req) });
     const pType = types.find(t => t.code === config.process_type);
     const templates = pType ? pType.steps : [];
 
@@ -431,6 +470,72 @@ router.post('/test-dispatch', adminOnly, async (req, res) => {
     }
 
     res.json({ data: { ...result, transformedResponse } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ═══════════════════════════════════════════
+   System Settings (E-posta vb.)
+   ═══════════════════════════════════════════ */
+const { query: dbQuery } = require('../../shared/database/pool');
+
+router.get('/settings/:key', adminOnly, async (req, res) => {
+  try {
+    const tenantId = req.tenantId;
+    const { rows } = await dbQuery(
+      'SELECT value FROM system_settings WHERE tenant_id = $1 AND key = $2',
+      [tenantId, req.params.key]
+    );
+    res.json({ data: rows.length > 0 ? rows[0].value : null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/settings/:key', adminOnly, async (req, res) => {
+  try {
+    const tenantId = req.tenantId;
+    const key = req.params.key;
+    const value = req.body.value;
+    await dbQuery(
+      `INSERT INTO system_settings (tenant_id, key, value)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (tenant_id, key) DO UPDATE SET value = $3, updated_at = now()`,
+      [tenantId, key, JSON.stringify(value)]
+    );
+    // E-posta ayarları değişirse emailService cache'ini temizle
+    if (key === 'email') {
+      const emailService = require('../../shared/utils/emailService');
+      emailService.resetTransporter();
+    }
+    logAudit(req, 'system_settings', key, 'UPDATE', null, { key, value: key === 'email' ? '***' : value });
+    res.json({ message: 'Ayar kaydedildi' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Test e-posta gönderimi
+router.post('/settings/email/test', adminOnly, async (req, res) => {
+  try {
+    const { to } = req.body;
+    if (!to) return res.status(400).json({ error: 'Alıcı e-posta gerekli' });
+    const emailService = require('../../shared/utils/emailService');
+    const sent = await emailService.sendEmail(
+      to,
+      'Redigo Logistics — E-posta Test',
+      '<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">' +
+        '<h2 style="color:#0854A0;">E-posta Ayarları Doğrulandı</h2>' +
+        '<p>Bu bir test e-postasıdır. SMTP ayarlarınız başarıyla çalışıyor.</p>' +
+        '<hr style="border:none;border-top:1px solid #eee;"><p style="color:#999;font-size:11px;">Redigo Logistics Cockpit</p></div>',
+      req.tenantId
+    );
+    if (sent) {
+      res.json({ message: 'Test e-postası gönderildi: ' + to });
+    } else {
+      res.status(500).json({ error: 'E-posta gönderilemedi. SMTP ayarlarını kontrol edin.' });
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

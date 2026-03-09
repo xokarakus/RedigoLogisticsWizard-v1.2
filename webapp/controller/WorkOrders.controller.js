@@ -23,7 +23,7 @@ sap.ui.define([
     { label: "SAP Tesis",       property: "plant_code",         type: "String" },
     { label: "Depo",            property: "warehouse_code",     type: "String" },
     { label: "Hareket Tipi",    property: "mvt_type",           type: "String" },
-    { label: "Sevk Yeri",       property: "sap_ship_to",        type: "String" },
+    { label: "M\u00fc\u015fteri Ad\u0131", property: "sap_ship_to",        type: "String" },
     { label: "Kalemler",        property: "line_count",         type: "Number" },
     { label: "\u00d6ncelik",    property: "priority",           type: "String" },
     { label: "Al\u0131nma",     property: "received_at_fmt",    type: "String" },

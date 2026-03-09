@@ -3,9 +3,10 @@
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m"
   xmlns:core="sap.ui.core"
-  xmlns:t="sap.ui.table">
+  xmlns:t="sap.ui.table"
+  height="100%">
 
-  <Page title="{i18n>woTitle}" showNavButton="false" enableScrolling="false">
+  <Page title="{i18n>woTitle}" showNavButton="false" enableScrolling="false" height="100%">
 
     <content>
       <t:Table
@@ -30,15 +31,18 @@
         <t:extension>
           <OverflowToolbar>
             <SegmentedButton id="typeFilter" selectionChange="onTypeFilterChange">
+              <layoutData><OverflowToolbarLayoutData priority="High" /></layoutData>
               <items>
                 <SegmentedButtonItem text="{i18n>woFilterAll}" key="ALL" />
                 <SegmentedButtonItem text="{i18n>woOutbound}" key="OUTBOUND" />
                 <SegmentedButtonItem text="{i18n>woInbound}" key="INBOUND" />
               </items>
             </SegmentedButton>
-            <SearchField width="250px" placeholder="{i18n>woSearchPlaceholder}" liveChange="onSearch" />
-            <ToolbarSpacer />
+            <SearchField width="220px" placeholder="{i18n>woSearchPlaceholder}" liveChange="onSearch">
+              <layoutData><OverflowToolbarLayoutData priority="High" /></layoutData>
+            </SearchField>
             <Select id="statusFilter" selectedKey="OPEN" change="onFilterChange">
+              <layoutData><OverflowToolbarLayoutData priority="High" /></layoutData>
               <core:Item key="OPEN" text="{i18n>woFilterOpen}" />
               <core:Item key="ALL" text="{i18n>woFilterAll}" />
               <core:Item key="RECEIVED" text="{i18n>woReceived}" />
@@ -52,24 +56,38 @@
             </Select>
             <Select id="warehouseFilter" change="onFilterChange"
               items="{workOrders>/warehouseOptions}">
+              <layoutData><OverflowToolbarLayoutData priority="Low" /></layoutData>
               <core:Item key="{workOrders>key}" text="{workOrders>text}" />
             </Select>
             <Select id="processTypeFilter" change="onFilterChange"
               items="{workOrders>/processTypeOptions}">
+              <layoutData><OverflowToolbarLayoutData priority="Low" /></layoutData>
               <core:Item key="{workOrders>key}" text="{workOrders>text}" />
             </Select>
             <DateRangeSelection id="dateRangeFilter"
               placeholder="{i18n>woDateRangePlaceholder}"
               displayFormat="dd.MM.yyyy"
-              change="onFilterChange" />
+              change="onFilterChange">
+              <layoutData><OverflowToolbarLayoutData priority="Low" /></layoutData>
+            </DateRangeSelection>
+            <ToolbarSpacer />
+            <Button text="{i18n>woProcessBtn}" icon="sap-icon://initiative" press="onProcessSelected" type="Emphasized">
+              <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+            </Button>
             <ToolbarSeparator />
-            <Button text="{i18n>woProcessBtn}" icon="sap-icon://initiative" press="onProcessSelected" type="Emphasized" />
+            <Button icon="sap-icon://sort" tooltip="{i18n>alvSort}" press="onSortDialog" type="Transparent">
+              <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+            </Button>
+            <Button icon="sap-icon://excel-attachment" tooltip="{i18n>btnExport}" press="onExport" type="Transparent">
+              <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+            </Button>
+            <Button icon="sap-icon://refresh" tooltip="{i18n>btnRefresh}" press="onRefresh" type="Transparent">
+              <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+            </Button>
             <ToolbarSeparator />
-            <Button icon="sap-icon://sort" tooltip="{i18n>alvSort}" press="onSortDialog" type="Transparent" />
-            <Button icon="sap-icon://excel-attachment" tooltip="{i18n>btnExport}" press="onExport" type="Transparent" />
-            <Button icon="sap-icon://refresh" tooltip="{i18n>btnRefresh}" press="onRefresh" type="Transparent" />
-            <ToolbarSeparator />
-            <ObjectStatus text="{workOrders>/countText}" state="Information" />
+            <ObjectStatus text="{workOrders>/countText}" state="Information">
+              <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+            </ObjectStatus>
           </OverflowToolbar>
         </t:extension>
 
@@ -82,22 +100,25 @@
             </t:template>
           </t:Column>
 
-          <!-- 2. Teslimat Tipi -->
-          <t:Column sortProperty="sap_delivery_type" filterProperty="sap_delivery_type" autoResizable="true" width="80px">
+          <!-- 2. Teslimat Tipi (ikonlu) -->
+          <t:Column sortProperty="sap_delivery_type" filterProperty="sap_delivery_type" autoResizable="true" width="100px">
             <Label text="{i18n>woDeliveryType}" />
             <t:template>
-              <ObjectStatus text="{workOrders>sap_delivery_type}" state="Information" />
+              <ObjectStatus
+                text="{workOrders>sap_delivery_type}"
+                icon="{= ${workOrders>sap_delivery_type} === 'LF' ? 'sap-icon://shipping-status' : ${workOrders>sap_delivery_type} === 'NL' ? 'sap-icon://inventory' : ${workOrders>sap_delivery_type} === 'EL' ? 'sap-icon://inbox' : ${workOrders>sap_delivery_type} === 'RL' ? 'sap-icon://undo' : ${workOrders>sap_delivery_type} === 'UL' ? 'sap-icon://transfer' : 'sap-icon://document'}"
+                state="{= ${workOrders>sap_delivery_type} === 'LF' ? 'Information' : ${workOrders>sap_delivery_type} === 'NL' ? 'Warning' : ${workOrders>sap_delivery_type} === 'EL' ? 'Success' : ${workOrders>sap_delivery_type} === 'RL' ? 'Error' : 'Information'}" />
             </t:template>
           </t:Column>
 
           <!-- 3. Yon (INBOUND/OUTBOUND) -->
-          <t:Column sortProperty="order_type" filterProperty="order_type" autoResizable="true" width="110px">
+          <t:Column sortProperty="order_type" filterProperty="order_type" autoResizable="true" width="130px">
             <Label text="{i18n>woType}" />
             <t:template>
               <ObjectStatus
                 text="{workOrders>order_type}"
                 state="{= ${workOrders>order_type} === 'OUTBOUND' ? 'Information' : 'Success'}"
-                icon="{= ${workOrders>order_type} === 'OUTBOUND' ? 'sap-icon://outbox' : 'sap-icon://inbox'}" />
+                icon="{= ${workOrders>order_type} === 'OUTBOUND' ? 'sap-icon://shipping-status' : 'sap-icon://cart-3'}" />
             </t:template>
           </t:Column>
 
@@ -121,21 +142,38 @@
             </t:template>
           </t:Column>
 
-          <!-- 6. SAP Tesis -->
+          <!-- 6. G&#xF6;n. &#xDC;retim Yeri (WERKS) -->
           <t:Column sortProperty="plant_code" filterProperty="plant_code" autoResizable="true" width="90px">
-            <Label text="{i18n>woPlant}" />
+            <Label text="{i18n>woSendingPlant}" />
             <t:template>
               <ObjectNumber number="{workOrders>plant_code}" emphasized="true" />
             </t:template>
           </t:Column>
 
-          <!-- 7. Depo -->
-          <t:Column sortProperty="warehouse_code" filterProperty="warehouse_code" autoResizable="true" width="110px">
-            <Label text="{i18n>woWarehouse}" />
+          <!-- 7. G&#xF6;n. Depo (LGORT) -->
+          <t:Column sortProperty="sap_stor_loc" filterProperty="sap_stor_loc" autoResizable="true" width="90px">
+            <Label text="{i18n>woSendingWarehouse}" />
             <t:template>
-              <Text text="{workOrders>warehouse_code}" wrapping="false" />
+              <Text text="{workOrders>sap_stor_loc}" wrapping="false" />
             </t:template>
           </t:Column>
+
+          <!-- 8. Alan &#xDC;retim Yeri (UMWRK) -->
+          <t:Column sortProperty="sap_target_plant" filterProperty="sap_target_plant" autoResizable="true" width="90px">
+            <Label text="{i18n>woReceivingPlant}" />
+            <t:template>
+              <Text text="{workOrders>sap_target_plant}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- 9. Alan Depo (UMLGO) -->
+          <t:Column sortProperty="sap_target_stor_loc" filterProperty="sap_target_stor_loc" autoResizable="true" width="90px">
+            <Label text="{i18n>woReceivingWarehouse}" />
+            <t:template>
+              <Text text="{workOrders>sap_target_stor_loc}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
 
           <!-- 8. Hareket Tipi -->
           <t:Column sortProperty="mvt_type" filterProperty="mvt_type" autoResizable="true" width="90px" hAlign="Center">
@@ -158,14 +196,6 @@
             <Label text="{i18n>woCustomerName}" />
             <t:template>
               <Text text="{workOrders>sap_customer_name}" wrapping="false" />
-            </t:template>
-          </t:Column>
-
-          <!-- 11. Depo Yeri (LGORT) -->
-          <t:Column sortProperty="sap_stor_loc" filterProperty="sap_stor_loc" autoResizable="true" width="90px">
-            <Label text="{i18n>woStorLoc}" />
-            <t:template>
-              <Text text="{workOrders>sap_stor_loc}" wrapping="false" />
             </t:template>
           </t:Column>
 

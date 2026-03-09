@@ -6,7 +6,14 @@
   <title>Redigo Logistics Cockpit</title>
   <style>
     .errBox { padding: 20px; margin: 20px; background: #fff3f3; border: 2px solid #cc0000; border-radius: 8px; font-family: monospace; font-size: 13px; color: #cc0000; white-space: pre-wrap; }
-    #loadMsg { padding: 40px; font-family: Arial; color: #555; }
+    #loadMsg { padding: 40px; font-family: Arial; text-align: center; }
+    html, body { height: 100% !important; margin: 0; }
+    #uiArea, #uiArea > div, #uiArea .sapMPage { min-height: 100vh; }
+    .sapUiLoginFlex { min-height: 90vh !important; }
+    /* NavContainer + Table scrollbar fix */
+    .sapMNavContainer, .sapMNavContainer > .sapMPage { height: 100% !important; }
+    .sapMPage > section { height: 100%; }
+    .sapUiTable { height: 100% !important; }
   </style>
   <script>
     window.onerror = function(msg, url, line, col, err) {
@@ -29,32 +36,175 @@
     data-sap-ui-resourceroots='{"com.redigo.logistics.cockpit": "./"}'
     data-sap-ui-compatVersion="edge"
     data-sap-ui-async="true"
-    data-sap-ui-libs="sap.m,sap.ui.layout,sap.ui.table,sap.ui.unified"
+    data-sap-ui-libs="sap.m,sap.ui.layout,sap.ui.table,sap.ui.unified,sap.tnt"
   ></script>
   <script>
     function showErr(msg) {
       document.body.insertAdjacentHTML("beforeend", '<div class="errBox">' + msg + '</div>');
     }
+
+    var BASE_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+      ? "http://localhost:3000" : "";
+
     sap.ui.require([
       "sap/ui/core/Component",
-      "sap/ui/core/ComponentContainer"
-    ], function (Component, ComponentContainer) {
-      document.getElementById("loadMsg").textContent = "Component olusturuluyor...";
-      Component.create({
-        name: "com.redigo.logistics.cockpit"
-      }).then(function (oComponent) {
-        document.getElementById("loadMsg").textContent = "Component OK, rendering...";
-        new ComponentContainer({
-          component: oComponent,
-          height: "100%"
-        }).placeAt("content");
-      }).catch(function (err) {
-        showErr("Component.create FAILED:\n" + err.message + "\n\n" + (err.stack || ""));
-      });
+      "sap/ui/core/ComponentContainer",
+      "sap/ui/core/mvc/XMLView",
+      "sap/ui/model/resource/ResourceModel"
+    ], function (Component, ComponentContainer, XMLView, ResourceModel) {
+
+      // Tema uygula (bootstrap'tan SONRA)
+      var themePref = localStorage.getItem("redigo_theme") || "auto";
+      if (themePref === "dark" || (themePref === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+        sap.ui.getCore().applyTheme("sap_horizon_dark");
+      }
+      if (themePref === "auto") {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function(e) {
+          var c = localStorage.getItem("redigo_theme");
+          if (c && c !== "auto") return;
+          sap.ui.getCore().applyTheme(e.matches ? "sap_horizon_dark" : "sap_horizon");
+        });
+      }
+
+      var oI18nModel = new ResourceModel({ bundleName: "com.redigo.logistics.cockpit.i18n.i18n" });
+
+      // ── Auth Gate ──
+      function checkSetup() {
+        document.getElementById("loadMsg").textContent = "Sistem kontrol ediliyor...";
+        fetch(BASE_URL + "/api/auth/setup-status")
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.needs_setup) {
+              showSetup();
+            } else {
+              checkToken();
+            }
+          })
+          .catch(function(err) {
+            showErr("Backend baglantisi kurulamadi:\n" + err.message + "\n\nBackend calistigina emin olun (port 3000).");
+          });
+      }
+
+      function showSetup() {
+        document.getElementById("loadMsg").style.display = "none";
+        XMLView.create({ viewName: "com.redigo.logistics.cockpit.view.Setup" })
+          .then(function(oView) {
+            oView.setModel(oI18nModel, "i18n");
+            window._redigoShowLogin = function() {
+              oView.destroy();
+              showLogin();
+            };
+            oView.placeAt("uiArea");
+          })
+          .catch(function(err) {
+            showErr("Setup view yuklenemedi:\n" + err.message);
+          });
+      }
+
+      function showLogin() {
+        document.getElementById("loadMsg").style.display = "none";
+        // Onceki view varsa temizle
+        var uiArea = document.getElementById("uiArea");
+        if (uiArea) uiArea.innerHTML = "";
+
+        XMLView.create({ viewName: "com.redigo.logistics.cockpit.view.Login" })
+          .then(function(oView) {
+            oView.setModel(oI18nModel, "i18n");
+            window._redigoLoadApp = function() {
+              oView.destroy();
+              loadApp();
+            };
+            window._redigoShowForgotPassword = function() {
+              oView.destroy();
+              showForgotPassword();
+            };
+            oView.placeAt("uiArea");
+          })
+          .catch(function(err) {
+            showErr("Login view yuklenemedi:\n" + err.message);
+          });
+      }
+
+      function showForgotPassword() {
+        var uiArea = document.getElementById("uiArea");
+        if (uiArea) uiArea.innerHTML = "";
+
+        XMLView.create({ viewName: "com.redigo.logistics.cockpit.view.ForgotPassword" })
+          .then(function(oView) {
+            oView.setModel(oI18nModel, "i18n");
+            window._redigoShowLogin = function() {
+              oView.destroy();
+              showLogin();
+            };
+            oView.placeAt("uiArea");
+          })
+          .catch(function(err) {
+            showErr("ForgotPassword view yuklenemedi:\n" + err.message);
+          });
+      }
+
+      function checkToken() {
+        var token = localStorage.getItem("redigo_token");
+        if (!token) {
+          showLogin();
+          return;
+        }
+        document.getElementById("loadMsg").textContent = "Oturum dogrulaniyor...";
+        fetch(BASE_URL + "/api/auth/me", {
+          headers: { "Authorization": "Bearer " + token }
+        })
+          .then(function(r) {
+            if (r.status === 401) {
+              localStorage.removeItem("redigo_token");
+              showLogin();
+              return null;
+            }
+            return r.json();
+          })
+          .then(function(d) {
+            if (!d) return;
+            if (d.user) {
+              loadApp();
+            } else {
+              localStorage.removeItem("redigo_token");
+              showLogin();
+            }
+          })
+          .catch(function() {
+            localStorage.removeItem("redigo_token");
+            showLogin();
+          });
+      }
+
+      function loadApp() {
+        document.getElementById("loadMsg").textContent = "Uygulama yukleniyor...";
+        var uiArea = document.getElementById("uiArea");
+        if (uiArea) uiArea.innerHTML = "";
+
+        Component.create({
+          name: "com.redigo.logistics.cockpit"
+        }).then(function(oComponent) {
+          document.getElementById("loadMsg").style.display = "none";
+          new ComponentContainer({
+            component: oComponent,
+            height: "100%"
+          }).placeAt("uiArea");
+        }).catch(function(err) {
+          showErr("Component.create FAILED:\n" + err.message + "\n\n" + (err.stack || ""));
+        });
+      }
+
+      // Baslat — DOM hazir olduktan sonra
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", checkSetup);
+      } else {
+        checkSetup();
+      }
     });
   </script>
 </head>
-<body class="sapUiBody sapUiSizeCompact" id="content">
+<body class="sapUiBody sapUiSizeCompact">
   <div id="loadMsg">SAPUI5 yukleniyor...</div>
+  <div id="uiArea" style="height:100%"></div>
 </body>
 </html>

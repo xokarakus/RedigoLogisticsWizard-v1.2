@@ -1,0 +1,87 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.Setup"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:l="sap.ui.layout"
+  xmlns:core="sap.ui.core"
+  height="100%">
+
+  <Page showHeader="false" backgroundDesign="Solid" enableScrolling="false">
+    <content>
+      <FlexBox height="100%" justifyContent="Center" alignItems="Center">
+        <VBox width="400px" class="sapUiMediumMargin">
+
+          <FlexBox justifyContent="Center" class="sapUiMediumMarginBottom">
+            <VBox alignItems="Center">
+              <core:Icon src="sap-icon://factory" size="3rem" color="#0854A0" class="sapUiSmallMarginBottom" />
+              <Title text="{i18n>setupTitle}" level="H1" class="sapUiSmallMarginBottom" />
+              <Text text="{i18n>setupDesc}" class="sapUiTinyMarginBottom" />
+            </VBox>
+          </FlexBox>
+
+          <l:VerticalLayout width="100%" class="sapUiContentPadding">
+            <MessageStrip
+              id="setupError"
+              type="Error"
+              showIcon="true"
+              visible="{setup>/errorVisible}"
+              text="{setup>/errorText}"
+              class="sapUiSmallMarginBottom" />
+
+            <Label text="{i18n>setupCompanyName}" required="true" />
+            <Input id="companyNameInput"
+              value="{setup>/companyName}"
+              placeholder="{i18n>setupCompanyName}"
+              width="100%"
+              class="sapUiSmallMarginBottom" />
+
+            <Label text="{i18n>setupCompanyCode}" required="true" />
+            <Input id="companyCodeInput"
+              value="{setup>/companyCode}"
+              placeholder="{i18n>setupCompanyCode}"
+              width="100%"
+              class="sapUiSmallMarginBottom" />
+
+            <Label text="{i18n>setupUsername}" required="true" />
+            <Input id="setupUsernameInput"
+              value="{setup>/username}"
+              placeholder="{i18n>setupUsername}"
+              width="100%"
+              class="sapUiSmallMarginBottom" />
+
+            <Label text="{i18n>setupPassword}" required="true" />
+            <Input id="setupPasswordInput"
+              value="{setup>/password}"
+              placeholder="{i18n>setupPassword}"
+              type="Password"
+              width="100%"
+              class="sapUiSmallMarginBottom" />
+
+            <Label text="{i18n>setupConfirmPassword}" required="true" />
+            <Input id="setupConfirmPasswordInput"
+              value="{setup>/confirmPassword}"
+              placeholder="{i18n>setupConfirmPassword}"
+              type="Password"
+              width="100%"
+              submit="onSetup"
+              class="sapUiSmallMarginBottom" />
+
+            <Button
+              text="{i18n>setupCreate}"
+              press="onSetup"
+              type="Emphasized"
+              width="100%"
+              class="sapUiSmallMarginTop"
+              busy="{setup>/busy}" />
+          </l:VerticalLayout>
+
+          <FlexBox justifyContent="Center" class="sapUiMediumMarginTop">
+            <Text text="v1.2" class="sapUiTinyMargin" />
+          </FlexBox>
+
+        </VBox>
+      </FlexBox>
+    </content>
+  </Page>
+
+</mvc:View>

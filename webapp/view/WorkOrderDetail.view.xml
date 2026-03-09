@@ -37,8 +37,18 @@
                   <Text text="{detail>/sap_ship_to}" />
                   <Label text="{i18n>wodSoldTo}" />
                   <Text text="{detail>/sap_sold_to}" />
-                  <Label text="{i18n>woPlant}" />
+                  <Label text="{i18n>woSendingPlant}" />
                   <Text text="{detail>/plant_code}" />
+                  <Label text="{i18n>woReceivingPlant}" />
+                  <Text text="{detail>/sap_target_plant}" />
+                  <Label text="{i18n>woSendingWarehouse}" />
+                  <Text text="{detail>/sap_stor_loc}" />
+                  <Label text="{i18n>woReceivingWarehouse}" />
+                  <Text text="{detail>/sap_target_stor_loc}" />
+                  <Label text="{i18n>woShippingPoint}" />
+                  <Text text="{detail>/sap_shipping_point}" />
+                  <Label text="{i18n>woVendor}" />
+                  <Text text="{detail>/sap_vendor_no}" />
                   <Label text="{i18n>woType}" />
                   <ObjectStatus text="{detail>/order_type}"
                     state="{= ${detail>/order_type} === 'OUTBOUND' ? 'Information' : 'Success'}" />
@@ -115,36 +125,75 @@
               class="sapUiSmallMarginTop" />
           </IconTabFilter>
 
-          <!-- TAB 3: Transaction History -->
+          <!-- TAB 3: Transaction History (Timeline) -->
           <IconTabFilter text="{i18n>wodTransactions}" icon="sap-icon://activity-items" key="transactions"
             count="{detail>/txCount}">
-            <Table items="{detail>/transactions}" autoPopinMode="true">
-              <columns>
-                <Column importance="High"><Text text="{i18n>txAction}" /></Column>
-                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>txDirection}" /></Column>
-                <Column importance="High"><Text text="{i18n>txStatus}" /></Column>
-                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>txSAPFunction}" /></Column>
-                <Column importance="Medium" hAlign="End" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>txDuration}" /></Column>
-                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>txRetryCount}" /></Column>
-                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>txStarted}" /></Column>
-                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>txError}" /></Column>
-              </columns>
-              <items>
-                <ColumnListItem>
-                  <cells>
-                    <Text text="{detail>action}" />
-                    <Text text="{detail>direction}" />
-                    <ObjectStatus text="{detail>status}"
-                      state="{= ${detail>status} === 'SUCCESS' ? 'Success' : ${detail>status} === 'FAILED' || ${detail>status} === 'DEAD' ? 'Error' : 'Warning'}" />
-                    <Text text="{detail>sap_function}" />
-                    <ObjectNumber number="{detail>duration_ms}" unit="ms" />
-                    <ObjectNumber number="{detail>retry_count}" />
-                    <Text text="{detail>started_at_fmt}" />
-                    <Text text="{detail>error_message}" maxLines="2" />
-                  </cells>
-                </ColumnListItem>
-              </items>
-            </Table>
+
+            <!-- Empty state -->
+            <VBox visible="{= ${detail>/txCount} === 0 }" alignItems="Center" justifyContent="Center"
+              class="sapUiLargeMarginTop">
+              <core:Icon src="sap-icon://activity-items" size="3rem" color="#bbb" class="sapUiMediumMarginBottom" />
+              <Title text="{i18n>txNoHistory}" level="H4" titleStyle="H4" />
+              <Text text="{i18n>txNoHistoryDesc}" class="sapUiTinyMarginTop sapUiSmallMarginBottom" />
+            </VBox>
+
+            <!-- Timeline list -->
+            <List items="{detail>/transactions}" showSeparators="None"
+              visible="{= ${detail>/txCount} > 0 }">
+              <CustomListItem class="sapUiTinyMarginTopBottom">
+                <HBox class="sapUiSmallMarginBeginEnd sapUiTinyMarginTopBottom" alignItems="Start">
+
+                  <!-- Left: Icon circle -->
+                  <VBox alignItems="Center" width="3rem" class="sapUiTinyMarginTop">
+                    <core:Icon src="{detail>_icon}" color="{detail>_iconColor}" size="1.375rem" />
+                  </VBox>
+
+                  <!-- Center: Content -->
+                  <VBox width="100%" class="sapUiTinyMarginBegin">
+                    <HBox justifyContent="SpaceBetween" alignItems="Start" width="100%">
+                      <VBox>
+                        <HBox alignItems="Center">
+                          <Title text="{detail>_actionText}" level="H6" titleStyle="H6" />
+                          <ObjectStatus text="{detail>_directionBadge}" state="Information"
+                            class="sapUiTinyMarginBegin"
+                            visible="{= !!${detail>_directionBadge} }" />
+                        </HBox>
+                        <Text text="{detail>_subtitle}" class="sapUiTinyMarginTop" />
+                      </VBox>
+                      <VBox alignItems="End">
+                        <ObjectStatus text="{detail>_statusText}"
+                          state="{detail>_statusState}"
+                          icon="{detail>_statusIcon}"
+                          inverted="true" />
+                        <Text text="{detail>_relativeTime}" class="sapUiTinyMarginTop" />
+                      </VBox>
+                    </HBox>
+
+                    <!-- Detail chips row -->
+                    <HBox class="sapUiTinyMarginTop" alignItems="Center" wrap="Wrap">
+                      <ObjectStatus text="{detail>_durationText}" icon="sap-icon://lateness"
+                        class="sapUiTinyMarginEnd"
+                        visible="{= !!${detail>duration_ms} }" />
+                      <ObjectStatus text="{detail>sap_function}" icon="sap-icon://connected"
+                        class="sapUiTinyMarginEnd"
+                        visible="{= !!${detail>sap_function} }" />
+                      <ObjectStatus text="{detail>sap_doc_number}" icon="sap-icon://document"
+                        state="Success" class="sapUiTinyMarginEnd"
+                        visible="{= !!${detail>sap_doc_number} }" />
+                      <ObjectStatus text="{detail>_retryText}" icon="sap-icon://refresh"
+                        state="Warning"
+                        visible="{= ${detail>retry_count} > 0 }" />
+                    </HBox>
+
+                    <!-- Error message -->
+                    <MessageStrip text="{detail>error_message}" type="Error" showIcon="true"
+                      showCloseButton="false" class="sapUiTinyMarginTop"
+                      visible="{= !!${detail>error_message} }" />
+                  </VBox>
+
+                </HBox>
+              </CustomListItem>
+            </List>
           </IconTabFilter>
 
           <!-- TAB 5: Raw Payloads -->

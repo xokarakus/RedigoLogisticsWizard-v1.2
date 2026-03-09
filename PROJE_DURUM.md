@@ -241,4 +241,8 @@ RedigoLogisticsWizard-v1.2/
 - Backend restart için benden onay alman gerek yok.
 - varsayımda bulunma ban sor
 - Karar alırken neye göre karar alınacağını paylaş
-- Aksini söylemedikçe tüm çalışmLeı sadece RedigoLogisticsWizard-v1.2 
+- Aksini söylemedikçe tüm çalışmLeı sadece RedigoLogisticsWizard-v1.2
+- Daha çözümcül sonuçlar üret son kullanıcı deneyimini en iyi seviyede tutatlım. 
+- Bir şirket kodu veya benzer uyarlamalar bir defa kullanıldığında silinemez ve tekil kodu hiç bir zaman değiştirilemez.
+- Her yapıda Tenant olduğunu garanti etmek gerekiyor.
+- Servislerde DB kaydettiğimiz tüm alanlar Json servislerde mutalak olmalı ki boş kalmasın.

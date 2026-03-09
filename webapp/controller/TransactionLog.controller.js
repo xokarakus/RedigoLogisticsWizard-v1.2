@@ -22,6 +22,33 @@ sap.ui.define([
 
   var MAX_JSON_DISPLAY = 50000; // 50KB limit for JSON display
 
+  var ACTION_LABELS = {
+    CREATE_WORK_ORDER:  "\u0130\u015f Emri Olu\u015fturuldu",
+    DISPATCH_TO_3PL:    "3PL\u2019ye G\u00f6nderildi",
+    FETCH_FROM_SAP:     "SAP\u2019den Veri \u00c7ekildi",
+    QUERY_STATUS:       "Durum Sorguland\u0131",
+    POST_PGI:           "PGI (Mal \u00c7\u0131k\u0131\u015f) Kaydedildi",
+    POST_GR:            "GR (Mal Giri\u015f) Kaydedildi",
+    PGI_POST:           "PGI Kaydedildi",
+    GR_POST:            "Mal Giri\u015f Kaydedildi",
+    DELIVERY_UPDATE:    "Teslimat G\u00fcncellendi",
+    INV_MOVEMENT:       "Stok Hareketi",
+    STATUS_CHANGE:      "Durum De\u011fi\u015fikli\u011fi",
+    INBOUND_DELIVERY:   "Gelen Teslimat",
+    OUTBOUND_DELIVERY:  "Giden Teslimat",
+    QUANTITY_CHANGE:    "Miktar De\u011fi\u015fikli\u011fi",
+    SAP_REFRESH:        "SAP Verisi Yenilendi"
+  };
+
+  function getActionLabel(sAction) {
+    if (!sAction) return "";
+    if (ACTION_LABELS[sAction]) return ACTION_LABELS[sAction];
+    if (sAction.indexOf("OUTBOUND_") === 0) {
+      return "3PL\u2019ye G\u00f6nderildi (" + sAction.substring(9) + ")";
+    }
+    return sAction;
+  }
+
   return Controller.extend("com.redigo.logistics.cockpit.controller.TransactionLog", {
     onInit: function () {
       this._oModel = new JSONModel({ data: [], count: 0, countText: "", actionOptions: [] });
@@ -60,8 +87,8 @@ sap.ui.define([
       API.get("/api/transactions", { limit: 200 }).then(function (result) {
         var aData = (result.data || []).map(function (tx) {
           tx.started_at_fmt = tx.started_at ? new Date(tx.started_at).toLocaleString("tr-TR") : "";
-          // Kisa correlation ref: ilk 8 karakter
           tx.correlation_ref = tx.correlation_id ? tx.correlation_id.substring(0, 8).toUpperCase() : "";
+          tx._actionText = getActionLabel(tx.action);
           return tx;
         });
         that._oModel.setProperty("/data", aData);

@@ -1,0 +1,135 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.JobManagement"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
+
+  <Page title="{i18n>jobTitle}" showNavButton="false">
+
+    <headerContent>
+      <Button text="{i18n>btnRefresh}" icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
+      <Button text="{i18n>jobAdd}" icon="sap-icon://add" press="onAddJob" type="Emphasized" />
+    </headerContent>
+
+    <subHeader>
+      <OverflowToolbar>
+        <SearchField id="jobSearch" placeholder="{i18n>btnSearch}..." liveChange="onSearch" width="300px" />
+        <ToolbarSpacer />
+        <Select id="jobTypeFilter" change="onFilterChange">
+          <core:Item key="ALL" text="{i18n>woFilterAll}" />
+          <core:Item key="FETCH_FROM_SAP" text="{i18n>jobTypeFetch}" />
+          <core:Item key="SEND_TO_3PL" text="{i18n>jobTypeSend}" />
+          <core:Item key="POST_GOODS_ISSUE" text="{i18n>jobTypePGI}" />
+          <core:Item key="POST_GOODS_RECEIPT" text="{i18n>jobTypePGR}" />
+          <core:Item key="QUERY_STATUS" text="{i18n>jobTypeQuery}" />
+          <core:Item key="RECONCILIATION" text="{i18n>jobTypeRecon}" />
+          <core:Item key="CLEANUP_LOGS" text="{i18n>jobTypeCleanup}" />
+        </Select>
+        <Select id="jobStatusFilter" change="onFilterChange">
+          <core:Item key="ALL" text="{i18n>woFilterAll}" />
+          <core:Item key="active" text="{i18n>tmStatusActive}" />
+          <core:Item key="passive" text="{i18n>tmStatusPassive}" />
+        </Select>
+        <ObjectStatus text="{jobs>/summary}" state="Information" icon="sap-icon://schedule" />
+      </OverflowToolbar>
+    </subHeader>
+
+    <content>
+      <Table
+        id="jobTable"
+        items="{jobs>/filtered}"
+        growing="true"
+        growingThreshold="50"
+        autoPopinMode="true"
+        fixedLayout="false">
+
+        <columns>
+          <Column importance="High"><Text text="{i18n>jobName}" /></Column>
+          <Column importance="High" hAlign="Center" width="5em"><Text text="{i18n>jobClass}" /></Column>
+          <Column importance="High" width="10em"><Text text="{i18n>jobType}" /></Column>
+          <Column importance="High" width="10em"><Text text="{i18n>jobSchedule}" /></Column>
+          <Column importance="High" hAlign="Center" width="7em"><Text text="{i18n>woStatus}" /></Column>
+          <Column importance="Medium" hAlign="Center" minScreenWidth="Tablet" demandPopin="true" width="12em"><Text text="{i18n>jobStats}" /></Column>
+          <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true" width="9em"><Text text="{i18n>jobLastRun}" /></Column>
+          <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true" width="9em"><Text text="{i18n>jobNextRun}" /></Column>
+          <Column importance="High" hAlign="End" width="9em"><Text text="{i18n>cfgActions}" /></Column>
+        </columns>
+
+        <items>
+          <ColumnListItem
+            highlight="{= ${jobs>last_run_status} === 'FAILED' ? 'Error' : ${jobs>is_active} ? 'None' : 'Warning'}"
+            type="Active"
+            press="onJobPress">
+            <cells>
+              <!-- Ad + Aciklama -->
+              <ObjectIdentifier
+                title="{jobs>name}"
+                text="{jobs>description}" />
+
+              <!-- Job Class (SAP) -->
+              <ObjectStatus
+                text="{jobs>job_class}"
+                state="{= ${jobs>job_class} === 'A' ? 'Error' : ${jobs>job_class} === 'B' ? 'Warning' : 'Success'}"
+                inverted="true" />
+
+              <!-- Job Tipi -->
+              <Text text="{jobs>_typeText}" wrapping="false" />
+
+              <!-- Zamanlama -->
+              <VBox>
+                <ObjectStatus
+                  text="{jobs>_scheduleTypeText}"
+                  state="{= ${jobs>schedule_type} === 'PERIODIC' ? 'Success' : ${jobs>schedule_type} === 'IMMEDIATE' ? 'Warning' : 'None'}"
+                  icon="{= ${jobs>schedule_type} === 'PERIODIC' ? 'sap-icon://recurrence' : ${jobs>schedule_type} === 'ONCE' ? 'sap-icon://date-time' : 'sap-icon://touch'}" />
+                <Text text="{jobs>_cronText}" wrapping="false" visible="{= !!${jobs>_cronText}}" class="sapMTextColorSecondary" />
+              </VBox>
+
+              <!-- Durum -->
+              <VBox>
+                <ObjectStatus
+                  text="{= ${jobs>is_active} ? ${i18n>tmStatusActive} : ${i18n>tmStatusPassive}}"
+                  state="{= ${jobs>is_active} ? 'Success' : 'Error'}" />
+                <ObjectStatus
+                  text="{jobs>last_run_status}"
+                  state="{= ${jobs>last_run_status} === 'SUCCESS' ? 'Success' : ${jobs>last_run_status} === 'FAILED' ? 'Error' : ${jobs>last_run_status} === 'RUNNING' ? 'Warning' : 'None'}"
+                  visible="{= !!${jobs>last_run_status}}" />
+              </VBox>
+
+              <!-- Istatistik -->
+              <HBox justifyContent="Center">
+                <ObjectStatus text="{jobs>run_count}" class="sapUiTinyMarginEnd" />
+                <Text text="(" />
+                <ObjectStatus text="{jobs>success_count}" state="Success" class="sapUiTinyMarginEnd" />
+                <Text text="/" />
+                <ObjectStatus text="{jobs>fail_count}" state="Error" />
+                <Text text=")" />
+              </HBox>
+
+              <!-- Son Calisma -->
+              <Text text="{jobs>_lastRunFmt}" wrapping="false" />
+
+              <!-- Sonraki Calisma -->
+              <Text text="{jobs>_nextRunFmt}" wrapping="false" />
+
+              <!-- Aksiyonlar -->
+              <HBox justifyContent="End">
+                <Button icon="sap-icon://media-play" press="onRunJob" type="Transparent"
+                  tooltip="{i18n>jobRun}" />
+                <Button icon="{= ${jobs>is_active} ? 'sap-icon://media-pause' : 'sap-icon://media-play'}"
+                  press="onToggleJob" type="Transparent"
+                  tooltip="{= ${jobs>is_active} ? ${i18n>jobDeactivate} : ${i18n>jobActivate}}" />
+                <Button icon="sap-icon://edit" press="onEditJob" type="Transparent"
+                  tooltip="{i18n>jobEdit}" />
+                <Button icon="sap-icon://delete" press="onDeleteJob" type="Transparent"
+                  tooltip="{i18n>btnDelete}" />
+              </HBox>
+            </cells>
+          </ColumnListItem>
+        </items>
+
+      </Table>
+    </content>
+
+  </Page>
+
+</mvc:View>

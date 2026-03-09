@@ -1,0 +1,112 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.TenantManagement"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
+
+  <Page title="{i18n>tmTitle}" showNavButton="false">
+
+    <headerContent>
+      <Button text="{i18n>btnRefresh}" icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
+      <Button text="{i18n>tmAddTenant}" icon="sap-icon://add" press="onAddTenant" type="Emphasized" />
+    </headerContent>
+
+    <subHeader>
+      <OverflowToolbar>
+        <SearchField id="tmSearch" placeholder="{i18n>btnSearch}..." liveChange="onSearch" width="300px" />
+        <ToolbarSpacer />
+        <Select id="tmPlanFilter" change="onFilterChange">
+          <core:Item key="ALL" text="{i18n>woFilterAll}" />
+          <core:Item key="standard" text="Standard" />
+          <core:Item key="professional" text="Professional" />
+          <core:Item key="enterprise" text="Enterprise" />
+        </Select>
+        <Select id="tmStatusFilter" change="onFilterChange">
+          <core:Item key="ALL" text="{i18n>woFilterAll}" />
+          <core:Item key="active" text="{i18n>tmStatusActive}" />
+          <core:Item key="passive" text="{i18n>tmStatusPassive}" />
+        </Select>
+        <ObjectStatus text="{tenants>/summary}" state="Information" icon="sap-icon://building" />
+      </OverflowToolbar>
+    </subHeader>
+
+    <content>
+      <Table
+        id="tmTable"
+        items="{tenants>/filtered}"
+        growing="true"
+        growingThreshold="50"
+        growingScrollToLoad="true"
+        autoPopinMode="true"
+        fixedLayout="false">
+
+        <columns>
+          <Column importance="High"><Text text="{i18n>tmName}" /></Column>
+          <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>tmDomain}" /></Column>
+          <Column importance="High" hAlign="Center" width="5em"><Text text="{i18n>tmPlan}" /></Column>
+          <Column importance="High" hAlign="Center" width="10em"><Text text="{i18n>tmStatUsers}" /></Column>
+          <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true" width="9em"><Text text="{i18n>adminLastLogin}" /></Column>
+          <Column importance="High" hAlign="End" width="7em"><Text text="{i18n>cfgActions}" /></Column>
+        </columns>
+
+        <items>
+          <ColumnListItem
+            highlight="{= ${tenants>is_active} ? 'None' : 'Warning'}"
+            type="Inactive">
+            <cells>
+              <!-- Firma Adi + Kod -->
+              <ObjectIdentifier
+                title="{tenants>name}"
+                text="{tenants>code}" />
+
+              <!-- Domain + Ilgili Kisi -->
+              <VBox>
+                <Text text="{tenants>domain}" wrapping="false" />
+                <Text text="{tenants>contact_person}" wrapping="false"
+                  visible="{= !!${tenants>contact_person}}"
+                  class="sapMTextColorSecondary" />
+              </VBox>
+
+              <!-- Plan + Status -->
+              <VBox>
+                <ObjectStatus text="{tenants>plan}"
+                  state="{= ${tenants>plan} === 'enterprise' ? 'Error' : ${tenants>plan} === 'professional' ? 'Warning' : 'Success'}"
+                  inverted="true" />
+                <ObjectStatus
+                  text="{= ${tenants>is_active} ? ${i18n>tmStatusActive} : ${i18n>tmStatusPassive}}"
+                  state="{= ${tenants>is_active} ? 'Success' : 'Error'}"
+                  icon="{= ${tenants>is_active} ? 'sap-icon://accept' : 'sap-icon://decline'}" />
+              </VBox>
+
+              <!-- Kullanicilar -->
+              <HBox justifyContent="Center">
+                <ObjectStatus text="{tenants>_stats/active_users}" state="Success" class="sapUiTinyMarginEnd" />
+                <Text text="/" class="sapUiTinyMarginEnd" />
+                <ObjectStatus text="{tenants>_stats/inactive_users}" state="Error" class="sapUiTinyMarginEnd" />
+                <Text text="/" class="sapUiTinyMarginEnd" />
+                <ObjectStatus text="{tenants>_stats/total_users}" state="Information" />
+              </HBox>
+
+              <!-- Son Giris -->
+              <Text text="{tenants>_stats/last_login_fmt}" wrapping="false" />
+
+              <!-- Aksiyonlar -->
+              <HBox justifyContent="End">
+                <Button icon="sap-icon://edit" press="onEditTenant" type="Transparent"
+                  tooltip="{i18n>tmEditTenant}" />
+                <Button icon="sap-icon://role" press="onImpersonate" type="Transparent"
+                  tooltip="{i18n>tmImpersonate}" />
+                <Button icon="sap-icon://delete" press="onDeleteTenant" type="Transparent"
+                  tooltip="{i18n>btnDelete}"
+                  visible="{= ${tenants>code} !== 'REDIGO' }" />
+              </HBox>
+            </cells>
+          </ColumnListItem>
+        </items>
+
+      </Table>
+    </content>
+
+  </Page>
+
+</mvc:View>

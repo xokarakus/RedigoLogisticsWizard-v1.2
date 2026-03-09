@@ -533,6 +533,56 @@
             </Table>
           </IconTabFilter>
 
+          <!-- TAB 7: Email Settings (E-posta Ayarlari) -->
+          <IconTabFilter text="{i18n>emailTitle}" icon="sap-icon://email" key="emailSettings">
+
+            <f:SimpleForm id="emailSettingsForm" editable="true" layout="ResponsiveGridLayout"
+              labelSpanXL="3" labelSpanL="3" labelSpanM="4"
+              emptySpanXL="4" emptySpanL="3" emptySpanM="0"
+              columnsXL="1" columnsL="1" columnsM="1"
+              class="sapUiMediumMarginTop">
+
+              <core:Title text="{i18n>emailSmtpTitle}" />
+              <Label text="{i18n>emailSmtpHost}" required="true" />
+              <Input value="{emailCfg>/smtp_host}" placeholder="smtp.gmail.com" />
+
+              <Label text="{i18n>emailSmtpPort}" />
+              <Input value="{emailCfg>/smtp_port}" placeholder="587" type="Number" width="120px" />
+
+              <Label text="{i18n>emailSmtpSecure}" />
+              <Select id="smtpSecureSelect" selectedKey="{emailCfg>/smtp_secure_key}">
+                <core:Item key="false" text="STARTTLS (587)" />
+                <core:Item key="true" text="SSL/TLS (465)" />
+              </Select>
+
+              <Label text="{i18n>emailSmtpUser}" />
+              <Input value="{emailCfg>/smtp_user}" placeholder="user@company.com" />
+
+              <Label text="{i18n>emailSmtpPass}" />
+              <Input value="{emailCfg>/smtp_pass}" type="Password" placeholder="********" />
+
+              <core:Title text="{i18n>emailSenderTitle}" />
+              <Label text="{i18n>emailSmtpFrom}" required="true" />
+              <Input value="{emailCfg>/smtp_from}" placeholder="noreply@company.com" type="Email" />
+
+              <Label text="{i18n>emailAppUrl}" required="true" />
+              <Input value="{emailCfg>/app_url}" placeholder="https://logistics.company.com" />
+
+            </f:SimpleForm>
+
+            <OverflowToolbar class="sapUiSmallMarginTop">
+              <ToolbarSpacer />
+              <Button text="{i18n>emailTestSend}" icon="sap-icon://email"
+                press="onTestEmail" type="Default" />
+              <Button text="{i18n>cfgSave}" icon="sap-icon://save"
+                press="onSaveEmailSettings" type="Emphasized" />
+            </OverflowToolbar>
+
+            <MessageStrip text="{i18n>emailHelpText}" type="Information" showIcon="true"
+              class="sapUiSmallMargin" />
+
+          </IconTabFilter>
+
         </items>
       </IconTabBar>
     </content>

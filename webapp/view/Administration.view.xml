@@ -1,0 +1,157 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.Administration"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  xmlns:l="sap.ui.layout">
+
+  <Page title="{i18n>adminTitle}" showNavButton="false">
+
+    <headerContent>
+      <Button icon="sap-icon://refresh" press="onRefresh" tooltip="{i18n>btnRefresh}" />
+    </headerContent>
+
+    <content>
+      <IconTabBar id="adminTabBar" expandable="false">
+        <items>
+
+          <!-- TAB 1: Kullanicilar -->
+          <IconTabFilter text="{i18n>adminUsers}" icon="sap-icon://employee" key="users"
+            count="{admin>/userCount}">
+
+            <OverflowToolbar>
+              <Title text="{i18n>adminUsers}" level="H5" />
+              <ToolbarSpacer />
+              <Button text="{i18n>adminAddUser}" icon="sap-icon://add" press="onAddUser" type="Emphasized" />
+            </OverflowToolbar>
+
+            <Table id="usersTable" items="{admin>/users}" autoPopinMode="true" mode="None">
+              <columns>
+                <Column importance="High"><Text text="{i18n>adminUsername}" /></Column>
+                <Column importance="High"><Text text="{i18n>adminDisplayName}" /></Column>
+                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>adminEmail}" /></Column>
+                <Column importance="High" hAlign="Center" width="10rem"><Text text="{i18n>adminRole}" /></Column>
+                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>adminTenant}" /></Column>
+                <Column importance="Medium" hAlign="Center" width="5rem"><Text text="{i18n>cfgActive}" /></Column>
+                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>adminLastLogin}" /></Column>
+                <Column importance="High" hAlign="Center" width="7rem"><Text text="{i18n>cfgActions}" /></Column>
+              </columns>
+              <items>
+                <ColumnListItem>
+                  <cells>
+                    <ObjectIdentifier title="{admin>username}" />
+                    <Text text="{admin>display_name}" />
+                    <Text text="{admin>email}" />
+                    <ObjectStatus text="{admin>_roleName}" state="{admin>_roleState}" inverted="true" />
+                    <Text text="{admin>tenant_name}" />
+                    <core:Icon
+                      src="{= ${admin>is_active} ? 'sap-icon://accept' : 'sap-icon://decline'}"
+                      color="{= ${admin>is_active} ? '#2b7c2b' : '#cc0000'}" />
+                    <Text text="{admin>_lastLoginFormatted}" />
+                    <HBox justifyContent="Center">
+                      <Button icon="sap-icon://edit" press="onEditUser" type="Transparent" tooltip="{i18n>adminEditUser}" />
+                      <Button icon="sap-icon://email" press="onResetPassword" type="Transparent" tooltip="{i18n>adminResetPassword}" />
+                    </HBox>
+                  </cells>
+                </ColumnListItem>
+              </items>
+            </Table>
+          </IconTabFilter>
+
+          <!-- TAB 2: Roller ve Yetkiler -->
+          <IconTabFilter text="{i18n>permTitle}" icon="sap-icon://shield" key="permissions"
+            count="{admin>/roleCount}">
+
+            <l:Splitter orientation="Horizontal">
+              <l:contentAreas>
+
+                <!-- Sol: Rol Listesi -->
+                <VBox>
+                  <layoutData><l:SplitterLayoutData size="35%" /></layoutData>
+                  <OverflowToolbar>
+                    <Title text="{i18n>roleListTitle}" level="H5" />
+                    <ToolbarSpacer />
+                    <Button text="{i18n>roleAdd}" icon="sap-icon://add" press="onAddRole" type="Emphasized" />
+                  </OverflowToolbar>
+
+                  <List id="roleList" items="{admin>/roles}" mode="SingleSelectMaster"
+                    selectionChange="onSelectRole">
+                    <CustomListItem highlight="{= ${admin>is_system} ? 'Information' : 'None'}">
+                      <HBox alignItems="Center" class="sapUiSmallMarginBeginEnd sapUiTinyMarginTopBottom">
+                        <core:Icon src="{= ${admin>is_system} ? 'sap-icon://locked' : 'sap-icon://unlocked'}"
+                          class="sapUiSmallMarginEnd"
+                          color="{= ${admin>code} === 'SUPER_ADMIN' ? '#cc0000' : ${admin>code} === 'TENANT_ADMIN' ? '#e78c07' : '#0854a0'}" />
+                        <VBox>
+                          <Title text="{admin>name}" level="H6" />
+                          <Text text="{admin>code}" class="sapUiTinyMarginTop" />
+                        </VBox>
+                        <ToolbarSpacer />
+                        <ObjectNumber number="{admin>_userCount}"
+                          unit="{i18n>adminUsers}" emphasized="false" />
+                      </HBox>
+                    </CustomListItem>
+                  </List>
+                </VBox>
+
+                <!-- Sag: Yetki Matrisi -->
+                <VBox>
+                  <layoutData><l:SplitterLayoutData size="65%" /></layoutData>
+                  <!-- Secili rol yok -->
+                  <MessageStrip text="{i18n>roleSelectHint}" type="Information" showIcon="true"
+                    visible="{= !${admin>/selectedRole}}" class="sapUiSmallMargin" />
+
+                  <!-- Secili rol var -->
+                  <VBox visible="{= !!${admin>/selectedRole}}">
+                    <OverflowToolbar>
+                      <Title text="{admin>/selectedRoleName}" level="H5" />
+                      <ToolbarSpacer />
+                      <Button icon="sap-icon://edit" press="onEditRole" type="Transparent"
+                        tooltip="{i18n>roleEdit}" visible="{= !${admin>/selectedRoleIsSystem} || ${admin>/selectedRoleCode} === 'TENANT_ADMIN' || ${admin>/selectedRoleCode} === 'TENANT_USER'}" />
+                      <Button icon="sap-icon://delete" press="onDeleteRole" type="Reject"
+                        visible="{= !${admin>/selectedRoleIsSystem}}" />
+                      <Button text="{i18n>cfgSave}" icon="sap-icon://save" press="onSavePermissions"
+                        type="Emphasized"
+                        visible="{= ${admin>/selectedRoleCode} !== 'SUPER_ADMIN'}" />
+                    </OverflowToolbar>
+
+                    <!-- Super Admin mesaji -->
+                    <MessageStrip text="{i18n>permSuperAdminInfo}" type="Warning" showIcon="true"
+                      visible="{= ${admin>/selectedRoleCode} === 'SUPER_ADMIN'}" class="sapUiSmallMargin" />
+
+                    <!-- Tenant Admin mesaji -->
+                    <MessageStrip text="{i18n>permTenantAdminInfo}" type="Information" showIcon="true"
+                      visible="{= ${admin>/selectedRoleCode} === 'TENANT_ADMIN'}" class="sapUiSmallMargin" />
+
+                    <!-- Yetki tablosu -->
+                    <Table items="{admin>/permissionRows}" autoPopinMode="true" mode="None"
+                      visible="{= ${admin>/selectedRoleCode} !== 'SUPER_ADMIN'}">
+                      <columns>
+                        <Column importance="High" width="12rem"><Text text="{i18n>permGroup}" /></Column>
+                        <Column importance="High"><Text text="{i18n>permName}" /></Column>
+                        <Column importance="High" hAlign="Center" width="6rem"><Text text="{i18n>permGranted}" /></Column>
+                      </columns>
+                      <items>
+                        <ColumnListItem highlight="{= ${admin>isGroupHeader} ? 'Information' : 'None'}">
+                          <cells>
+                            <Text text="{admin>groupLabel}" visible="{admin>isGroupHeader}" />
+                            <Text text="{admin>label}" />
+                            <CheckBox selected="{admin>granted}" visible="{= !${admin>isGroupHeader}}"
+                              enabled="{= !${admin>locked}}" />
+                          </cells>
+                        </ColumnListItem>
+                      </items>
+                    </Table>
+                  </VBox>
+                </VBox>
+
+              </l:contentAreas>
+            </l:Splitter>
+
+          </IconTabFilter>
+
+        </items>
+      </IconTabBar>
+    </content>
+  </Page>
+
+</mvc:View>
