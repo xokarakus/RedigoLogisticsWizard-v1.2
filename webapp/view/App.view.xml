@@ -70,7 +70,9 @@
           <tnt:NavigationListItem text="{i18n>navReconciliation}" icon="sap-icon://compare-2" key="reconciliation"
             visible="{appState>/perm/reconciliation_view}" />
 
-          <!-- Yonetim -->
+          <!-- Ana Veri + Yonetim -->
+          <tnt:NavigationListItem text="{i18n>navMasterData}" icon="sap-icon://database"
+            key="masterData" visible="{appState>/perm/config_view}" />
           <tnt:NavigationListItem text="{i18n>navConfiguration}" icon="sap-icon://action-settings"
             key="configuration" visible="{appState>/perm/config_view}" />
           <tnt:NavigationListItem text="{i18n>navAdministration}" icon="sap-icon://employee"

@@ -7,13 +7,9 @@
   <style>
     .errBox { padding: 20px; margin: 20px; background: #fff3f3; border: 2px solid #cc0000; border-radius: 8px; font-family: monospace; font-size: 13px; color: #cc0000; white-space: pre-wrap; }
     #loadMsg { padding: 40px; font-family: Arial; text-align: center; }
-    html, body { height: 100% !important; margin: 0; }
-    #uiArea, #uiArea > div, #uiArea .sapMPage { min-height: 100vh; }
+    html, body { height: 100% !important; margin: 0; overflow: hidden; }
+    #uiArea { height: 100%; }
     .sapUiLoginFlex { min-height: 90vh !important; }
-    /* NavContainer + Table scrollbar fix */
-    .sapMNavContainer, .sapMNavContainer > .sapMPage { height: 100% !important; }
-    .sapMPage > section { height: 100%; }
-    .sapUiTable { height: 100% !important; }
   </style>
   <script>
     window.onerror = function(msg, url, line, col, err) {

@@ -55,6 +55,7 @@ app.use('/api/config', authenticate, require('./api/routes/config'));
 app.use('/api/trigger', authenticate, require('./api/routes/trigger'));
 app.use('/api/goods-movement', authenticate, require('./api/routes/goodsMovement'));
 app.use('/api/scheduled-jobs', authenticate, require('./api/routes/scheduledJobs'));
+app.use('/api/master-data', authenticate, require('./api/routes/masterData'));
 
 // ── Queue API (kuyruk yönetimi) ──
 app.get('/api/queue/stats', authenticate, async (req, res) => {

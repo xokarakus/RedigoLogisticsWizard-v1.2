@@ -30,7 +30,7 @@ sap.ui.define([
         that._oModel.setProperty("/mappings", result.data || []);
       });
 
-      API.get("/api/transactions", { action_like: "INV_", limit: 50 }).then(function (result) {
+      API.get("/api/transactions", { action_like: "INV_", limit: 100 }).then(function (result) {
         var aData = (result.data || []).map(function (tx) {
           tx.created_at_fmt = tx.created_at ? new Date(tx.created_at).toLocaleString("tr-TR") : "";
           return tx;

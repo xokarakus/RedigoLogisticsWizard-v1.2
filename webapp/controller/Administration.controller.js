@@ -27,7 +27,8 @@ sap.ui.define([
 
     onInit: function () {
       this._oModel = new JSONModel({
-        users: [], userCount: 0, tenants: [], currentTenantDomain: "",
+        users: [], allUsers: [], userCount: 0, filteredCountText: "",
+        tenants: [], currentTenantDomain: "",
         roles: [], roleCount: 0,
         selectedRole: null, selectedRoleName: "", selectedRoleCode: "",
         selectedRoleIsSystem: false,
@@ -54,18 +55,23 @@ sap.ui.define([
             ? new Date(u.last_login_at).toLocaleString("tr-TR") : "-";
           return u;
         });
+        that._oModel.setProperty("/allUsers", users);
         that._oModel.setProperty("/users", users);
         that._oModel.setProperty("/userCount", users.length);
+        that._oModel.setProperty("/filteredCountText", users.length + " / " + users.length);
 
         // Role name'leri user listesine isle
         that._enrichUserRoleNames();
+        that._applyUserFilters();
       });
 
       // Tenant listesi (SUPER_ADMIN)
       var user = API.getUser();
       if (user && user.role === "SUPER_ADMIN") {
         API.get("/api/auth/tenants").then(function (res) {
-          that._oModel.setProperty("/tenants", res.data || []);
+          var tenants = res.data || [];
+          that._oModel.setProperty("/tenants", tenants);
+          that._populateTenantFilter(tenants);
         });
       }
       if (user && user.tenant_domain) {
@@ -115,6 +121,52 @@ sap.ui.define([
     onRefresh: function () {
       this._loadData();
       MessageToast.show(this._getText("msgRefreshed"));
+    },
+
+    /* ══════════════════════════════════════
+       Kullanici Filtreleme
+       ══════════════════════════════════════ */
+
+    _populateTenantFilter: function (aTenants) {
+      var oSelect = this.byId("tenantFilter");
+      if (!oSelect) return;
+      // Keep "ALL" item, add tenants
+      oSelect.removeAllItems();
+      oSelect.addItem(new Item({ key: "ALL", text: this._getText("adminAllTenants") }));
+      aTenants.forEach(function (t) {
+        oSelect.addItem(new Item({ key: t.id, text: t.code + " - " + t.name }));
+      });
+    },
+
+    onUserSearch: function () { this._applyUserFilters(); },
+    onUserFilter: function () { this._applyUserFilters(); },
+
+    _applyUserFilters: function () {
+      var allUsers = this._oModel.getProperty("/allUsers") || [];
+      var sQuery = (this.byId("userSearch") ? this.byId("userSearch").getValue() : "").toLowerCase().trim();
+      var sRole = this.byId("roleFilter") ? this.byId("roleFilter").getSelectedKey() : "ALL";
+      var sActive = this.byId("activeFilter") ? this.byId("activeFilter").getSelectedKey() : "ALL";
+      var sTenant = this.byId("tenantFilter") ? this.byId("tenantFilter").getSelectedKey() : "ALL";
+
+      var filtered = allUsers.filter(function (u) {
+        // Text search
+        if (sQuery) {
+          var haystack = [u.username, u.display_name, u.email, u.tenant_name, u._roleName].join(" ").toLowerCase();
+          if (haystack.indexOf(sQuery) === -1) return false;
+        }
+        // Role filter
+        if (sRole !== "ALL" && u.role !== sRole) return false;
+        // Active filter
+        if (sActive === "ACTIVE" && !u.is_active) return false;
+        if (sActive === "INACTIVE" && u.is_active) return false;
+        // Tenant filter
+        if (sTenant !== "ALL" && String(u.tenant_id) !== String(sTenant)) return false;
+        return true;
+      });
+
+      this._oModel.setProperty("/users", filtered);
+      this._oModel.setProperty("/userCount", filtered.length);
+      this._oModel.setProperty("/filteredCountText", filtered.length + " / " + allUsers.length);
     },
 
     /* ══════════════════════════════════════

@@ -13,6 +13,8 @@ const logger = require('../../../shared/utils/logger');
 
 const workOrderStore = new DbStore('work_orders');
 const transactionStore = new DbStore('transaction_logs');
+const materialStore = new DbStore('materials');
+const partnerStore = new DbStore('business_partners');
 
 /** Null-safe numeric conversion — NaN, null, undefined, "" → 0 */
 function safeNum(val) {
@@ -136,7 +138,8 @@ async function handleCreateWorkOrder(job) {
     });
   }
 
-  // Transaction log'u work_order'a bağla (correlation_id üzerinden zaten bağlı)
+  // ── Master Data UPSERT (otomatik) ──
+  await upsertMasterData(header, items, workOrder.tenant_id);
 
   // api_endpoint varsa → DISPATCH_TO_3PL kuyruğa ekle
   if (mapping.api_endpoint) {
@@ -254,6 +257,83 @@ async function handleDispatchTo3PL(job) {
     duration_ms: dispatchResult.duration_ms,
     transformedResponse: transformedResponse
   };
+}
+
+/**
+ * Master Data UPSERT — SAP payload'dan malzeme ve iş ortağı bilgilerini çıkarır.
+ * Yoksa ekler, varsa last_synced_at günceller.
+ */
+async function upsertMasterData(header, items, tenantId) {
+  try {
+    // ── Malzemeler (ITEMS → materials) ──
+    for (const item of items) {
+      const matnr = item.MATNR || item.material;
+      if (!matnr) continue;
+
+      const allMats = await materialStore.readAll({ filter: { tenant_id: tenantId } });
+      const existing = allMats.find(m => m.sap_material_no === matnr);
+
+      if (existing) {
+        await materialStore.update(existing.id, { last_synced_at: new Date().toISOString() });
+      } else {
+        await materialStore.create({
+          sap_material_no: matnr,
+          description: item.MAKTX || item.description || '',
+          base_uom: item.VRKME || item.uom || 'EA',
+          gross_weight: safeNum(item.BRGEW),
+          weight_unit: item.GEWEI || '',
+          material_group: item.MATKL || '',
+          tenant_id: tenantId,
+          last_synced_at: new Date().toISOString()
+        });
+      }
+    }
+
+    // ── Müşteri (KUNNR → business_partners) ──
+    const kunnr = header.KUNNR;
+    if (kunnr) {
+      const allPartners = await partnerStore.readAll({ filter: { tenant_id: tenantId } });
+      const existingCust = allPartners.find(p => p.sap_partner_no === kunnr && p.partner_type === 'CUSTOMER');
+
+      if (existingCust) {
+        await partnerStore.update(existingCust.id, { last_synced_at: new Date().toISOString() });
+      } else {
+        await partnerStore.create({
+          sap_partner_no: kunnr,
+          partner_type: 'CUSTOMER',
+          name: header.NAME1 || '',
+          city: header.ORT01 || '',
+          country: header.LAND1 || 'TR',
+          tenant_id: tenantId,
+          last_synced_at: new Date().toISOString()
+        });
+      }
+    }
+
+    // ── Satıcı (LIFNR → business_partners) ──
+    const lifnr = header.LIFNR;
+    if (lifnr) {
+      const allPartners = await partnerStore.readAll({ filter: { tenant_id: tenantId } });
+      const existingVend = allPartners.find(p => p.sap_partner_no === lifnr && p.partner_type === 'VENDOR');
+
+      if (existingVend) {
+        await partnerStore.update(existingVend.id, { last_synced_at: new Date().toISOString() });
+      } else {
+        await partnerStore.create({
+          sap_partner_no: lifnr,
+          partner_type: 'VENDOR',
+          name: header.NAME1 || '',
+          city: header.ORT01 || '',
+          country: header.LAND1 || 'TR',
+          tenant_id: tenantId,
+          last_synced_at: new Date().toISOString()
+        });
+      }
+    }
+  } catch (err) {
+    // Master data UPSERT hatası iş emri oluşturmayı engellememeli
+    logger.error('Master data UPSERT error', { error: err.message });
+  }
 }
 
 module.exports = {

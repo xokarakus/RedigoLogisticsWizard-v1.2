@@ -56,16 +56,35 @@ sap.ui.define([
 
     _loadData: function () {
       var that = this;
-      API.get("/api/work-orders", { limit: 200 }).then(function (result) {
+      var oParams = { limit: 100 };
+
+      // Tarih filtresi varsa backend'e gonder (limit kalkar, tum gecmis gelir)
+      var oDateRange = this.byId("dateRangeFilter");
+      if (oDateRange) {
+        var dFrom = oDateRange.getDateValue();
+        var dTo = oDateRange.getSecondDateValue();
+        if (dFrom && dTo) {
+          oParams.date_from = dFrom.toISOString().slice(0, 10);
+          oParams.date_to = dTo.toISOString().slice(0, 10);
+          delete oParams.limit;
+        }
+      }
+
+      API.get("/api/work-orders", oParams).then(function (result) {
         var aData = (result.data || []).map(function (o) {
           o.received_at_fmt = o.received_at ? new Date(o.received_at).toLocaleString("tr-TR") : "";
           o.completed_at_fmt = o.completed_at ? new Date(o.completed_at).toLocaleString("tr-TR") : "";
           o.line_count = o.line_count || 0;
           return o;
         });
+        var iTotal = result.count || aData.length;
         that._oModel.setProperty("/data", aData);
         that._oModel.setProperty("/count", aData.length);
-        that._oModel.setProperty("/countText", that._getText("woOrderCount", [aData.length]));
+        that._oModel.setProperty("/totalCount", iTotal);
+        that._oModel.setProperty("/countText",
+          iTotal > aData.length
+            ? that._getText("woOrderCount", [aData.length]) + " / " + iTotal
+            : that._getText("woOrderCount", [aData.length]));
         that._buildDeliveryTypeOptions(aData);
         that._buildProcessTypeOptions(aData);
         that._applyFilters();
@@ -208,7 +227,16 @@ sap.ui.define([
     },
 
     onTypeFilterChange: function () { this._applyFilters(); },
-    onFilterChange: function () { this._applyFilters(); },
+
+    onFilterChange: function (oEvent) {
+      // Tarih filtresi de\u011fi\u015ftiyse backend'den yeniden \u00e7ek
+      var oSource = oEvent ? oEvent.getSource() : null;
+      if (oSource && oSource.getId && oSource.getId().indexOf("dateRangeFilter") > -1) {
+        this._loadData();
+        return;
+      }
+      this._applyFilters();
+    },
 
     onSearch: function (oEvent) {
       this._sSearchQuery = oEvent.getParameter("newValue") || "";

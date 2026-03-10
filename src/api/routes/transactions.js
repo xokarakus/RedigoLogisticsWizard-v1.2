@@ -9,7 +9,7 @@ const woStore = new DbStore('work_orders');
 // GET /api/transactions - List transactions with filtering
 router.get('/', async (req, res) => {
   try {
-    const { status, work_order_id, action_like, limit = 100 } = req.query;
+    const { status, work_order_id, action_like, limit = 100, date_from, date_to } = req.query;
     let data = await store.readAll();
 
     if (status) {
@@ -20,6 +20,15 @@ router.get('/', async (req, res) => {
     }
     if (action_like) {
       data = data.filter(t => t.action && t.action.indexOf(action_like) !== -1);
+    }
+    if (date_from) {
+      const dFrom = new Date(date_from);
+      data = data.filter(t => t.started_at && new Date(t.started_at) >= dFrom);
+    }
+    if (date_to) {
+      const dTo = new Date(date_to);
+      dTo.setHours(23, 59, 59, 999);
+      data = data.filter(t => t.started_at && new Date(t.started_at) <= dTo);
     }
 
     // Enrich with delivery_no from work orders
@@ -39,9 +48,13 @@ router.get('/', async (req, res) => {
 
     // Sort by started_at desc
     data.sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
-    data = data.slice(0, Number(limit));
+    const total = data.length;
+    const bHasDateFilter = !!(date_from || date_to);
+    if (!bHasDateFilter) {
+      data = data.slice(0, Number(limit));
+    }
 
-    res.json({ data, count: data.length });
+    res.json({ data, count: total });
   } catch (err) {
     logger.error('GET /api/transactions error', { error: err.message });
     res.status(500).json({ error: err.message });

@@ -69,7 +69,7 @@ function flattenHeader(wo) {
 // GET /api/work-orders - List work orders
 router.get('/', async (req, res) => {
   try {
-    const { status, type, limit = 50, offset = 0 } = req.query;
+    const { status, type, limit = 100, offset = 0, date_from, date_to } = req.query;
     let data = await store.readAll();
 
     if (status) {
@@ -77,6 +77,16 @@ router.get('/', async (req, res) => {
     }
     if (type) {
       data = data.filter(o => o.order_type === type);
+    }
+    // Tarih aralığı filtresi (received_at)
+    if (date_from) {
+      const dFrom = new Date(date_from);
+      data = data.filter(o => o.received_at && new Date(o.received_at) >= dFrom);
+    }
+    if (date_to) {
+      const dTo = new Date(date_to);
+      dTo.setHours(23, 59, 59, 999);
+      data = data.filter(o => o.received_at && new Date(o.received_at) <= dTo);
     }
 
     // process_types tablosundan kod→ad eşleştirmesi
@@ -112,7 +122,11 @@ router.get('/', async (req, res) => {
     data.sort((a, b) => new Date(b.received_at) - new Date(a.received_at));
 
     const total = data.length;
-    data = data.slice(Number(offset), Number(offset) + Number(limit));
+    // Tarih filtresi varsa limit uygulama (kullanici gecmis veriyi istiyor)
+    const bHasDateFilter = !!(date_from || date_to);
+    if (!bHasDateFilter) {
+      data = data.slice(Number(offset), Number(offset) + Number(limit));
+    }
 
     res.json({ data, count: total });
   } catch (err) {

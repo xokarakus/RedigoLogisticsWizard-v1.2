@@ -6,7 +6,7 @@
   xmlns:t="sap.ui.table"
   height="100%">
 
-  <Page title="{i18n>woTitle}" showNavButton="false" enableScrolling="false" height="100%">
+  <Page title="{i18n>woTitle}" showNavButton="false" enableScrolling="false">
 
     <content>
       <t:Table
@@ -15,7 +15,7 @@
         selectionMode="MultiToggle"
         selectionBehavior="RowSelector"
         visibleRowCountMode="Auto"
-        minAutoRowCount="5"
+        minAutoRowCount="3"
         enableColumnReordering="true"
         enableCellFilter="true"
         enableColumnFreeze="true"

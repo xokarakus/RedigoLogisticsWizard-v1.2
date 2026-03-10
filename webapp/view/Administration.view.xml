@@ -21,8 +21,34 @@
 
             <OverflowToolbar>
               <Title text="{i18n>adminUsers}" level="H5" />
+              <ToolbarSeparator />
+              <SearchField id="userSearch" width="200px" placeholder="{i18n>adminSearchPlaceholder}" liveChange="onUserSearch">
+                <layoutData><OverflowToolbarLayoutData priority="High" /></layoutData>
+              </SearchField>
+              <Select id="roleFilter" change="onUserFilter" width="160px">
+                <layoutData><OverflowToolbarLayoutData priority="High" /></layoutData>
+                <core:Item key="ALL" text="{i18n>woFilterAll}" />
+                <core:Item key="SUPER_ADMIN" text="Super Admin" />
+                <core:Item key="TENANT_ADMIN" text="{i18n>adminTenantAdmin}" />
+                <core:Item key="TENANT_USER" text="{i18n>adminTenantUser}" />
+              </Select>
+              <Select id="activeFilter" change="onUserFilter" width="120px">
+                <layoutData><OverflowToolbarLayoutData priority="High" /></layoutData>
+                <core:Item key="ALL" text="{i18n>woFilterAll}" />
+                <core:Item key="ACTIVE" text="{i18n>adminActiveOnly}" />
+                <core:Item key="INACTIVE" text="{i18n>adminInactiveOnly}" />
+              </Select>
+              <Select id="tenantFilter" change="onUserFilter" width="170px"
+                visible="{= ${admin>/tenants}.length > 0}">
+                <layoutData><OverflowToolbarLayoutData priority="Low" /></layoutData>
+                <core:Item key="ALL" text="{i18n>adminAllTenants}" />
+              </Select>
               <ToolbarSpacer />
-              <Button text="{i18n>adminAddUser}" icon="sap-icon://add" press="onAddUser" type="Emphasized" />
+              <ObjectStatus text="{admin>/filteredCountText}" state="Information" />
+              <ToolbarSeparator />
+              <Button text="{i18n>adminAddUser}" icon="sap-icon://add" press="onAddUser" type="Emphasized">
+                <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+              </Button>
             </OverflowToolbar>
 
             <Table id="usersTable" items="{admin>/users}" autoPopinMode="true" mode="None">

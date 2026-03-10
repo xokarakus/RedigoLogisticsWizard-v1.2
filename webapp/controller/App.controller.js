@@ -18,6 +18,7 @@ sap.ui.define([
     inventory: "com.redigo.logistics.cockpit.view.Inventory",
     transactionLog: "com.redigo.logistics.cockpit.view.TransactionLog",
     reconciliation: "com.redigo.logistics.cockpit.view.Reconciliation",
+    masterData: "com.redigo.logistics.cockpit.view.MasterData",
     configuration: "com.redigo.logistics.cockpit.view.Configuration",
     administration: "com.redigo.logistics.cockpit.view.Administration",
     tenantManagement: "com.redigo.logistics.cockpit.view.TenantManagement",

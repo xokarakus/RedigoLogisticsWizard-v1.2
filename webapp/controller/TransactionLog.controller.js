@@ -84,16 +84,21 @@ sap.ui.define([
 
     _loadData: function () {
       var that = this;
-      API.get("/api/transactions", { limit: 200 }).then(function (result) {
+      API.get("/api/transactions", { limit: 100 }).then(function (result) {
         var aData = (result.data || []).map(function (tx) {
           tx.started_at_fmt = tx.started_at ? new Date(tx.started_at).toLocaleString("tr-TR") : "";
           tx.correlation_ref = tx.correlation_id ? tx.correlation_id.substring(0, 8).toUpperCase() : "";
           tx._actionText = getActionLabel(tx.action);
           return tx;
         });
+        var iTotal = result.count || aData.length;
         that._oModel.setProperty("/data", aData);
         that._oModel.setProperty("/count", aData.length);
-        that._oModel.setProperty("/countText", that._getText("txTransactionCount", [aData.length]));
+        that._oModel.setProperty("/totalCount", iTotal);
+        that._oModel.setProperty("/countText",
+          iTotal > aData.length
+            ? that._getText("txTransactionCount", [aData.length]) + " / " + iTotal
+            : that._getText("txTransactionCount", [aData.length]));
         that._buildActionOptions(aData);
         that._applyFilters();
       });

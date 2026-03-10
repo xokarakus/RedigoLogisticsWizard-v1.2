@@ -1,0 +1,136 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.MasterData"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  height="100%">
+
+  <Page title="{i18n>mdTitle}" showNavButton="false" enableScrolling="true">
+    <content>
+      <IconTabBar id="masterDataTabs" select="onTabSelect" expandable="false" stretchContentHeight="true">
+
+        <!-- ═══ Tab 1: Malzeme Kodları ═══ -->
+        <items>
+          <IconTabFilter text="{i18n>mdMaterials}" icon="sap-icon://product" key="materials" count="{masterData>/materialCount}">
+            <Table id="materialsTable" items="{masterData>/materials}" growing="true" growingThreshold="50"
+              mode="MultiSelect" alternateRowColors="true" sticky="ColumnHeaders,HeaderToolbar">
+
+              <headerToolbar>
+                <OverflowToolbar>
+                  <SearchField width="250px" placeholder="{i18n>mdSearchMaterial}" liveChange="onMaterialSearch">
+                    <layoutData><OverflowToolbarLayoutData priority="High" /></layoutData>
+                  </SearchField>
+                  <ToolbarSpacer />
+                  <Button text="{i18n>mdDispatch}" icon="sap-icon://upload-to-cloud" press="onDispatchMaterials" type="Emphasized">
+                    <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+                  </Button>
+                  <ToolbarSeparator />
+                  <Button text="{i18n>mdAddMaterial}" icon="sap-icon://add" press="onAddMaterial" type="Default">
+                    <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+                  </Button>
+                  <Button icon="sap-icon://refresh" tooltip="{i18n>btnRefresh}" press="onRefreshMaterials" type="Transparent">
+                    <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+                  </Button>
+                </OverflowToolbar>
+              </headerToolbar>
+
+              <columns>
+                <Column width="140px"><Text text="{i18n>mdMaterialNo}" /></Column>
+                <Column><Text text="{i18n>mdDescription}" /></Column>
+                <Column width="120px"><Text text="{i18n>mdMaterialGroup}" /></Column>
+                <Column width="80px" hAlign="Center"><Text text="{i18n>mdBaseUom}" /></Column>
+                <Column width="100px" hAlign="End"><Text text="{i18n>mdGrossWeight}" /></Column>
+                <Column width="80px" hAlign="Center"><Text text="{i18n>mdWeightUnit}" /></Column>
+                <Column width="140px"><Text text="{i18n>mdLastSynced}" /></Column>
+                <Column width="100px" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
+              </columns>
+
+              <items>
+                <ColumnListItem>
+                  <cells>
+                    <ObjectIdentifier title="{masterData>sap_material_no}" />
+                    <Text text="{masterData>description}" />
+                    <Text text="{masterData>material_group}" />
+                    <Text text="{masterData>base_uom}" />
+                    <ObjectNumber number="{masterData>gross_weight}" />
+                    <Text text="{masterData>weight_unit}" />
+                    <Text text="{masterData>last_synced_fmt}" />
+                    <HBox justifyContent="Center">
+                      <Button icon="sap-icon://edit" press="onEditMaterial" type="Transparent" tooltip="{i18n>mdEditMaterial}" />
+                      <Button icon="sap-icon://delete" press="onDeleteMaterial" type="Transparent" tooltip="{i18n>btnDelete}" />
+                    </HBox>
+                  </cells>
+                </ColumnListItem>
+              </items>
+
+            </Table>
+          </IconTabFilter>
+
+          <!-- ═══ Tab 2: Müşteri/Satıcı ═══ -->
+          <IconTabFilter text="{i18n>mdPartners}" icon="sap-icon://supplier" key="partners" count="{masterData>/partnerCount}">
+            <Table id="partnersTable" items="{masterData>/partners}" growing="true" growingThreshold="50"
+              mode="MultiSelect" alternateRowColors="true" sticky="ColumnHeaders,HeaderToolbar">
+
+              <headerToolbar>
+                <OverflowToolbar>
+                  <SearchField width="250px" placeholder="{i18n>mdSearchPartner}" liveChange="onPartnerSearch">
+                    <layoutData><OverflowToolbarLayoutData priority="High" /></layoutData>
+                  </SearchField>
+                  <Select id="partnerTypeFilter" change="onPartnerTypeFilter">
+                    <layoutData><OverflowToolbarLayoutData priority="High" /></layoutData>
+                    <core:Item key="ALL" text="{i18n>mdAllTypes}" />
+                    <core:Item key="CUSTOMER" text="{i18n>mdCustomer}" />
+                    <core:Item key="VENDOR" text="{i18n>mdVendor}" />
+                  </Select>
+                  <ToolbarSpacer />
+                  <Button text="{i18n>mdDispatch}" icon="sap-icon://upload-to-cloud" press="onDispatchPartners" type="Emphasized">
+                    <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+                  </Button>
+                  <ToolbarSeparator />
+                  <Button text="{i18n>mdAddPartner}" icon="sap-icon://add" press="onAddPartner" type="Default">
+                    <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+                  </Button>
+                  <Button icon="sap-icon://refresh" tooltip="{i18n>btnRefresh}" press="onRefreshPartners" type="Transparent">
+                    <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+                  </Button>
+                </OverflowToolbar>
+              </headerToolbar>
+
+              <columns>
+                <Column width="140px"><Text text="{i18n>mdPartnerNo}" /></Column>
+                <Column width="110px"><Text text="{i18n>mdPartnerType}" /></Column>
+                <Column><Text text="{i18n>mdName}" /></Column>
+                <Column width="120px"><Text text="{i18n>mdCity}" /></Column>
+                <Column width="80px" hAlign="Center"><Text text="{i18n>mdCountry}" /></Column>
+                <Column width="140px"><Text text="{i18n>mdLastSynced}" /></Column>
+                <Column width="100px" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
+              </columns>
+
+              <items>
+                <ColumnListItem>
+                  <cells>
+                    <ObjectIdentifier title="{masterData>sap_partner_no}" />
+                    <ObjectStatus text="{= ${masterData>partner_type} === 'CUSTOMER' ? ${i18n>mdCustomer} : ${i18n>mdVendor}}"
+                      state="{= ${masterData>partner_type} === 'CUSTOMER' ? 'Information' : 'Warning'}"
+                      icon="{= ${masterData>partner_type} === 'CUSTOMER' ? 'sap-icon://customer' : 'sap-icon://supplier'}" />
+                    <Text text="{masterData>name}" />
+                    <Text text="{masterData>city}" />
+                    <Text text="{masterData>country}" />
+                    <Text text="{masterData>last_synced_fmt}" />
+                    <HBox justifyContent="Center">
+                      <Button icon="sap-icon://edit" press="onEditPartner" type="Transparent" tooltip="{i18n>mdEditPartner}" />
+                      <Button icon="sap-icon://delete" press="onDeletePartner" type="Transparent" tooltip="{i18n>btnDelete}" />
+                    </HBox>
+                  </cells>
+                </ColumnListItem>
+              </items>
+
+            </Table>
+          </IconTabFilter>
+        </items>
+
+      </IconTabBar>
+    </content>
+  </Page>
+
+</mvc:View>
