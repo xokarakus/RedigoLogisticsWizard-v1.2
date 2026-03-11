@@ -146,7 +146,8 @@ async function dispatchViaDestination(destinationName, path, opts) {
  * @returns {Object} { ok, statusCode, statusText, responseBody, duration_ms, error }
  */
 async function dispatch(opts) {
-  const { url, method = 'POST', headers = [], securityProfileId, body } = opts;
+  const { url, method = 'POST', headers = [], securityProfileId, body, timeout_ms } = opts;
+  const timeoutMs = timeout_ms && timeout_ms > 0 ? timeout_ms : 30000; // default 30sn
 
   // ── BTP Destination Service: dest://DEST_NAME/path ──
   if (url && url.startsWith('dest://')) {
@@ -189,9 +190,19 @@ async function dispatch(opts) {
       fetchOpts.body = JSON.stringify(finalBody);
     }
 
-    logger.info('Dispatch to 3PL', { url, method });
+    // Timeout with AbortController
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    fetchOpts.signal = controller.signal;
 
-    const response = await fetch(url, fetchOpts);
+    logger.info('Dispatch to 3PL', { url, method, timeout_ms: timeoutMs });
+
+    let response;
+    try {
+      response = await fetch(url, fetchOpts);
+    } finally {
+      clearTimeout(timer);
+    }
     const responseText = await response.text();
     const duration_ms = Date.now() - startTime;
 
@@ -208,14 +219,16 @@ async function dispatch(opts) {
     };
   } catch (err) {
     const duration_ms = Date.now() - startTime;
-    logger.error('Dispatch error', { url, error: err.message });
+    const isTimeout = err.name === 'AbortError';
+    const errorMsg = isTimeout ? 'Timeout (' + timeoutMs + 'ms)' : err.message;
+    logger.error('Dispatch error', { url, error: errorMsg, timeout: isTimeout });
     return {
       ok: false,
-      statusCode: 0,
-      statusText: 'Network Error',
+      statusCode: isTimeout ? 408 : 0,
+      statusText: isTimeout ? 'Request Timeout' : 'Network Error',
       responseBody: null,
       duration_ms,
-      error: err.message
+      error: errorMsg
     };
   }
 }

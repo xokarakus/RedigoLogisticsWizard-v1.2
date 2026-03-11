@@ -34,7 +34,7 @@ sap.ui.define([
           selectedFMHeaders: [], selectedFMSecurityId: "", selectedFMDirection: "SAP_TO_3PL",
           securityForCompany: [], fmTreeNodes: [],
           outputHeaders: "", outputJson: "", outputSecurity: "",
-          selectedFMMethod: "POST", selectedFMApiEndpoint: "",
+          selectedFMMethod: "POST", selectedFMApiEndpoint: "", selectedFMTimeout: 30000,
           selectedFMSourceApi: "", selectedFMSourceSecurityId: "",
           sourceSecurityProfiles: [],
           testInputJson: "", testResponseJson: "", testStatus: "", testStatusState: "None",

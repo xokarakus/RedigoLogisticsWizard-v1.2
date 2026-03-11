@@ -273,6 +273,9 @@
                       </Select>
                       <Label text="Endpoint" />
                       <Input value="{cfg>/selectedFMApiEndpoint}" placeholder="https://api.3pl.com/orders" change="onFMApiEndpointChange" />
+                      <Label text="{i18n>fmTimeout}" />
+                      <Input value="{cfg>/selectedFMTimeout}" type="Number" placeholder="30000" change="onFMTimeoutChange"
+                        description="ms" />
                       <Label text="{i18n>fmTargetSecurity}" />
                       <Select selectedKey="{cfg>/selectedFMSecurityId}" change="onFMSecurityChange"
                         items="{ path: 'cfg>/securityForCompany' }">

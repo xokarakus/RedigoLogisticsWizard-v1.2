@@ -56,6 +56,7 @@ sap.ui.define([
       this._oModel.setProperty("/selectedFMSecurityId", oProfile.security_profile_id || "");
       this._oModel.setProperty("/selectedFMMethod", oProfile.http_method || "POST");
       this._oModel.setProperty("/selectedFMApiEndpoint", oProfile.api_endpoint || "");
+      this._oModel.setProperty("/selectedFMTimeout", oProfile.timeout_ms || 30000);
       var sSourceApi = oProfile.source_api_endpoint;
       if (!sSourceApi) {
         sSourceApi = this._generateSourceApiPath(oProfile);
@@ -148,6 +149,7 @@ sap.ui.define([
       oHttpMethod.addItem(new Item({ key: "PUT", text: "PUT" }));
       oHttpMethod.addItem(new Item({ key: "PATCH", text: "PATCH" }));
       var oApiEndpoint = new Input({ value: bEdit ? (oExisting.api_endpoint || "") : "", placeholder: "https://api.example.com/orders" });
+      var oTimeout = new Input({ value: bEdit ? String(oExisting.timeout_ms || 30000) : "30000", type: "Number", description: "ms" });
       var oActive = new Select({ selectedKey: bEdit ? String(oExisting.is_active) : "true" });
       oActive.addItem(new Item({ key: "true", text: this._getText("cfgActiveYes") }));
       oActive.addItem(new Item({ key: "false", text: this._getText("cfgActiveNo") }));
@@ -175,6 +177,7 @@ sap.ui.define([
           new Label({ text: this._getText("fmDirection") }), oDirection,
           new Label({ text: this._getText("fmHttpMethod") }), oHttpMethod,
           new Label({ text: this._getText("fmApiEndpoint") }), oApiEndpoint,
+          new Label({ text: this._getText("fmTimeout") }), oTimeout,
           oLblSapJson, oSapJson,
           oLbl3plJson, o3plJson,
           new Label({ text: this._getText("cfgActive") }), oActive
@@ -206,6 +209,7 @@ sap.ui.define([
               direction: oDirection.getSelectedKey(),
               http_method: oHttpMethod.getSelectedKey(),
               api_endpoint: oApiEndpoint.getValue().trim(),
+              timeout_ms: parseInt(oTimeout.getValue(), 10) || 30000,
               sap_sample_json: oSapObj,
               threepl_sample_json: o3plObj,
               is_active: oActive.getSelectedKey() === "true"

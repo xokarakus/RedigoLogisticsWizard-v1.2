@@ -635,6 +635,19 @@ sap.ui.define([
       });
     },
 
+    onFMTimeoutChange: function (oEvent) {
+      var iVal = parseInt(oEvent.getSource().getValue(), 10) || 30000;
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+      var that = this;
+      API.put("/api/config/field-mappings/" + oFound.profile.id, { timeout_ms: iVal }).then(function (result) {
+        if (result.data && !Array.isArray(result.data)) {
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/timeout_ms", iVal);
+          MessageToast.show(that._getText("msgSaved"));
+        }
+      });
+    },
+
     onTestIntegration: function () {
       var that = this;
       var oFound = this._getSelectedFMProfile();

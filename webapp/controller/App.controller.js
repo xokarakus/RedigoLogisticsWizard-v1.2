@@ -23,7 +23,8 @@ sap.ui.define([
     administration: "com.redigo.logistics.cockpit.view.Administration",
     tenantManagement: "com.redigo.logistics.cockpit.view.TenantManagement",
     auditLog: "com.redigo.logistics.cockpit.view.AuditLog",
-    jobManagement: "com.redigo.logistics.cockpit.view.JobManagement"
+    jobManagement: "com.redigo.logistics.cockpit.view.JobManagement",
+    dlq: "com.redigo.logistics.cockpit.view.DeadLetterQueue"
   };
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.App", {

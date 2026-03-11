@@ -272,7 +272,8 @@ router.post('/dispatch', adminOnly, async (req, res) => {
           method: mapping.http_method || 'POST',
           headers: mapping.headers || [],
           securityProfileId: mapping.security_profile_id,
-          body: transformed
+          body: transformed,
+          timeout_ms: mapping.timeout_ms
         });
 
         // Transaction log

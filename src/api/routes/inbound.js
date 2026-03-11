@@ -5,33 +5,31 @@ const DbStore = require('../../shared/database/dbStore');
 const logger = require('../../shared/utils/logger');
 const { applyFieldRules, validateRequiredFields } = require('../../shared/utils/fieldTransformer');
 const pgQueue = require('../../shared/queue/pgQueue');
+const { ACTIVE_STATUSES, CLOSED_STATUSES } = require('../../shared/constants/statuses');
 
 const fieldMappingStore = new DbStore('field_mappings');
 const transactionStore = new DbStore('transaction_logs');
 const workOrderStore = new DbStore('work_orders');
 
-// Tekrar işleme alınmaması gereken durumlar
-const ACTIVE_STATUSES = ['RECEIVED', 'SENT_TO_WMS', 'IN_PROGRESS', 'PARTIALLY_DONE', 'COMPLETED', 'PGI_POSTED', 'GR_POSTED'];
-
 /**
  * Dinamik Inbound Endpoint
- * SAP bu endpoint'e POST yaparak kokpite veri gönderir.
+ * SAP bu endpoint'e POST yaparak kokpite veri gonderir.
  * URL pattern: /api/inbound/:processSlug/:companySlug
  *
  * Pipeline:
- * 1. Gelen URL'i field_mappings'deki source_api_endpoint ile eşleştir
- * 2. Eşleşen mapping'in field_rules'ını uygula (SAP → 3PL dönüşümü)
- * 3. INBOUND transaction kaydı oluştur (correlation_id ile)
- * 4. CREATE_WORK_ORDER işini kuyruğa ekle (asenkron)
- *    → Worker: iş emri oluşturur, api_endpoint varsa DISPATCH_TO_3PL kuyruğa ekler
- * 5. correlation_id ile hızlı yanıt dön
+ * 1. Gelen URL'i field_mappings'deki source_api_endpoint ile eslestir
+ * 2. Eslesen mapping'in field_rules'ini uygula (SAP -> 3PL donusumu)
+ * 3. INBOUND transaction kaydi olustur (correlation_id ile)
+ * 4. CREATE_WORK_ORDER isini kuyruga ekle (asenkron)
+ *    -> Worker: is emri olusturur, api_endpoint varsa DISPATCH_TO_3PL kuyruga ekler
+ * 5. correlation_id ile hizli yanit don
  */
 router.all('/*', async (req, res) => {
   try {
   const incomingPath = '/api/inbound' + req.path;
   const mappings = await fieldMappingStore.readAll();
 
-  // source_api_endpoint ile eşleştir
+  // source_api_endpoint ile eslestir
   const mapping = mappings.find(fm =>
     fm.source_api_endpoint === incomingPath && fm.is_active
   );
@@ -51,27 +49,33 @@ router.all('/*', async (req, res) => {
   const startTime = Date.now();
   const receivedAt = new Date().toISOString();
   const isWorkOrder = mapping.category !== 'MASTER_DATA';
+  const tenantId = mapping.tenant_id || null;
 
-  // ── Duplike kontrolü: yalnızca WORK_ORDER kategorisi için ──
+  // -- Duplike kontrolu: yalnizca WORK_ORDER kategorisi icin --
   const deliveryNo = inputPayload.HEADER
     ? inputPayload.HEADER.VBELN
     : (inputPayload.VBELN || null);
 
   if (isWorkOrder && deliveryNo) {
-    const existingOrders = await workOrderStore.readAll();
+    const filterOpts = tenantId ? { filter: { tenant_id: tenantId } } : {};
+    const existingOrders = await workOrderStore.readAll(filterOpts);
     const duplicate = existingOrders.find(wo =>
       wo.sap_delivery_no === deliveryNo && ACTIVE_STATUSES.includes(wo.status)
     );
 
     if (duplicate) {
+      const isClosed = CLOSED_STATUSES.includes(duplicate.status);
       logger.warn('Inbound: duplicate delivery rejected', {
         delivery_no: deliveryNo,
         existing_work_order: duplicate.id,
         existing_status: duplicate.status,
-        existing_correlation_id: duplicate.correlation_id
+        existing_correlation_id: duplicate.correlation_id,
+        closed: isClosed
       });
       return res.status(409).json({
-        error: 'Bu teslimat zaten isleniyor',
+        error: isClosed
+          ? 'Bu teslimat tamamlanmis/iptal edilmis, tekrar gonderilemez'
+          : 'Bu teslimat zaten isleniyor',
         delivery_no: deliveryNo,
         existing_work_order_id: duplicate.id,
         existing_correlation_id: duplicate.correlation_id,
@@ -90,7 +94,7 @@ router.all('/*', async (req, res) => {
     correlation_id: correlationId
   });
 
-  // ── Adım 0: Zorunlu alan kontrolü ──
+  // -- Adim 0: Zorunlu alan kontrolu --
   const reqCheck = validateRequiredFields(inputPayload, mapping.field_rules || []);
   if (!reqCheck.valid) {
     logger.warn('Inbound: required fields missing', {
@@ -109,7 +113,8 @@ router.all('/*', async (req, res) => {
       retry_count: 0,
       started_at: receivedAt,
       completed_at: new Date().toISOString(),
-      duration_ms: Date.now() - startTime
+      duration_ms: Date.now() - startTime,
+      tenant_id: tenantId
     });
     return res.status(400).json({
       error: 'Zorunlu alanlar eksik',
@@ -118,7 +123,7 @@ router.all('/*', async (req, res) => {
     });
   }
 
-  // ── Adım 1: Alan kurallarını uygula ──
+  // -- Adim 1: Alan kurallarini uygula --
   let transformed = {};
   try {
     transformed = applyFieldRules(inputPayload, mapping.field_rules || []);
@@ -136,7 +141,8 @@ router.all('/*', async (req, res) => {
       retry_count: 0,
       started_at: receivedAt,
       completed_at: new Date().toISOString(),
-      duration_ms: Date.now() - startTime
+      duration_ms: Date.now() - startTime,
+      tenant_id: tenantId
     });
     return res.status(400).json({
       error: 'Field transformation failed',
@@ -148,7 +154,7 @@ router.all('/*', async (req, res) => {
   const transformCompletedAt = new Date().toISOString();
   const rulesApplied = (mapping.field_rules || []).filter(r => r.sap_field && r.threepl_field).length;
 
-  // ── Adım 2: INBOUND transaction kaydı ──
+  // -- Adim 2: INBOUND transaction kaydi --
   const inboundTx = await transactionStore.create({
     correlation_id: correlationId,
     direction: 'INBOUND',
@@ -162,10 +168,11 @@ router.all('/*', async (req, res) => {
     retry_count: 0,
     started_at: receivedAt,
     completed_at: transformCompletedAt,
-    duration_ms: Date.now() - startTime
+    duration_ms: Date.now() - startTime,
+    tenant_id: tenantId
   });
 
-  // ── Adım 3: Kategoriye göre kuyruğa ekle ──
+  // -- Adim 3: Kategoriye gore kuyruga ekle --
   const mappingPayload = {
     id: mapping.id,
     process_type: mapping.process_type,
@@ -175,14 +182,16 @@ router.all('/*', async (req, res) => {
     http_method: mapping.http_method || 'POST',
     headers: mapping.headers || [],
     security_profile_id: mapping.security_profile_id || null,
-    response_rules: mapping.response_rules || []
+    response_rules: mapping.response_rules || [],
+    timeout_ms: mapping.timeout_ms || 30000,
+    tenant_id: tenantId
   };
 
   let job;
   let jobType;
 
   if (isWorkOrder) {
-    // WORK_ORDER: İş emri oluştur, ardından 3PL'e dispatch
+    // WORK_ORDER: Is emri olustur, ardindan 3PL'e dispatch
     jobType = 'CREATE_WORK_ORDER';
     job = await pgQueue.enqueue(jobType, correlationId, {
       original: inputPayload,
@@ -191,7 +200,7 @@ router.all('/*', async (req, res) => {
       inbound_tx_id: inboundTx.id
     }, { delivery_no: deliveryNo });
   } else {
-    // MASTER_DATA: İş emri oluşturma, direkt 3PL'e dispatch et
+    // MASTER_DATA: Is emri olusturma, direkt 3PL'e dispatch et
     if (mapping.api_endpoint) {
       jobType = 'DISPATCH_TO_3PL';
       job = await pgQueue.enqueue(jobType, correlationId, {
@@ -200,13 +209,13 @@ router.all('/*', async (req, res) => {
         inbound_tx_id: inboundTx.id
       });
     } else {
-      // api_endpoint yoksa sadece INBOUND log kalır
+      // api_endpoint yoksa sadece INBOUND log kalir
       jobType = null;
       job = null;
     }
   }
 
-  // ── Adım 4: Hızlı yanıt dön ──
+  // -- Adim 4: Hizli yanit don --
   res.json({
     status: 'received',
     correlation_id: correlationId,

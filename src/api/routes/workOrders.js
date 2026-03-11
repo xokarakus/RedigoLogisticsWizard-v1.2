@@ -2,10 +2,14 @@ const express = require('express');
 const router = express.Router();
 const DbStore = require('../../shared/database/dbStore');
 const logger = require('../../shared/utils/logger');
+const { tenantFilter } = require('../../shared/middleware/auth');
+const { CLOSED_STATUSES } = require('../../shared/constants/statuses');
 
 const store = new DbStore('work_orders');
 const pcStore = new DbStore('process_configs');
 const ptStore = new DbStore('process_types');
+
+function tf(req) { return tenantFilter(req); }
 
 // Build lookup key from work order fields
 function configKey(plantCode, warehouseCode, deliveryType) {
@@ -70,7 +74,7 @@ function flattenHeader(wo) {
 router.get('/', async (req, res) => {
   try {
     const { status, type, limit = 100, offset = 0, date_from, date_to } = req.query;
-    let data = await store.readAll();
+    let data = await store.readAll({ filter: tf(req) });
 
     if (status) {
       data = data.filter(o => o.status === status);
@@ -170,6 +174,51 @@ router.get('/:id', async (req, res) => {
     res.json({ data: item });
   } catch (err) {
     logger.error('GET /api/work-orders/:id error', { error: err.message, id: req.params.id });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/work-orders/:id - Update work order (kapali durumda engellenir)
+router.put('/:id', async (req, res) => {
+  try {
+    const item = await store.findById(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Kayit bulunamadi' });
+
+    if (CLOSED_STATUSES.includes(item.status)) {
+      return res.status(403).json({
+        error: 'Bu is emri kapatilmis (' + item.status + '), degistirilemez',
+        status: item.status
+      });
+    }
+
+    // Guncellenmesine izin verilen alanlar
+    const allowed = ['priority', 'notes', 'status'];
+    const updates = {};
+    allowed.forEach(key => {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    });
+
+    // Status degisikligi: kapaliya gecis kontrolu
+    if (updates.status && CLOSED_STATUSES.includes(updates.status) && updates.status !== 'CANCELLED') {
+      return res.status(403).json({
+        error: 'Bu duruma manuel gecis yapilamaz: ' + updates.status,
+        status: item.status
+      });
+    }
+
+    // CANCELLED yapilirken completed_at set et
+    if (updates.status === 'CANCELLED') {
+      updates.completed_at = new Date().toISOString();
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'Guncellenecek alan yok' });
+    }
+
+    const updated = await store.update(req.params.id, updates);
+    res.json({ data: updated });
+  } catch (err) {
+    logger.error('PUT /api/work-orders error', { error: err.message, id: req.params.id });
     res.status(500).json({ error: err.message });
   }
 });

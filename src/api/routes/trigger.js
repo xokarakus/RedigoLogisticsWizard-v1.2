@@ -189,7 +189,8 @@ router.post('/send-to-3pl', async (req, res) => {
         method: (mapping && mapping.http_method) || 'POST',
         headers: (mapping && mapping.headers) || [],
         securityProfileId: (mapping && mapping.security_profile_id) || null,
-        body: transformed
+        body: transformed,
+        timeout_ms: (mapping && mapping.timeout_ms) || undefined
       });
     } else {
       // Demo mode — API endpoint tanımlı değil

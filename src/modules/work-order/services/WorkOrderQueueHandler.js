@@ -37,6 +37,7 @@ function safeNum(val) {
  */
 async function handleCreateWorkOrder(job) {
   const { original, transformed, mapping, inbound_tx_id } = job.payload;
+  const tenantId = mapping.tenant_id || null;
 
   // SAP payload'dan iş emri alanlarını çıkar
   const header = original.HEADER || original;
@@ -80,7 +81,8 @@ async function handleCreateWorkOrder(job) {
   // İdempotent: aynı delivery_no ile aktif iş emri varsa güncelle
   let workOrder = null;
   if (deliveryNo) {
-    const existing = await workOrderStore.readAll();
+    const filterOpts = tenantId ? { filter: { tenant_id: tenantId } } : {};
+    const existing = await workOrderStore.readAll(filterOpts);
     workOrder = existing.find(wo => wo.sap_delivery_no === deliveryNo);
   }
 
@@ -127,7 +129,8 @@ async function handleCreateWorkOrder(job) {
       priority: 'MEDIUM',
       received_at: new Date().toISOString(),
       lines: lines,
-      sap_raw_payload: original
+      sap_raw_payload: original,
+      tenant_id: tenantId
     });
 
     logger.info('Work order created', {
@@ -184,7 +187,8 @@ async function handleDispatchTo3PL(job) {
     method: mapping.http_method || 'POST',
     headers: mapping.headers || [],
     securityProfileId: mapping.security_profile_id,
-    body: transformed
+    body: transformed,
+    timeout_ms: mapping.timeout_ms
   });
 
   // Response rules uygula
@@ -215,7 +219,9 @@ async function handleDispatchTo3PL(job) {
     retry_count: job.attempts || 0,
     started_at: dispatchStartedAt,
     completed_at: new Date().toISOString(),
-    duration_ms: dispatchResult.duration_ms
+    duration_ms: dispatchResult.duration_ms,
+    work_order_id: work_order_id,
+    tenant_id: mapping.tenant_id || null
   });
 
   if (!dispatchResult.ok) {

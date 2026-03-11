@@ -2,15 +2,18 @@ const express = require('express');
 const router = express.Router();
 const DbStore = require('../../shared/database/dbStore');
 const logger = require('../../shared/utils/logger');
+const { tenantFilter } = require('../../shared/middleware/auth');
 
 const store = new DbStore('transaction_logs');
 const woStore = new DbStore('work_orders');
+
+function tf(req) { return tenantFilter(req); }
 
 // GET /api/transactions - List transactions with filtering
 router.get('/', async (req, res) => {
   try {
     const { status, work_order_id, action_like, limit = 100, date_from, date_to } = req.query;
-    let data = await store.readAll();
+    let data = await store.readAll({ filter: tf(req) });
 
     if (status) {
       data = data.filter(t => t.status === status);
@@ -32,7 +35,7 @@ router.get('/', async (req, res) => {
     }
 
     // Enrich with delivery_no from work orders
-    const orders = await woStore.readAll();
+    const orders = await woStore.readAll({ filter: tf(req) });
     const orderMap = {};
     orders.forEach(o => { orderMap[o.id] = o; });
     data = data.map(t => {

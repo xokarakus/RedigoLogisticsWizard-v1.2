@@ -2,15 +2,18 @@ const express = require('express');
 const router = express.Router();
 const DbStore = require('../../shared/database/dbStore');
 const logger = require('../../shared/utils/logger');
+const { tenantFilter } = require('../../shared/middleware/auth');
 
 const woStore = new DbStore('work_orders');
 const txStore = new DbStore('transaction_logs');
 
+function tf(req) { return tenantFilter(req); }
+
 // GET /api/dashboard/kpis - Compute KPIs from data
 router.get('/kpis', async (req, res) => {
   try {
-    const orders = await woStore.readAll();
-    const txs = await txStore.readAll();
+    const orders = await woStore.readAll({ filter: tf(req) });
+    const txs = await txStore.readAll({ filter: tf(req) });
 
     const today = new Date().toISOString().slice(0, 10);
 

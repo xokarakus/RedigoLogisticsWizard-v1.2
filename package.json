@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "migrate": "node src/shared/database/migrate.js",
+    "migrate": "node src/shared/database/migrate.js up",
+    "migrate:status": "node src/shared/database/migrate.js status",
+    "migrate:rollback": "node src/shared/database/migrate.js rollback",
     "seed": "node src/shared/database/seed.js",
     "traffic": "node tools/traffic-agent/index.js",
     "test-services": "node src/test-services.js",
