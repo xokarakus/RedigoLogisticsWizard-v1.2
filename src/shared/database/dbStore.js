@@ -115,6 +115,39 @@ class DbStore {
   }
 
   /**
+   * Find rows by filter with SQL WHERE (index-friendly).
+   * Unlike readAll(), this is optimized for indexed lookups.
+   * @param {Object} filter - Key-value pairs for WHERE (equality)
+   * @param {Object} [options]
+   * @param {number} [options.limit]
+   * @param {string} [options.orderBy] - e.g. 'created_at DESC'
+   * @returns {Promise<Array>}
+   */
+  async findBy(filter, options = {}) {
+    const { limit, orderBy } = options;
+    const values = [];
+    const clauses = [];
+
+    for (const [key, val] of Object.entries(filter)) {
+      if (val !== undefined && val !== null) {
+        values.push(val);
+        clauses.push(`"${key}" = $${values.length}`);
+      }
+    }
+
+    let sql = `SELECT * FROM "${this.table}"`;
+    if (clauses.length > 0) sql += ' WHERE ' + clauses.join(' AND ');
+    sql += ' ORDER BY ' + (orderBy || 'created_at DESC');
+    if (limit) {
+      values.push(limit);
+      sql += ` LIMIT $${values.length}`;
+    }
+
+    const { rows } = await query(sql, values.length > 0 ? values : undefined);
+    return rows;
+  }
+
+  /**
    * Insert a new row. Returns the created row with generated UUID.
    * Does NOT generate its own id — PostgreSQL gen_random_uuid() handles it.
    */

@@ -2,6 +2,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 const config = require('./shared/config');
 const logger = require('./shared/utils/logger');
 const sapClient = require('./shared/sap/client');
@@ -29,29 +30,97 @@ app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
-app.use(cors());
+
+// CORS — origin whitelist (server-to-server cagrilar Origin gondermez, izin ver)
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:8090').split(',').map(s => s.trim());
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
 app.use(compression());
 app.use(express.json({ limit: '5mb' }));
+
+// Rate Limiting
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_AUTH || '10', 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' }
+});
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_API || '100', 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' }
+});
+const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_WEBHOOK || '300', 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' }
+});
 
 // XSUAA JWT Authentication (BTP'de aktif, local dev'de skip)
 setupAuth(app);
 
 // Health check (auth gerekmez)
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: APP_VERSION, apiVersion: API_VERSION, uptime: process.uptime() });
+app.get('/health', async (req, res) => {
+  const health = {
+    status: 'ok',
+    version: APP_VERSION,
+    apiVersion: API_VERSION,
+    uptime: process.uptime(),
+    memory: {
+      rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB',
+      heap: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB'
+    },
+    timestamp: new Date().toISOString()
+  };
+
+  // DB connectivity check
+  try {
+    const start = Date.now();
+    await require('./shared/database/pool').query('SELECT 1');
+    health.db = { status: 'ok', latency_ms: Date.now() - start };
+  } catch (err) {
+    health.db = { status: 'error', error: err.message };
+    health.status = 'degraded';
+  }
+
+  // Queue stats
+  try {
+    health.queue = await pgQueue.getStats();
+  } catch (_) {
+    health.queue = { status: 'unknown' };
+  }
+
+  res.status(health.status === 'ok' ? 200 : 503).json(health);
 });
 
 // ══════════════════════════════════════
 // API v1 Router
 // ══════════════════════════════════════
 const v1 = express.Router();
+v1.use(apiLimiter);
 
 // Auth (kendi JWT auth'u var)
+v1.use('/auth/login', authLimiter);
+v1.use('/auth/setup', authLimiter);
 v1.use('/auth', require('./api/routes/auth'));
 
 // Webhook (auth yok — harici sistemler cagirir)
-v1.use('/wms', require('./api/routes/wmsWebhook'));
-v1.use('/inbound', require('./api/routes/inbound'));
+v1.use('/wms', webhookLimiter, require('./api/routes/wmsWebhook'));
+v1.use('/inbound', webhookLimiter, require('./api/routes/inbound'));
 
 // Korumali route'lar (JWT + scope)
 v1.use('/work-orders', authenticate, require('./api/routes/workOrders'));

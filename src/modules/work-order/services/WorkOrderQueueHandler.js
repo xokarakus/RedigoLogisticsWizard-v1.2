@@ -10,6 +10,7 @@ const pgQueue = require('../../../shared/queue/pgQueue');
 const { dispatch } = require('../../../shared/utils/httpDispatcher');
 const { applyResponseRules } = require('../../../shared/utils/fieldTransformer');
 const logger = require('../../../shared/utils/logger');
+const { sanitizePayload } = require('../../../shared/utils/securityUtils');
 
 const workOrderStore = new DbStore('work_orders');
 const transactionStore = new DbStore('transaction_logs');
@@ -213,7 +214,7 @@ async function handleDispatchTo3PL(job) {
     status: dispatchResult.ok ? 'SUCCESS' : 'FAILED',
     sap_function: mapping.api_endpoint,
     sap_doc_number: delivery_no,
-    sap_request: transformed,
+    sap_request: sanitizePayload(transformed),
     sap_response: dispatchResult.responseBody,
     error_message: dispatchResult.error,
     retry_count: job.attempts || 0,

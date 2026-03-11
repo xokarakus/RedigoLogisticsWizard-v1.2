@@ -8,6 +8,7 @@ const { logAudit } = require('../../shared/middleware/auditLog');
 
 const adminOnly = requireScope('Admin');
 const { tenantFilter } = require('../../shared/middleware/auth');
+const { fieldMappingCache, processTypeCache, processConfigCache } = require('../../shared/utils/cacheStore');
 
 const configStore = new DbStore('process_configs');
 const typeStore = new DbStore('process_types');
@@ -151,6 +152,7 @@ router.get('/process-configs', async (req, res) => {
 router.post('/process-configs', adminOnly, async (req, res) => {
   try {
     const item = await configStore.create({ ...req.body, tenant_id: req.tenantId });
+    processConfigCache.invalidate();
     logAudit(req, 'process_config', item.id, 'CREATE', null, item);
     res.status(201).json({ data: item });
   } catch (err) {
@@ -164,6 +166,7 @@ router.put('/process-configs/:id', adminOnly, async (req, res) => {
     const old = await configStore.findById(req.params.id);
     const updated = await configStore.update(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    processConfigCache.invalidate();
     logAudit(req, 'process_config', req.params.id, 'UPDATE', old, updated);
     res.json({ data: updated });
   } catch (err) {
@@ -177,6 +180,7 @@ router.delete('/process-configs/:id', adminOnly, async (req, res) => {
     const old = await configStore.findById(req.params.id);
     if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
     await configStore.remove(req.params.id);
+    processConfigCache.invalidate();
     logAudit(req, 'process_config', req.params.id, 'DELETE', old, null);
     res.json({ success: true });
   } catch (err) {
@@ -204,6 +208,7 @@ router.get('/process-types', async (req, res) => {
 router.post('/process-types', adminOnly, async (req, res) => {
   try {
     const item = await typeStore.create({ ...req.body, tenant_id: req.tenantId });
+    processTypeCache.invalidate();
     logAudit(req, 'process_type', item.id, 'CREATE', null, item);
     res.status(201).json({ data: item });
   } catch (err) {
@@ -217,6 +222,7 @@ router.put('/process-types/:id', adminOnly, async (req, res) => {
     const old = await typeStore.findById(req.params.id);
     const updated = await typeStore.update(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    processTypeCache.invalidate();
     logAudit(req, 'process_type', req.params.id, 'UPDATE', old, updated);
     res.json({ data: updated });
   } catch (err) {
@@ -230,6 +236,7 @@ router.delete('/process-types/:id', adminOnly, async (req, res) => {
     const old = await typeStore.findById(req.params.id);
     if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
     await typeStore.remove(req.params.id);
+    processTypeCache.invalidate();
     logAudit(req, 'process_type', req.params.id, 'DELETE', old, null);
     res.json({ success: true });
   } catch (err) {
@@ -259,6 +266,7 @@ router.get('/field-mappings', async (req, res) => {
 router.post('/field-mappings', adminOnly, async (req, res) => {
   try {
     const item = await fieldMappingStore.create({ ...req.body, tenant_id: req.tenantId });
+    fieldMappingCache.invalidate();
     logAudit(req, 'field_mapping', item.id, 'CREATE', null, item);
     res.status(201).json({ data: item });
   } catch (err) {
@@ -272,6 +280,7 @@ router.put('/field-mappings/:id', adminOnly, async (req, res) => {
     const old = await fieldMappingStore.findById(req.params.id);
     const updated = await fieldMappingStore.update(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
+    fieldMappingCache.invalidate();
     logAudit(req, 'field_mapping', req.params.id, 'UPDATE', old, updated);
     res.json({ data: updated });
   } catch (err) {
@@ -285,6 +294,7 @@ router.delete('/field-mappings/:id', adminOnly, async (req, res) => {
     const old = await fieldMappingStore.findById(req.params.id);
     if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
     await fieldMappingStore.remove(req.params.id);
+    fieldMappingCache.invalidate();
     logAudit(req, 'field_mapping', req.params.id, 'DELETE', old, null);
     res.json({ success: true });
   } catch (err) {

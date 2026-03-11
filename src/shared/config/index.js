@@ -23,7 +23,8 @@ if (process.env.VCAP_SERVICES) {
     database: pgCreds.dbname,
     user: pgCreds.username,
     password: pgCreds.password,
-    max: parseInt(process.env.DB_POOL_SIZE || '10', 10),
+    max: parseInt(process.env.DB_POOL_SIZE || '15', 10),
+    statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT || '30000', 10),
     ssl: {
       rejectUnauthorized: false,
       ca: pgCreds.sslrootcert || undefined,
@@ -61,7 +62,8 @@ if (process.env.VCAP_SERVICES) {
     database: process.env.DB_NAME || 'redigo_v12',
     user: process.env.DB_USER || 'redigo',
     password: process.env.DB_PASSWORD || '',
-    max: parseInt(process.env.DB_POOL_SIZE || '10', 10),
+    max: parseInt(process.env.DB_POOL_SIZE || '15', 10),
+    statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT || '30000', 10),
   };
 
   redisConfig = {

@@ -43,4 +43,33 @@ function isMasked(value) {
   return value === MASK_VALUE;
 }
 
-module.exports = { maskCredentials, isMasked, MASK_VALUE, SENSITIVE_KEYS };
+/**
+ * Sanitize arbitrary JSONB payloads by redacting sensitive keys.
+ * Opt-in via SANITIZE_TX_PAYLOADS=true env var.
+ * Walks nested objects recursively.
+ */
+const PAYLOAD_SENSITIVE_KEYS = new Set([
+  'password', 'passwd', 'token', 'api_key', 'apikey',
+  'secret', 'authorization', 'client_secret', 'key_value'
+]);
+
+const shouldSanitize = process.env.SANITIZE_TX_PAYLOADS === 'true';
+
+function sanitizePayload(obj) {
+  if (!shouldSanitize || !obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizePayload);
+
+  const result = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (PAYLOAD_SENSITIVE_KEYS.has(key.toLowerCase())) {
+      result[key] = '***REDACTED***';
+    } else if (val && typeof val === 'object') {
+      result[key] = sanitizePayload(val);
+    } else {
+      result[key] = val;
+    }
+  }
+  return result;
+}
+
+module.exports = { maskCredentials, isMasked, sanitizePayload, MASK_VALUE, SENSITIVE_KEYS };

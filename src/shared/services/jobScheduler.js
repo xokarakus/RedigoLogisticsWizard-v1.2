@@ -293,9 +293,73 @@ async function runJobByType(job) {
     }
 
     case 'RECONCILIATION': {
-      result.processed = 1;
-      result.success = 1;
-      result.details.push({ message: 'Mutabakat tamamland\u0131' });
+      const today = new Date().toISOString().slice(0, 10);
+
+      // Her depo icin mutabakat raporu olustur
+      const whSql = 'SELECT DISTINCT warehouse_code FROM work_orders WHERE warehouse_code IS NOT NULL'
+        + (tid ? ' AND tenant_id = $1' : '');
+      const whResult = await query(whSql, tenantParams);
+
+      for (const wh of whResult.rows) {
+        const wCode = wh.warehouse_code;
+        const wParams = tid ? [tid, wCode] : [wCode];
+        const wIdx = tid ? 'tenant_id = $1 AND warehouse_code = $2' : 'warehouse_code = $1';
+
+        // SAP open: henuz 3PL'e gonderilmemis veya bekleyen
+        const sapOpen = await query(
+          `SELECT COUNT(*) AS cnt FROM work_orders WHERE ${wIdx} AND status IN ('RECEIVED','SENT_TO_WMS')`,
+          wParams
+        );
+
+        // WMS open: 3PL tarafinda islem goren
+        const wmsOpen = await query(
+          `SELECT COUNT(*) AS cnt FROM work_orders WHERE ${wIdx} AND status IN ('SENT_TO_WMS','IN_PROGRESS','PICKING_COMPLETE','PARTIALLY_DONE')`,
+          wParams
+        );
+
+        // Tutarsizlik: 48 saatten fazla SENT_TO_WMS'de kalan emirler
+        const stuckResult = await query(
+          `SELECT id, sap_delivery_no, status, sent_to_wms_at FROM work_orders WHERE ${wIdx} AND status = 'SENT_TO_WMS' AND sent_to_wms_at < NOW() - INTERVAL '48 hours' LIMIT 100`,
+          wParams
+        );
+        const discrepancies = stuckResult.rows.map(r => ({
+          delivery: r.sap_delivery_no,
+          work_order_id: r.id,
+          issue: 'stuck_in_wms_48h',
+          since: r.sent_to_wms_at
+        }));
+
+        // DISPATCH_FAILED emirler
+        const failedResult = await query(
+          `SELECT id, sap_delivery_no, status FROM work_orders WHERE ${wIdx} AND status = 'DISPATCH_FAILED' LIMIT 100`,
+          wParams
+        );
+        failedResult.rows.forEach(r => {
+          discrepancies.push({
+            delivery: r.sap_delivery_no,
+            work_order_id: r.id,
+            issue: 'dispatch_failed'
+          });
+        });
+
+        // Rapor kaydet
+        const sapCnt = Number(sapOpen.rows[0].cnt);
+        const wmsCnt = Number(wmsOpen.rows[0].cnt);
+        const rptParams = [today, wCode, sapCnt, wmsCnt, JSON.stringify(discrepancies), tid || null];
+        await query(
+          `INSERT INTO reconciliation_reports (run_date, warehouse_code, total_sap_open, total_wms_open, sap_open_count, wms_open_count, discrepancies, status, tenant_id) VALUES ($1, $2, $3, $4, $3, $4, $5::jsonb, 'COMPLETED', $6)`,
+          rptParams
+        );
+
+        result.items.push({
+          sap_delivery_no: wCode,
+          status: discrepancies.length > 0 ? 'WARNING' : 'SUCCESS'
+        });
+      }
+
+      result.processed = whResult.rows.length;
+      result.success = whResult.rows.length;
+      result.details.push({ message: whResult.rows.length + ' depo mutabakat raporu olusturuldu' });
       break;
     }
 

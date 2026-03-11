@@ -13,10 +13,13 @@ const {
   JWT_SECRET, SUPER_ADMIN_DOMAIN
 } = require('../../shared/middleware/auth');
 
+const { query } = require('../../shared/database/pool');
+
 const userStore = new DbStore('users');
 const tenantStore = new DbStore('tenants');
 
-const JWT_EXPIRES_IN = '8h';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
+const REFRESH_TOKEN_DAYS = parseInt(process.env.REFRESH_TOKEN_DAYS || '7', 10);
 
 const MAX_LOGIN_ATTEMPTS = 3;
 const LOCKOUT_MINUTES = 15;
@@ -204,10 +207,24 @@ router.post('/login', async (req, res) => {
     };
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+    // Refresh token olustur
+    const refreshTokenRaw = crypto.randomBytes(40).toString('hex');
+    const refreshTokenHash = crypto.createHash('sha256').update(refreshTokenRaw).digest('hex');
+    const refreshExpiresAt = new Date(Date.now() + REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+    await query(
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, ip_address, user_agent)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [user.id, refreshTokenHash, refreshExpiresAt, req.ip, req.headers['user-agent'] || null]
+    );
+
     logger.info('User login', { username: user.username, tenant: tenant.code, role: user.role });
 
     res.json({
       token,
+      refreshToken: refreshTokenRaw,
+      tokenExpiresIn: JWT_EXPIRES_IN,
       must_change_password: user.must_change_password || false,
       user: {
         id: user.id,
@@ -223,6 +240,98 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     logger.error('Login error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ═══════════════════════════════════════════
+   POST /api/auth/refresh — Token rotation
+   ═══════════════════════════════════════════ */
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ error: 'refreshToken gerekli' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+
+    // Gecerli refresh token bul
+    const { rows } = await query(
+      `SELECT * FROM refresh_tokens WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > NOW()`,
+      [tokenHash]
+    );
+
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Gecersiz veya suresi dolmus refresh token' });
+    }
+
+    const rt = rows[0];
+
+    // Eski token'i revoke et (rotation)
+    await query('UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = $1', [rt.id]);
+
+    // Kullaniciyi dogrula
+    const user = await userStore.findById(rt.user_id);
+    if (!user || !user.is_active) {
+      return res.status(401).json({ error: 'Kullanici aktif degil' });
+    }
+
+    const tenant = await tenantStore.findById(user.tenant_id);
+    if (!tenant || !tenant.is_active) {
+      return res.status(401).json({ error: 'Tenant aktif degil' });
+    }
+
+    // Yeni access token
+    const payload = {
+      user_id: user.id,
+      tenant_id: user.tenant_id,
+      tenant_code: tenant.code,
+      tenant_name: tenant.name,
+      tenant_domain: tenant.domain || null,
+      role: user.role,
+      is_super_admin: user.is_super_admin || false,
+      is_system_tenant: tenant.is_system_tenant || false,
+      username: user.username,
+      display_name: user.display_name || user.username,
+      email: user.email || null
+    };
+    const newToken = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+    // Yeni refresh token
+    const newRefreshRaw = crypto.randomBytes(40).toString('hex');
+    const newRefreshHash = crypto.createHash('sha256').update(newRefreshRaw).digest('hex');
+    const newExpiresAt = new Date(Date.now() + REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+    await query(
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5)`,
+      [user.id, newRefreshHash, newExpiresAt, req.ip, req.headers['user-agent'] || null]
+    );
+
+    res.json({
+      token: newToken,
+      refreshToken: newRefreshRaw,
+      tokenExpiresIn: JWT_EXPIRES_IN
+    });
+  } catch (err) {
+    logger.error('Refresh token error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ═══════════════════════════════════════════
+   POST /api/auth/logout — Revoke all refresh tokens
+   ═══════════════════════════════════════════ */
+router.post('/logout', authenticate, async (req, res) => {
+  try {
+    const result = await query(
+      'UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL',
+      [req.user.user_id]
+    );
+    logger.info('User logout — revoked refresh tokens', { user_id: req.user.user_id, count: result.rowCount });
+    res.json({ success: true, revoked: result.rowCount });
+  } catch (err) {
+    logger.error('Logout error', { error: err.message });
     res.status(500).json({ error: err.message });
   }
 });

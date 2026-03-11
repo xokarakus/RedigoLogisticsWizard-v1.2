@@ -4,6 +4,7 @@ const DbStore = require('../../shared/database/dbStore');
 const logger = require('../../shared/utils/logger');
 const { tenantFilter } = require('../../shared/middleware/auth');
 const { CLOSED_STATUSES } = require('../../shared/constants/statuses');
+const { processTypeCache, processConfigCache } = require('../../shared/utils/cacheStore');
 
 const store = new DbStore('work_orders');
 const pcStore = new DbStore('process_configs');
@@ -93,13 +94,21 @@ router.get('/', async (req, res) => {
       data = data.filter(o => o.received_at && new Date(o.received_at) <= dTo);
     }
 
-    // process_types tablosundan kod→ad eşleştirmesi
-    const processTypes = await ptStore.readAll();
+    // process_types tablosundan kod→ad eşleştirmesi (cached)
+    let processTypes = processTypeCache.get('all');
+    if (!processTypes) {
+      processTypes = await ptStore.readAll();
+      processTypeCache.set('all', processTypes);
+    }
     const ptMap = {};
     processTypes.forEach(pt => { ptMap[pt.code] = pt.name; });
 
-    // Enrich: process_type zaten work_order'da varsa kullan, yoksa process_configs'den bul
-    const configs = await pcStore.readAll();
+    // Enrich: process_type zaten work_order'da varsa kullan, yoksa process_configs'den bul (cached)
+    let configs = processConfigCache.get('all');
+    if (!configs) {
+      configs = await pcStore.readAll();
+      processConfigCache.set('all', configs);
+    }
     const configMap = {};
     configs.forEach(c => {
       configMap[configKey(c.plant_code, c.warehouse_code, c.delivery_type)] = c;

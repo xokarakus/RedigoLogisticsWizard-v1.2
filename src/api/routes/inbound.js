@@ -6,6 +6,8 @@ const logger = require('../../shared/utils/logger');
 const { applyFieldRules, validateRequiredFields } = require('../../shared/utils/fieldTransformer');
 const pgQueue = require('../../shared/queue/pgQueue');
 const { ACTIVE_STATUSES, CLOSED_STATUSES } = require('../../shared/constants/statuses');
+const { fieldMappingCache } = require('../../shared/utils/cacheStore');
+const { sanitizePayload } = require('../../shared/utils/securityUtils');
 
 const fieldMappingStore = new DbStore('field_mappings');
 const transactionStore = new DbStore('transaction_logs');
@@ -27,7 +29,11 @@ const workOrderStore = new DbStore('work_orders');
 router.all('/*', async (req, res) => {
   try {
   const incomingPath = '/api/inbound' + req.path;
-  const mappings = await fieldMappingStore.readAll();
+  let mappings = fieldMappingCache.get('all');
+  if (!mappings) {
+    mappings = await fieldMappingStore.readAll();
+    fieldMappingCache.set('all', mappings);
+  }
 
   // source_api_endpoint ile eslestir
   const mapping = mappings.find(fm =>
@@ -57,10 +63,11 @@ router.all('/*', async (req, res) => {
     : (inputPayload.VBELN || null);
 
   if (isWorkOrder && deliveryNo) {
-    const filterOpts = tenantId ? { filter: { tenant_id: tenantId } } : {};
-    const existingOrders = await workOrderStore.readAll(filterOpts);
+    const dupFilter = { sap_delivery_no: deliveryNo };
+    if (tenantId) dupFilter.tenant_id = tenantId;
+    const existingOrders = await workOrderStore.findBy(dupFilter, { limit: 10 });
     const duplicate = existingOrders.find(wo =>
-      wo.sap_delivery_no === deliveryNo && ACTIVE_STATUSES.includes(wo.status)
+      ACTIVE_STATUSES.includes(wo.status)
     );
 
     if (duplicate) {
@@ -107,7 +114,7 @@ router.all('/*', async (req, res) => {
       action: 'INBOUND_' + mapping.process_type,
       status: 'FAILED',
       sap_function: incomingPath,
-      sap_request: inputPayload,
+      sap_request: sanitizePayload(inputPayload),
       sap_response: null,
       error_message: 'Zorunlu alanlar eksik: ' + reqCheck.missing.join(', '),
       retry_count: 0,
@@ -135,7 +142,7 @@ router.all('/*', async (req, res) => {
       action: 'INBOUND_' + mapping.process_type,
       status: 'FAILED',
       sap_function: incomingPath,
-      sap_request: inputPayload,
+      sap_request: sanitizePayload(inputPayload),
       sap_response: null,
       error_message: 'Transform error: ' + err.message,
       retry_count: 0,
@@ -162,7 +169,7 @@ router.all('/*', async (req, res) => {
     status: 'SUCCESS',
     sap_function: incomingPath,
     sap_doc_number: deliveryNo,
-    sap_request: inputPayload,
+    sap_request: sanitizePayload(inputPayload),
     sap_response: transformed,
     error_message: null,
     retry_count: 0,
