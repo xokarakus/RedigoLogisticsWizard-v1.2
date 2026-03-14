@@ -133,6 +133,7 @@ v1.use('/trigger', authenticate, require('./api/routes/trigger'));
 v1.use('/goods-movement', authenticate, require('./api/routes/goodsMovement'));
 v1.use('/scheduled-jobs', authenticate, require('./api/routes/scheduledJobs'));
 v1.use('/master-data', authenticate, require('./api/routes/masterData'));
+v1.use('/db-cockpit', authenticate, require('./api/routes/dbCockpit'));
 
 // Queue API
 v1.get('/queue/stats', authenticate, async (req, res) => {

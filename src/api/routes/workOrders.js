@@ -236,7 +236,9 @@ router.put('/:id', async (req, res) => {
 router.post('/ingest', async (req, res) => {
   try {
     const payload = req.body;
+    const tenantId = req.tenantId || (req.user && req.user.tenant_id) || null;
     const item = await store.create({
+      tenant_id: tenantId,
       sap_delivery_no: payload.sap_delivery_no,
       sap_delivery_type: payload.sap_delivery_type,
       sap_doc_date: payload.sap_doc_date,

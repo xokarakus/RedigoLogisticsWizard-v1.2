@@ -57,11 +57,22 @@ class DbStore {
       }
     }
 
-    let sql = `SELECT * FROM "${this.table}"`;
-    if (whereClauses.length > 0) {
-      sql += ' WHERE ' + whereClauses.join(' AND ');
+    // tenant_id olan tablolara tenant code/name join et
+    const tenantJoinTables = ['process_configs', 'process_types', 'warehouses', 'field_mappings', 'movement_mappings', 'security_profiles'];
+    const useJoin = tenantJoinTables.includes(this.table);
+
+    let sql;
+    if (useJoin) {
+      sql = `SELECT t.*, tn.code AS tenant_code, tn.name AS tenant_name FROM "${this.table}" t LEFT JOIN tenants tn ON tn.id = t.tenant_id`;
+    } else {
+      sql = `SELECT * FROM "${this.table}"`;
     }
-    sql += ' ORDER BY created_at DESC';
+    if (whereClauses.length > 0) {
+      // Join modunda alias kullan
+      const prefix = useJoin ? whereClauses.map(c => 't.' + c) : whereClauses;
+      sql += ' WHERE ' + prefix.join(' AND ');
+    }
+    sql += useJoin ? ' ORDER BY t.created_at DESC' : ' ORDER BY created_at DESC';
 
     if (limit != null) {
       values.push(Number(limit));

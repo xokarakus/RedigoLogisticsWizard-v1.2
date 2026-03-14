@@ -756,14 +756,44 @@ router.post('/tenants', authenticate, requireSuperAdmin, async (req, res) => {
   try {
     const { code, name, domain, tax_id, tax_office, address, iban, contact_person, phone, plan, title, admin_user } = req.body;
 
-    if (!code || !name || !domain) {
+    if (!name || !domain) {
       return res.status(400).json({
-        error: 'Zorunlu alanlar: code, name, domain'
+        error: 'Zorunlu alanlar: name, domain'
       });
     }
 
+    // Şirket kodu: boşsa domain/isimden üret, doluysa da benzersizlik kontrol et
+    const existing = await tenantStore.readAll();
+    const codes = new Set(existing.map(t => t.code));
+
+    let finalCode = (code || '').trim().toUpperCase();
+    if (!finalCode) {
+      // domain'in ilk kısmını al (tesla.com → TESLA)
+      const domainBase = domain.split('.')[0].toUpperCase().replace(/[^A-Z0-9]/g, '');
+      finalCode = domainBase || name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10);
+    }
+
+    // Benzersizlik kontrolü — çakışırsa sayı ekle
+    let candidate = finalCode;
+    let suffix = 2;
+    while (codes.has(candidate)) {
+      candidate = finalCode + '_' + suffix;
+      suffix++;
+    }
+    finalCode = candidate;
+
+    // Admin user varsa username benzersizliğini önceden kontrol et
+    if (admin_user && admin_user.username) {
+      const existingUser = await query(
+        'SELECT id FROM users WHERE username = $1', [admin_user.username]
+      );
+      if (existingUser.rows.length > 0) {
+        return res.status(409).json({ error: 'Bu kullanıcı adı zaten mevcut: ' + admin_user.username });
+      }
+    }
+
     const tenant = await tenantStore.create({
-      code: code.toUpperCase(),
+      code: finalCode,
       name,
       title: title || name,
       domain: domain.toLowerCase(),
@@ -814,6 +844,22 @@ router.post('/tenants', authenticate, requireSuperAdmin, async (req, res) => {
       }
     }
 
+    // Default rolleri oluştur (REDIGO referans tenant'ından kopyala, SUPER_ADMIN hariç)
+    try {
+      const refRoles = await query(
+        "SELECT code, name, permissions FROM roles WHERE tenant_id = (SELECT id FROM tenants WHERE is_system_tenant = true LIMIT 1) AND code != 'SUPER_ADMIN'"
+      );
+      for (const role of refRoles.rows) {
+        await query(
+          'INSERT INTO roles (id, tenant_id, code, name, permissions) VALUES (gen_random_uuid(), $1, $2, $3, $4)',
+          [tenant.id, role.code, role.name, JSON.stringify(role.permissions)]
+        );
+      }
+      logger.info('Default roles created', { tenant: tenant.code, count: refRoles.rows.length });
+    } catch (roleErr) {
+      logger.warn('Default role creation failed', { tenant: tenant.code, error: roleErr.message });
+    }
+
     logger.info('Tenant created', { code: tenant.code, by: req.user.username });
 
     res.status(201).json({
@@ -826,7 +872,14 @@ router.post('/tenants', authenticate, requireSuperAdmin, async (req, res) => {
     });
   } catch (err) {
     if (err.message && err.message.includes('duplicate key')) {
-      return res.status(409).json({ error: 'Bu şirket kodu zaten mevcut' });
+      const detail = err.detail || '';
+      if (detail.includes('code')) {
+        return res.status(409).json({ error: 'Bu şirket kodu zaten mevcut: ' + finalCode });
+      }
+      if (detail.includes('username')) {
+        return res.status(409).json({ error: 'Bu kullanıcı adı zaten mevcut' });
+      }
+      return res.status(409).json({ error: 'Çakışan kayıt: ' + detail });
     }
     res.status(500).json({ error: err.message });
   }
@@ -895,6 +948,8 @@ router.get('/users', authenticate, requireRole('TENANT_ADMIN'), async (req, res)
     let filter = {};
     if (req.userRole === 'TENANT_ADMIN') {
       filter.tenant_id = req.tenantId;
+    } else if (req.user && req.user.is_super_admin && req.user.impersonating) {
+      filter.tenant_id = req.user.tenant_id;
     }
 
     const users = await userStore.readAll({ filter });

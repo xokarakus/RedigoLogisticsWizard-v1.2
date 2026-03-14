@@ -1,0 +1,116 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.DbCockpit"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  xmlns:t="sap.ui.table"
+  height="100%">
+
+  <Page title="{i18n>dbCockpitTitle}" showNavButton="false" enableScrolling="false">
+    <content>
+      <HBox height="100%" width="100%">
+
+        <!-- Sol Panel: Tablo Listesi (sabit 280px) -->
+        <VBox width="280px" height="100%" class="sapUiTinyMarginEnd">
+          <SearchField width="100%" placeholder="{i18n>dbCockpitTableSearch}" liveChange="onTableSearch"
+            class="sapUiTinyMargin" />
+          <List id="tableList" items="{dbc>/filteredTables}" mode="SingleSelectMaster"
+            selectionChange="onTableSelect" growing="true" growingThreshold="50"
+            class="sapUiSizeCompact">
+            <items>
+              <StandardListItem title="{dbc>name}" description="{dbc>row_count}"
+                icon="sap-icon://table-view" type="Active" />
+            </items>
+          </List>
+        </VBox>
+
+        <!-- Sag Panel: Veri + SQL + Iliskiler -->
+        <VBox height="100%" class="sapUiSizeCompact">
+          <layoutData>
+            <FlexItemData growFactor="1" />
+          </layoutData>
+          <IconTabBar id="mainTabs" expandable="false" stretchContentHeight="true">
+            <items>
+
+              <!-- Tab 1: Tablo Verisi -->
+              <IconTabFilter text="{i18n>dbCockpitTableData}" icon="sap-icon://table-view" key="data">
+                <t:Table id="dataTable" visibleRowCountMode="Auto" alternateRowColors="true"
+                  enableBusyIndicator="true" selectionMode="None" minAutoRowCount="5">
+                  <t:extension>
+                    <OverflowToolbar>
+                      <Title text="{dbc>/selectedTable}" />
+                      <ToolbarSpacer />
+                      <Button icon="sap-icon://hint" tooltip="{i18n>dbCockpitColumns}" press="onShowColumnInfo" type="Transparent" />
+                      <Button icon="sap-icon://download" tooltip="CSV" press="onExport" type="Transparent" />
+                      <Button icon="sap-icon://refresh" press="onRefreshData" type="Transparent" />
+                    </OverflowToolbar>
+                  </t:extension>
+                </t:Table>
+                <OverflowToolbar>
+                  <Button icon="sap-icon://navigation-left-arrow" press="onPrevPage" enabled="{dbc>/hasPrev}" />
+                  <Text text="{dbc>/pageInfo}" />
+                  <Button icon="sap-icon://navigation-right-arrow" press="onNextPage" enabled="{dbc>/hasNext}" />
+                </OverflowToolbar>
+              </IconTabFilter>
+
+              <!-- Tab 2: SQL Sorgusu -->
+              <IconTabFilter text="{i18n>dbCockpitSqlQuery}" icon="sap-icon://syntax" key="sql">
+                <VBox class="sapUiSmallMargin">
+                  <TextArea id="sqlEditor" rows="4" width="100%" growing="true"
+                    placeholder="{i18n>dbCockpitSqlPlaceholder}" />
+                  <HBox class="sapUiSmallMarginTop" alignItems="Center">
+                    <Button text="{i18n>dbCockpitExecute}" icon="sap-icon://media-play"
+                      type="Emphasized" press="onExecuteQuery" />
+                    <ObjectStatus id="queryStatus" class="sapUiSmallMarginBegin" />
+                  </HBox>
+                </VBox>
+                <t:Table id="queryResultTable" visibleRowCountMode="Auto" alternateRowColors="true"
+                  enableBusyIndicator="true" selectionMode="None" minAutoRowCount="5">
+                  <t:extension>
+                    <OverflowToolbar>
+                      <Title text="{dbc>/queryRowCount}" />
+                      <ToolbarSpacer />
+                      <Button icon="sap-icon://download" tooltip="CSV" press="onExportQuery" type="Transparent" />
+                    </OverflowToolbar>
+                  </t:extension>
+                </t:Table>
+              </IconTabFilter>
+
+              <!-- Tab 3: Iliskiler -->
+              <IconTabFilter text="{i18n>dbCockpitRelationships}" icon="sap-icon://chain-link" key="rel">
+                <Table items="{dbc>/relationships}" alternateRowColors="true" growing="true" growingThreshold="100">
+                  <headerToolbar>
+                    <OverflowToolbar>
+                      <SearchField width="300px" placeholder="{i18n>dbCockpitTableSearch}" liveChange="onRelationshipSearch" />
+                    </OverflowToolbar>
+                  </headerToolbar>
+                  <columns>
+                    <Column><Text text="{i18n>dbCockpitSourceTable}" /></Column>
+                    <Column><Text text="{i18n>dbCockpitSourceColumn}" /></Column>
+                    <Column width="50px" hAlign="Center"><Text text="" /></Column>
+                    <Column><Text text="{i18n>dbCockpitTargetTable}" /></Column>
+                    <Column><Text text="{i18n>dbCockpitTargetColumn}" /></Column>
+                  </columns>
+                  <items>
+                    <ColumnListItem>
+                      <cells>
+                        <ObjectIdentifier title="{dbc>source_table}" />
+                        <Text text="{dbc>source_column}" />
+                        <core:Icon src="sap-icon://arrow-right" color="#888" />
+                        <ObjectIdentifier title="{dbc>target_table}" />
+                        <Text text="{dbc>target_column}" />
+                      </cells>
+                    </ColumnListItem>
+                  </items>
+                </Table>
+              </IconTabFilter>
+
+            </items>
+          </IconTabBar>
+        </VBox>
+
+      </HBox>
+    </content>
+  </Page>
+
+</mvc:View>

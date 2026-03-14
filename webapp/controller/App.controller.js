@@ -24,7 +24,8 @@ sap.ui.define([
     tenantManagement: "com.redigo.logistics.cockpit.view.TenantManagement",
     auditLog: "com.redigo.logistics.cockpit.view.AuditLog",
     jobManagement: "com.redigo.logistics.cockpit.view.JobManagement",
-    dlq: "com.redigo.logistics.cockpit.view.DeadLetterQueue"
+    dlq: "com.redigo.logistics.cockpit.view.DeadLetterQueue",
+    dbCockpit: "com.redigo.logistics.cockpit.view.DbCockpit"
   };
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.App", {
@@ -97,8 +98,14 @@ sap.ui.define([
 
       // Restore last page on reload, fallback to dashboard
       var sLastPage = localStorage.getItem("redigo_current_page");
+      var aSuperAdminPages = ["dbCockpit", "tenantManagement"];
       if (sLastPage && VIEW_MAP[sLastPage] && sLastPage !== "workOrderDetail") {
-        this._showView(sLastPage);
+        // Super admin sayfalarini sadece super admin restore edebilir
+        if (aSuperAdminPages.indexOf(sLastPage) >= 0 && !bSuperAdmin) {
+          this._showView("dashboard");
+        } else {
+          this._showView(sLastPage);
+        }
       } else {
         this._showView("dashboard");
       }

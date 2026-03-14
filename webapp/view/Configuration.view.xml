@@ -28,6 +28,7 @@
 
             <Table id="warehouseTable" items="{cfg>/warehouses}" mode="None" autoPopinMode="true">
               <columns>
+                <Column importance="Medium" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }"><Text text="{i18n>cfgTenant}" /></Column>
                 <Column importance="High"><Text text="{i18n>cfgCode}" /></Column>
                 <Column importance="High"><Text text="{i18n>cfgName}" /></Column>
                 <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgPlant}" /></Column>
@@ -41,6 +42,7 @@
               <items>
                 <ColumnListItem>
                   <cells>
+                    <ObjectStatus text="{cfg>tenant_code}" state="None" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }" />
                     <ObjectStatus text="{cfg>code}" state="Information" icon="sap-icon://supplier" />
                     <ObjectStatus text="{cfg>name}" state="Information" />
                     <Text text="{cfg>sap_plant}" />
@@ -72,6 +74,7 @@
 
             <Table id="processConfigTable" items="{cfg>/processConfigs}" mode="None" autoPopinMode="true">
               <columns>
+                <Column importance="Medium" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }"><Text text="{i18n>cfgTenant}" /></Column>
                 <Column importance="High"><Text text="{i18n>cfgPlant}" /></Column>
                 <Column importance="High"><Text text="{i18n>invWarehouse}" /></Column>
                 <Column importance="High"><Text text="{i18n>cfgDeliveryType}" /></Column>
@@ -87,6 +90,7 @@
               <items>
                 <ColumnListItem>
                   <cells>
+                    <ObjectStatus text="{cfg>tenant_code}" state="None" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }" />
                     <ObjectNumber number="{cfg>plant_code}" emphasized="true" />
                     <Text text="{cfg>warehouse_code}" />
                     <ObjectStatus text="{cfg>delivery_type}" state="Information" />
@@ -120,6 +124,7 @@
             <Table id="processTypeTable" items="{cfg>/processTypes}" mode="SingleSelectMaster"
               autoPopinMode="true" selectionChange="onSelectProcessType">
               <columns>
+                <Column importance="Medium" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }"><Text text="{i18n>cfgTenant}" /></Column>
                 <Column importance="High"><Text text="{i18n>cfgTypeCode}" /></Column>
                 <Column importance="High"><Text text="{i18n>cfgTypeName}" /></Column>
                 <Column importance="Medium" hAlign="Center" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgStepCount}" /></Column>
@@ -128,6 +133,7 @@
               <items>
                 <ColumnListItem>
                   <cells>
+                    <ObjectStatus text="{cfg>tenant_code}" state="None" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }" />
                     <ObjectStatus text="{cfg>code}" state="Information" />
                     <Text text="{cfg>name}" />
                     <ObjectNumber number="{cfg>stepCount}" />
@@ -196,6 +202,7 @@
             <Table id="fieldMappingTable" items="{cfg>/fieldMappingsFiltered}" mode="SingleSelectMaster"
               autoPopinMode="true" selectionChange="onSelectFieldMapping">
               <columns>
+                <Column importance="Medium" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }"><Text text="{i18n>cfgTenant}" /></Column>
                 <Column importance="High"><Text text="{i18n>cfgProcessType}" /></Column>
                 <Column importance="High"><Text text="{i18n>fmCompanyCode}" /></Column>
                 <Column importance="High"><Text text="{i18n>fmCategory}" /></Column>
@@ -208,6 +215,7 @@
               <items>
                 <ColumnListItem>
                   <cells>
+                    <ObjectStatus text="{cfg>tenant_code}" state="None" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }" />
                     <ObjectStatus text="{cfg>process_type}"
                       state="{= ${cfg>process_type} === 'GI' || ${cfg>process_type} === 'SUBCONTRACT_GI' ? 'Warning' : ${cfg>process_type} === 'GR' || ${cfg>process_type} === 'SUBCONTRACT_GR' ? 'Success' : ${cfg>process_type} === 'RETURN' ? 'Error' : 'Information'}" />
                     <ObjectStatus text="{cfg>company_code}" state="Information" />

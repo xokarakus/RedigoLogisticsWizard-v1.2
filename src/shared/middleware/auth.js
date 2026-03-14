@@ -130,6 +130,10 @@ function requirePlatformAdmin(req, res, next) {
  */
 function tenantFilter(req) {
   if (!req.user) return {};
+  // Super admin impersonate modundaysa hedef tenant'ı filtrele
+  if (req.user.is_super_admin && req.user.impersonating) {
+    return { tenant_id: req.user.tenant_id };
+  }
   if (req.user.is_super_admin) return {};
   return { tenant_id: req.user.tenant_id || req.tenantId };
 }

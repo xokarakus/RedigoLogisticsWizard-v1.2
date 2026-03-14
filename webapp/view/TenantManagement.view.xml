@@ -92,6 +92,9 @@
 
               <!-- Aksiyonlar -->
               <HBox justifyContent="End">
+                <Button icon="sap-icon://customize" press="onSetupWizard" type="Transparent"
+                  tooltip="{i18n>wizTitle}"
+                  visible="{= ${tenants>is_system_tenant} !== true }" />
                 <Button icon="sap-icon://edit" press="onEditTenant" type="Transparent"
                   tooltip="{i18n>tmEditTenant}" />
                 <Button icon="sap-icon://role" press="onImpersonate" type="Transparent"

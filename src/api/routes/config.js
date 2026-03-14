@@ -551,4 +551,100 @@ router.post('/settings/email/test', adminOnly, async (req, res) => {
   }
 });
 
+/* ═══════════════════════════════════════════
+   Konfigürasyon Sihirbazı (Configuration Wizard)
+   ═══════════════════════════════════════════ */
+
+const { requireRole } = require('../../shared/middleware/auth');
+const { getProviders, getTemplateEntities, applyTemplate } = require('./wizardHelper');
+const { getClient } = require('../../shared/database/pool');
+
+// GET /config/wizard/providers — list available logistics provider templates
+router.get('/wizard/providers', requireRole('SUPER_ADMIN'), async (req, res) => {
+  try {
+    const data = getProviders();
+    res.json({ data });
+  } catch (err) {
+    logger.error('GET /config/wizard/providers error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /config/wizard/preview?provider=ABC_LOG&sub_services=HOROZ,HOROZ_DIST
+router.get('/wizard/preview', requireRole('SUPER_ADMIN'), async (req, res) => {
+  try {
+    const { provider, sub_services } = req.query;
+    if (!provider) {
+      return res.status(400).json({ error: 'provider parametresi zorunlu' });
+    }
+    const subArr = sub_services ? sub_services.split(',').map(s => s.trim()) : [];
+    const result = getTemplateEntities(provider, subArr);
+    res.json({ provider, ...result });
+  } catch (err) {
+    logger.error('GET /config/wizard/preview error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /config/wizard/apply — bulk-create config for a tenant
+router.post('/wizard/apply', requireRole('SUPER_ADMIN'), async (req, res) => {
+  const { tenant_id, provider_code, sub_services } = req.body;
+  if (!tenant_id || !provider_code) {
+    return res.status(400).json({ error: 'tenant_id ve provider_code zorunlu' });
+  }
+
+  const client = await getClient();
+  try {
+    // Verify tenant exists
+    const { rows: tenants } = await client.query('SELECT id, name FROM tenants WHERE id = $1', [tenant_id]);
+    if (tenants.length === 0) {
+      client.release();
+      return res.status(404).json({ error: 'Tenant bulunamadı' });
+    }
+
+    // Check existing config count
+    const { rows: existCheck } = await client.query(
+      'SELECT COUNT(*) as cnt FROM warehouses WHERE tenant_id = $1',
+      [tenant_id]
+    );
+    const hasExisting = Number(existCheck[0].cnt) > 0;
+
+    // Get template entities
+    const entities = getTemplateEntities(provider_code, sub_services || []);
+
+    await client.query('BEGIN');
+    const result = await applyTemplate(client, tenant_id, entities);
+    await client.query('COMMIT');
+
+    // Invalidate caches
+    fieldMappingCache.invalidate();
+    processTypeCache.invalidate();
+    processConfigCache.invalidate();
+
+    // Audit log
+    logAudit(req, 'wizard', tenant_id, 'APPLY_TEMPLATE', null, {
+      provider_code,
+      sub_services: sub_services || [],
+      counts: result.counts,
+      had_existing: hasExisting
+    });
+
+    const totalCreated = Object.values(result.counts).reduce((a, b) => a + b, 0);
+
+    res.json({
+      message: `Şablon başarıyla uygulandı. ${totalCreated} kayıt oluşturuldu.`,
+      tenant: tenants[0].name,
+      provider: provider_code,
+      had_existing: hasExisting,
+      counts: result.counts
+    });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    logger.error('POST /config/wizard/apply error', { error: err.message, tenant_id, provider_code });
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = router;

@@ -12,9 +12,21 @@ sap.ui.define([
   "sap/m/Title",
   "sap/ui/core/Item",
   "sap/ui/layout/form/SimpleForm",
+  "sap/m/List",
+  "sap/m/StandardListItem",
+  "sap/m/CheckBox",
+  "sap/m/MessageStrip",
+  "sap/m/VBox",
+  "sap/m/HBox",
+  "sap/m/Text",
+  "sap/m/BusyIndicator",
+  "sap/m/ObjectStatus",
+  "sap/m/Wizard",
+  "sap/m/WizardStep",
   "com/redigo/logistics/cockpit/util/API"
 ], function (Controller, JSONModel, MessageToast, MessageBox, Dialog, Button, Label, Input,
-             Select, TextArea, Title, Item, SimpleForm, API) {
+             Select, TextArea, Title, Item, SimpleForm, List, StandardListItem, CheckBox,
+             MessageStrip, VBox, HBox, Text, BusyIndicator, ObjectStatus, Wizard, WizardStep, API) {
   "use strict";
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.TenantManagement", {
@@ -178,7 +190,7 @@ sap.ui.define([
       var oCodeInput = new Input({
         value: bEdit ? oTenant.code : "",
         enabled: !bEdit,
-        placeholder: "\u00d6rn: TESLA",
+        placeholder: oBundle.getText("tmCodePlaceholder"),
         maxLength: 20
       });
 
@@ -247,13 +259,30 @@ sap.ui.define([
       });
 
       // Yeni tenant için admin alanları (şifre yok — e-posta ile reset gönderilecek)
-      var oAdminUserInput = new Input({ value: "", placeholder: "admin" });
+      var oAdminUserInput = new Input({ value: "", placeholder: "araskargo_admin" });
       var oAdminEmailInput = new Input({ value: "", placeholder: "admin@firma.com", type: "Email" });
+
+      // Domain değiştiğinde admin alanlarını otomatik doldur
+      oDomainInput.attachLiveChange(function () {
+        var sDomain = oDomainInput.getValue().trim().toLowerCase();
+        if (!sDomain) return;
+        var sBase = sDomain.split(".")[0].replace(/[^a-z0-9]/g, "");
+        if (sBase) {
+          if (!oAdminUserInput._userEdited) {
+            oAdminUserInput.setValue(sBase + "_admin");
+          }
+          if (!oAdminEmailInput._userEdited) {
+            oAdminEmailInput.setValue("admin@" + sDomain);
+          }
+        }
+      });
+      oAdminUserInput.attachLiveChange(function () { oAdminUserInput._userEdited = true; });
+      oAdminEmailInput.attachLiveChange(function () { oAdminEmailInput._userEdited = true; });
 
       // ── Form yapısı (screenshot'a uygun gruplar) ──
       var aContent = [
         new Title({ text: oBundle.getText("tmCode") }),
-        new Label({ text: oBundle.getText("tmCode"), required: !bEdit }), oCodeInput,
+        new Label({ text: oBundle.getText("tmCode") }), oCodeInput,
         new Label({ text: oBundle.getText("tmName"), required: true }), oNameInput,
         new Label({ text: oBundle.getText("tmDomain"), required: true }), oDomainInput,
 
@@ -310,13 +339,13 @@ sap.ui.define([
             var sName = oNameInput.getValue().trim();
             var sDomain = oDomainInput.getValue().trim().toLowerCase();
 
-            if (!sName || (!bEdit && !sCode) || !sDomain) {
+            if (!sName || !sDomain) {
               MessageToast.show(oBundle.getText("msgRequiredFields"));
               return;
             }
 
             var oPayload = {
-              code: sCode,
+              code: sCode || null,
               name: sName,
               domain: sDomain,
               tax_id: oTaxIdInput.getValue().trim() || null,
@@ -354,12 +383,28 @@ sap.ui.define([
 
             prom.then(function (res) {
               if (res.error) {
-                MessageToast.show(res.error);
+                MessageBox.error(res.error);
                 return;
               }
-              MessageToast.show(oBundle.getText("msgSaved"));
               oDialog.close();
               that._loadData();
+
+              // Yeni tenant oluşturulduysa wizard öner
+              if (!bEdit && res.tenant) {
+                var sMsg = oBundle.getText("tmTenantCreated", [res.tenant.name, res.tenant.code]);
+                MessageBox.confirm(sMsg, {
+                  title: oBundle.getText("wizTitle"),
+                  onClose: function (sAction) {
+                    if (sAction === MessageBox.Action.OK) {
+                      that._openConfigWizard(res.tenant.id, res.tenant.name);
+                    } else {
+                      MessageToast.show(oBundle.getText("msgSaved"), { duration: 3000 });
+                    }
+                  }
+                });
+              } else {
+                MessageToast.show(oBundle.getText("msgSaved"));
+              }
             });
           }
         }),
@@ -372,6 +417,318 @@ sap.ui.define([
 
       this.getView().addDependent(oDialog);
       oDialog.open();
+    },
+
+    /* ═══════════════════════════════════════════
+       Konfigürasyon Sihirbazı
+       ═══════════════════════════════════════════ */
+
+    onSetupWizard: function (oEvent) {
+      var oCtx = oEvent.getSource().getBindingContext("tenants");
+      var oTenant = oCtx.getObject();
+      this._openConfigWizard(oTenant.id, oTenant.name);
+    },
+
+    _openConfigWizard: function (sTenantId, sTenantName) {
+      var that = this;
+      var oBundle = this.getView().getModel("i18n").getResourceBundle();
+
+      // Wizard state model
+      var oWizModel = new JSONModel({
+        providers: [],
+        selectedProvider: null,
+        selectedSubServices: [],
+        preview: null,
+        result: null,
+        busy: false,
+        step: 1
+      });
+
+      // ── Step 1: Provider Selection ──
+      var oProviderList = new List({
+        mode: "SingleSelectMaster",
+        selectionChange: function (oEv) {
+          var oItem = oEv.getParameter("listItem");
+          var oProvider = oItem.data("provider");
+          oWizModel.setProperty("/selectedProvider", oProvider);
+          oWizModel.setProperty("/selectedSubServices", []);
+
+          // HOROZ sub-services
+          oSubBox.removeAllItems();
+          if (oProvider.sub_services && oProvider.sub_services.length > 0) {
+            oProvider.sub_services.forEach(function (sub) {
+              var oCb = new CheckBox({
+                text: sub.name + " (" + sub.code + ")",
+                selected: true,
+                select: function () {
+                  that._updateSubServiceSelection(oWizModel, oSubBox);
+                }
+              });
+              oCb.data("code", sub.code);
+              oSubBox.addItem(oCb);
+            });
+            that._updateSubServiceSelection(oWizModel, oSubBox);
+            oSubBox.setVisible(true);
+          } else {
+            oSubBox.setVisible(false);
+          }
+          oStep1.setValidated(true);
+        }
+      });
+
+      var oSubBox = new VBox({ visible: false, items: [
+        new Title({ text: oBundle.getText("wizSubServices") }).addStyleClass("sapUiSmallMarginTop")
+      ] });
+
+      var oStep1 = new WizardStep({
+        title: oBundle.getText("wizStep1"),
+        validated: false,
+        content: [
+          new Text({ text: oBundle.getText("wizSelectProvider") }).addStyleClass("sapUiSmallMarginBottom"),
+          oProviderList,
+          oSubBox
+        ]
+      });
+
+      // ── Step 2: Preview ──
+      var oPreviewBox = new VBox();
+      var oStep2 = new WizardStep({
+        title: oBundle.getText("wizStep2"),
+        content: [oPreviewBox],
+        activate: function () {
+          that._loadPreview(oWizModel, oPreviewBox, oBundle);
+        }
+      });
+
+      // ── Step 3: Apply ──
+      var oResultBox = new VBox();
+      var oApplyBtn = new Button({
+        text: oBundle.getText("wizStep3"),
+        type: "Emphasized",
+        icon: "sap-icon://accept",
+        press: function () {
+          that._applyWizard(sTenantId, oWizModel, oResultBox, oApplyBtn, oBundle);
+        }
+      });
+
+      var oStep3 = new WizardStep({
+        title: oBundle.getText("wizStep3"),
+        content: [oApplyBtn, oResultBox]
+      });
+
+      // ── Wizard ──
+      var oWizard = new Wizard({
+        showNextButton: true,
+        steps: [oStep1, oStep2, oStep3]
+      });
+
+      var oDialog = new Dialog({
+        title: oBundle.getText("wizTitle") + " — " + sTenantName,
+        contentWidth: "680px",
+        contentHeight: "520px",
+        verticalScrolling: true,
+        content: [oWizard],
+        endButton: new Button({
+          text: oBundle.getText("cfgCancel"),
+          press: function () { oDialog.close(); }
+        }),
+        afterClose: function () { oDialog.destroy(); }
+      });
+
+      // Load providers
+      API.get("/api/v1/config/wizard/providers").then(function (res) {
+        var aProviders = res.data || [];
+        oWizModel.setProperty("/providers", aProviders);
+        aProviders.forEach(function (p) {
+          var sDesc = (p.auth_type || "") + " | " +
+            oBundle.getText("wizProviderInfo", [p.counts.warehouses, p.counts.process_configs, p.counts.field_mappings]);
+          var oItem = new StandardListItem({
+            title: p.name + " (" + p.code + ")",
+            description: sDesc,
+            icon: "sap-icon://shipping-status",
+            type: "Active"
+          });
+          oItem.data("provider", p);
+          oProviderList.addItem(oItem);
+        });
+      });
+
+      this.getView().addDependent(oDialog);
+      oDialog.open();
+    },
+
+    _updateSubServiceSelection: function (oWizModel, oSubBox) {
+      var aSelected = [];
+      oSubBox.getItems().forEach(function (oItem) {
+        if (oItem instanceof CheckBox && oItem.getSelected()) {
+          aSelected.push(oItem.data("code"));
+        }
+      });
+      oWizModel.setProperty("/selectedSubServices", aSelected);
+    },
+
+    _loadPreview: function (oWizModel, oPreviewBox, oBundle) {
+      oPreviewBox.removeAllItems();
+      var oProvider = oWizModel.getProperty("/selectedProvider");
+      if (!oProvider) return;
+
+      var sUrl = "/api/v1/config/wizard/preview?provider=" + oProvider.code;
+      var aSubs = oWizModel.getProperty("/selectedSubServices") || [];
+      if (aSubs.length > 0) {
+        sUrl += "&sub_services=" + aSubs.join(",");
+      }
+
+      oPreviewBox.addItem(new BusyIndicator({ size: "32px" }));
+
+      API.get(sUrl).then(function (res) {
+        oPreviewBox.removeAllItems();
+        var c = res.counts || {};
+
+        oPreviewBox.addItem(new Title({ text: oProvider.name + " — " + oBundle.getText("wizStep2") }).addStyleClass("sapUiSmallMarginBottom"));
+
+        // Counts
+        var aLines = [
+          { label: oBundle.getText("wizProcessTypes", [c.process_types || 0]), icon: "sap-icon://process" },
+          { label: oBundle.getText("wizWarehouses", [c.warehouses || 0]), icon: "sap-icon://factory" },
+          { label: oBundle.getText("wizProcessConfigs", [c.process_configs || 0]), icon: "sap-icon://settings" },
+          { label: oBundle.getText("wizFieldMappings", [c.field_mappings || 0]), icon: "sap-icon://connected" },
+          { label: oBundle.getText("wizMovementMappings", [c.movement_mappings || 0]), icon: "sap-icon://move" }
+        ];
+
+        aLines.forEach(function (line) {
+          oPreviewBox.addItem(new HBox({ items: [
+            new sap.ui.core.Icon({ src: line.icon, size: "1rem" }).addStyleClass("sapUiSmallMarginEnd"),
+            new Text({ text: line.label })
+          ] }).addStyleClass("sapUiTinyMarginBottom"));
+        });
+
+        // Security warning
+        oPreviewBox.addItem(new MessageStrip({
+          text: oBundle.getText("wizSecurityWarning"),
+          type: "Warning",
+          showIcon: true
+        }).addStyleClass("sapUiSmallMarginTop"));
+
+      }).catch(function () {
+        oPreviewBox.removeAllItems();
+        oPreviewBox.addItem(new MessageStrip({ text: oBundle.getText("wizApplyError"), type: "Error", showIcon: true }));
+      });
+    },
+
+    _applyWizard: function (sTenantId, oWizModel, oResultBox, oApplyBtn, oBundle) {
+      var oProvider = oWizModel.getProperty("/selectedProvider");
+      if (!oProvider) return;
+
+      oApplyBtn.setEnabled(false);
+      oApplyBtn.setBusy(true);
+      oResultBox.removeAllItems();
+
+      var oPayload = {
+        tenant_id: sTenantId,
+        provider_code: oProvider.code,
+        sub_services: oWizModel.getProperty("/selectedSubServices") || []
+      };
+
+      var that = this;
+      // Wizard ve dialog referanslarını bul (step kilitleme için)
+      var oWizard = oApplyBtn.getParent();
+      while (oWizard && !(oWizard instanceof Wizard)) { oWizard = oWizard.getParent(); }
+
+      API.post("/api/v1/config/wizard/apply", oPayload).then(function (res) {
+        oApplyBtn.setBusy(false);
+        if (res.error) {
+          oApplyBtn.setEnabled(true);
+          oResultBox.addItem(new MessageStrip({ text: res.error, type: "Error", showIcon: true }));
+          return;
+        }
+
+        // Success
+        var c = res.counts || {};
+        var total = Object.values(c).reduce(function (a, b) { return a + b; }, 0);
+
+        oResultBox.addItem(new MessageStrip({
+          text: oBundle.getText("wizApplySuccess") + " — " + oBundle.getText("wizResultSummary", [total]),
+          type: "Success",
+          showIcon: true
+        }).addStyleClass("sapUiSmallMarginBottom"));
+
+        // Detail counts
+        var aDetails = [
+          { label: oBundle.getText("wizProcessTypes", [c.process_types || 0]) },
+          { label: oBundle.getText("wizWarehouses", [c.warehouses || 0]) },
+          { label: oBundle.getText("wizProcessConfigs", [c.process_configs || 0]) },
+          { label: oBundle.getText("wizFieldMappings", [c.field_mappings || 0]) },
+          { label: oBundle.getText("wizMovementMappings", [c.movement_mappings || 0]) }
+        ];
+        aDetails.forEach(function (d) {
+          oResultBox.addItem(new Text({ text: "  \u2713 " + d.label }));
+        });
+
+        // Reminder
+        oResultBox.addItem(new MessageStrip({
+          text: oBundle.getText("wizReminder"),
+          type: "Information",
+          showIcon: true
+        }).addStyleClass("sapUiSmallMarginTop"));
+
+        // Uygula butonunu gizle — tekrar tıklanmasın
+        oApplyBtn.setVisible(false);
+
+        // Wizard adımlarını ve tüm interaktif elementleri kilitle
+        if (oWizard) {
+          oWizard.setShowNextButton(false);
+          oWizard.getSteps().forEach(function (oStep) {
+            oStep.setValidated(false);
+          });
+          // Tüm interaktif kontrolleri devre dışı bırak
+          that._disableAllControls(oWizard);
+        }
+
+        // Dialog İptal butonunu gizle, "Gözden Geçir ve Kapat" ekle
+        var oDialog = oApplyBtn.getParent();
+        while (oDialog && !(oDialog instanceof Dialog)) { oDialog = oDialog.getParent(); }
+        if (oDialog) {
+          var oEndBtn = oDialog.getEndButton();
+          if (oEndBtn) oEndBtn.setVisible(false);
+        }
+
+        var oCloseBtn = new Button({
+          text: oBundle.getText("wizReviewClose"),
+          type: "Emphasized",
+          icon: "sap-icon://accept",
+          press: function () {
+            var oDlg = oCloseBtn.getParent();
+            while (oDlg && !oDlg.close) { oDlg = oDlg.getParent(); }
+            if (oDlg && oDlg.close) { oDlg.close(); }
+          }
+        }).addStyleClass("sapUiSmallMarginTop");
+        oResultBox.addItem(oCloseBtn);
+
+        that._loadData();
+      }).catch(function (err) {
+        oApplyBtn.setBusy(false);
+        oApplyBtn.setEnabled(true);
+        oResultBox.addItem(new MessageStrip({
+          text: oBundle.getText("wizApplyError") + ": " + (err.message || err),
+          type: "Error",
+          showIcon: true
+        }));
+      });
+    },
+
+    _disableAllControls: function (oParent) {
+      var that = this;
+      var aAggregations = ["items", "content", "steps"];
+      aAggregations.forEach(function (sAgg) {
+        var aChildren = [];
+        try { aChildren = oParent.getAggregation(sAgg) || []; } catch (_) { /* ignore */ }
+        if (!Array.isArray(aChildren)) aChildren = [aChildren];
+        aChildren.forEach(function (oChild) {
+          if (oChild.setEnabled) oChild.setEnabled(false);
+          if (oChild.setMode) oChild.setMode("None");
+          that._disableAllControls(oChild);
+        });
+      });
     }
   });
 });

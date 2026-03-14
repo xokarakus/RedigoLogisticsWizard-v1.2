@@ -85,6 +85,8 @@
           <!-- Sistem (super_admin) -->
           <tnt:NavigationListItem text="{i18n>navTenants}" icon="sap-icon://building"
             key="tenantManagement" visible="{appState>/perm/tenants_manage}" />
+          <tnt:NavigationListItem text="{i18n>navDbCockpit}" icon="sap-icon://database"
+            key="dbCockpit" visible="{appState>/isSuperAdmin}" />
         </tnt:NavigationList>
 
         <tnt:fixedItem>
