@@ -11,17 +11,26 @@
       <HBox height="100%" width="100%">
 
         <!-- Sol Panel: Tablo Listesi (sabit 280px) -->
-        <VBox width="280px" height="100%" class="sapUiTinyMarginEnd">
+        <VBox width="320px" height="100%" class="sapUiTinyMarginEnd">
+          <Toolbar class="sapUiSizeCompact">
+            <core:Icon src="sap-icon://database" class="sapUiTinyMarginEnd" />
+            <Title text="{i18n>dbCockpitTables}" level="H5" />
+            <ToolbarSpacer />
+            <ObjectStatus id="tableCount" state="Information" />
+          </Toolbar>
           <SearchField width="100%" placeholder="{i18n>dbCockpitTableSearch}" liveChange="onTableSearch"
             class="sapUiTinyMargin" />
-          <List id="tableList" items="{dbc>/filteredTables}" mode="SingleSelectMaster"
-            selectionChange="onTableSelect" growing="true" growingThreshold="50"
-            class="sapUiSizeCompact">
-            <items>
-              <StandardListItem title="{dbc>name}" description="{dbc>row_count}"
-                icon="sap-icon://table-view" type="Active" />
-            </items>
-          </List>
+          <ScrollContainer height="calc(100vh - 180px)" width="100%" vertical="true" horizontal="false">
+            <List id="tableList" items="{dbc>/filteredTables}" mode="SingleSelectMaster"
+              selectionChange="onTableSelect" growing="true" growingThreshold="50"
+              class="sapUiSizeCompact">
+              <items>
+                <ObjectListItem title="{dbc>name}" icon="sap-icon://table-view" type="Active"
+                  number="{dbc>row_count}" numberUnit="rows"
+                  numberState="{= ${dbc>row_count} > 1000 ? 'Warning' : ${dbc>row_count} > 0 ? 'Success' : 'None' }" />
+              </items>
+            </List>
+          </ScrollContainer>
         </VBox>
 
         <!-- Sag Panel: Veri + SQL + Iliskiler -->
@@ -56,6 +65,17 @@
               <!-- Tab 2: SQL Sorgusu -->
               <IconTabFilter text="{i18n>dbCockpitSqlQuery}" icon="sap-icon://syntax" key="sql">
                 <VBox class="sapUiSmallMargin">
+                  <OverflowToolbar class="sapUiTinyMarginBottom">
+                    <core:Icon src="sap-icon://save" class="sapUiTinyMarginEnd" />
+                    <Select id="savedQuerySelect" width="280px" change="onLoadSavedQuery"
+                      items="{dbc>/savedQueries}">
+                      <core:Item key="{dbc>key}" text="{dbc>name}" />
+                    </Select>
+                    <Button icon="sap-icon://save" tooltip="{i18n>dbCockpitSaveQuery}" press="onSaveQuery" type="Transparent" />
+                    <Button icon="sap-icon://delete" tooltip="{i18n>dbCockpitDeleteQuery}" press="onDeleteQuery" type="Transparent" />
+                    <ToolbarSpacer />
+                    <ObjectStatus id="savedQueryCount" state="Information" />
+                  </OverflowToolbar>
                   <TextArea id="sqlEditor" rows="4" width="100%" growing="true"
                     placeholder="{i18n>dbCockpitSqlPlaceholder}" />
                   <HBox class="sapUiSmallMarginTop" alignItems="Center">
@@ -76,33 +96,19 @@
                 </t:Table>
               </IconTabFilter>
 
-              <!-- Tab 3: Iliskiler -->
+              <!-- Tab 3: Iliskiler (Gorsel) -->
               <IconTabFilter text="{i18n>dbCockpitRelationships}" icon="sap-icon://chain-link" key="rel">
-                <Table items="{dbc>/relationships}" alternateRowColors="true" growing="true" growingThreshold="100">
-                  <headerToolbar>
-                    <OverflowToolbar>
-                      <SearchField width="300px" placeholder="{i18n>dbCockpitTableSearch}" liveChange="onRelationshipSearch" />
-                    </OverflowToolbar>
-                  </headerToolbar>
-                  <columns>
-                    <Column><Text text="{i18n>dbCockpitSourceTable}" /></Column>
-                    <Column><Text text="{i18n>dbCockpitSourceColumn}" /></Column>
-                    <Column width="50px" hAlign="Center"><Text text="" /></Column>
-                    <Column><Text text="{i18n>dbCockpitTargetTable}" /></Column>
-                    <Column><Text text="{i18n>dbCockpitTargetColumn}" /></Column>
-                  </columns>
-                  <items>
-                    <ColumnListItem>
-                      <cells>
-                        <ObjectIdentifier title="{dbc>source_table}" />
-                        <Text text="{dbc>source_column}" />
-                        <core:Icon src="sap-icon://arrow-right" color="#888" />
-                        <ObjectIdentifier title="{dbc>target_table}" />
-                        <Text text="{dbc>target_column}" />
-                      </cells>
-                    </ColumnListItem>
-                  </items>
-                </Table>
+                <VBox height="100%">
+                  <OverflowToolbar>
+                    <SearchField id="relSearch" width="300px" placeholder="{i18n>dbCockpitTableSearch}" liveChange="onRelationshipSearch" />
+                    <ToolbarSpacer />
+                    <ObjectStatus id="relStats" />
+                    <Button icon="sap-icon://refresh" press="onRefreshRelationships" type="Transparent" />
+                  </OverflowToolbar>
+                  <ScrollContainer width="100%" vertical="true" horizontal="false" height="calc(100vh - 200px)">
+                    <VBox id="relContainer" class="sapUiSmallMargin" />
+                  </ScrollContainer>
+                </VBox>
               </IconTabFilter>
 
             </items>
