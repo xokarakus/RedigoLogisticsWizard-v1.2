@@ -1,0 +1,222 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.Reports"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  height="100%">
+
+  <Page title="{i18n>rptTitle}" enableScrolling="true">
+
+    <!-- ═══ Toolbar: Tarih Filtresi ═══ -->
+    <headerContent>
+      <Select id="periodSelect" selectedKey="{report>/period}" change="onPeriodChange" width="180px">
+        <core:Item key="7d" text="{i18n>rptLast7Days}" />
+        <core:Item key="30d" text="{i18n>rptLast30Days}" />
+        <core:Item key="90d" text="{i18n>rptLast90Days}" />
+        <core:Item key="custom" text="{i18n>rptCustomRange}" />
+      </Select>
+      <DateRangeSelection id="dateRange"
+        visible="{= ${report>/period} === 'custom'}"
+        change="onDateRangeChange"
+        width="280px" />
+      <Button icon="sap-icon://refresh" text="{i18n>btnRefresh}" press="onRefresh" type="Transparent" />
+    </headerContent>
+
+    <content>
+      <IconTabBar id="reportTabs" select="onTabSelect" class="sapUiNoContentPadding">
+
+        <!-- ════════════════════════════════════════════ -->
+        <!-- SEKME A: Surec Performans Analizi           -->
+        <!-- ════════════════════════════════════════════ -->
+        <items>
+          <IconTabFilter text="{i18n>rptTabProcess}" icon="sap-icon://process" key="processPerf">
+
+            <!-- KPI Tiles -->
+            <Panel headerText="{i18n>rptCycleTimes}" class="sapUiSmallMarginBottom">
+              <FlexBox wrap="Wrap" class="sapUiSmallMargin">
+                <GenericTile header="{i18n>rptAvgDispatch}" class="sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                  <TileContent>
+                    <NumericContent value="{report>/cycleTimes/avg_dispatch_min}" scale="{i18n>rptMinutes}" />
+                  </TileContent>
+                </GenericTile>
+                <GenericTile header="{i18n>rptAvgConfirmation}" class="sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                  <TileContent>
+                    <NumericContent value="{report>/cycleTimes/avg_confirmation_min}" scale="{i18n>rptMinutes}" />
+                  </TileContent>
+                </GenericTile>
+                <GenericTile header="{i18n>rptAvgPosting}" class="sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                  <TileContent>
+                    <NumericContent value="{report>/cycleTimes/avg_posting_min}" scale="{i18n>rptMinutes}" />
+                  </TileContent>
+                </GenericTile>
+                <GenericTile header="{i18n>rptAvgTotalCycle}" class="sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                  <TileContent>
+                    <NumericContent value="{report>/cycleTimes/avg_total_cycle_min}" scale="{i18n>rptMinutes}" />
+                  </TileContent>
+                </GenericTile>
+                <GenericTile header="{i18n>rptMedianCycle}" class="sapUiTinyMarginEnd sapUiTinyMarginBottom" frameType="OneByOne">
+                  <TileContent>
+                    <NumericContent value="{report>/cycleTimes/median_cycle_min}" scale="{i18n>rptMinutes}" />
+                  </TileContent>
+                </GenericTile>
+                <GenericTile header="{i18n>rptP95Cycle}" class="sapUiTinyMarginEnd sapUiTinyMarginBottom" frameType="OneByOne">
+                  <TileContent>
+                    <NumericContent value="{report>/cycleTimes/p95_cycle_min}" scale="{i18n>rptMinutes}" />
+                  </TileContent>
+                </GenericTile>
+              </FlexBox>
+            </Panel>
+
+            <!-- Surec Bazli Basari Oranlari -->
+            <Panel headerText="{i18n>rptSuccessRates}" class="sapUiSmallMarginBottom">
+              <Table items="{report>/successRates}" growing="true" growingThreshold="20">
+                <columns>
+                  <Column><Text text="{i18n>rptProcessType}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptTotal}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptSuccess}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptFailed}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptPending}" /></Column>
+                  <Column width="200px"><Text text="{i18n>rptSuccessRate}" /></Column>
+                </columns>
+                <items>
+                  <ColumnListItem>
+                    <Text text="{report>process_type}" />
+                    <Text text="{report>total}" />
+                    <ObjectStatus text="{report>success}" state="Success" />
+                    <ObjectStatus text="{report>failed}" state="Error" />
+                    <Text text="{report>pending}" />
+                    <ProgressIndicator percentValue="{report>success_rate}" displayValue="{report>success_rate}%" state="{= ${report>success_rate} >= 90 ? 'Success' : ${report>success_rate} >= 70 ? 'Warning' : 'Error'}" />
+                  </ColumnListItem>
+                </items>
+              </Table>
+            </Panel>
+
+            <!-- Darbogaz Analizi -->
+            <Panel headerText="{i18n>rptBottlenecks}" class="sapUiSmallMarginBottom">
+              <Table items="{report>/bottlenecks}">
+                <columns>
+                  <Column><Text text="{i18n>rptStage}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptAvgMinutes}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptMaxMinutes}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptSampleCount}" /></Column>
+                </columns>
+                <items>
+                  <ColumnListItem>
+                    <Text text="{report>stage}" />
+                    <ObjectNumber number="{report>avg_minutes}" unit="{i18n>rptMinutes}" state="{= ${report>avg_minutes} > 60 ? 'Error' : ${report>avg_minutes} > 30 ? 'Warning' : 'Success'}" />
+                    <ObjectNumber number="{report>max_minutes}" unit="{i18n>rptMinutes}" />
+                    <Text text="{report>sample_count}" />
+                  </ColumnListItem>
+                </items>
+              </Table>
+            </Panel>
+
+            <!-- En Sik Hata Nedenleri -->
+            <Panel headerText="{i18n>rptFailureReasons}">
+              <Table items="{report>/failureReasons}" growing="true" growingThreshold="10">
+                <columns>
+                  <Column width="150px"><Text text="{i18n>rptErrorCode}" /></Column>
+                  <Column><Text text="{i18n>rptErrorMessage}" /></Column>
+                  <Column hAlign="End" width="120px"><Text text="{i18n>rptOccurrenceCount}" /></Column>
+                  <Column width="160px"><Text text="{i18n>rptLastSeen}" /></Column>
+                </columns>
+                <items>
+                  <ColumnListItem>
+                    <ObjectStatus text="{report>error_code}" state="Error" />
+                    <Text text="{report>error_message}" wrapping="true" />
+                    <ObjectNumber number="{report>occurrence_count}" emphasized="true" />
+                    <Text text="{ path: 'report>last_seen', type: 'sap.ui.model.type.DateTime', formatOptions: { style: 'medium' } }" />
+                  </ColumnListItem>
+                </items>
+              </Table>
+            </Panel>
+
+          </IconTabFilter>
+
+          <!-- ════════════════════════════════════════════ -->
+          <!-- SEKME B: Depo & 3PL Performans              -->
+          <!-- ════════════════════════════════════════════ -->
+          <IconTabFilter text="{i18n>rptTabWarehouse}" icon="sap-icon://factory" key="warehousePerf">
+
+            <!-- Depo Performans Ozeti -->
+            <Panel headerText="{i18n>rptWarehouseSummary}" class="sapUiSmallMarginBottom">
+              <Table items="{report>/warehouseSummary}" growing="true" growingThreshold="20">
+                <columns>
+                  <Column><Text text="{i18n>rptWarehouseCode}" /></Column>
+                  <Column><Text text="{i18n>rptWarehouseName}" /></Column>
+                  <Column><Text text="{i18n>rptWmsProvider}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptTotal}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptCompleted}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptFailed}" /></Column>
+                  <Column hAlign="End" width="100px"><Text text="{i18n>rptErrorRate}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptAvgCycleMin}" /></Column>
+                </columns>
+                <items>
+                  <ColumnListItem>
+                    <Text text="{report>warehouse_code}" />
+                    <Text text="{report>warehouse_name}" />
+                    <Text text="{report>wms_provider}" />
+                    <Text text="{report>total_orders}" />
+                    <ObjectStatus text="{report>completed}" state="Success" />
+                    <ObjectStatus text="{report>failed}" state="Error" />
+                    <ObjectStatus text="{= ${report>error_rate} + '%'}" state="{= ${report>error_rate} > 10 ? 'Error' : ${report>error_rate} > 5 ? 'Warning' : 'Success'}" />
+                    <ObjectNumber number="{report>avg_cycle_min}" unit="{i18n>rptMinutes}" />
+                  </ColumnListItem>
+                </items>
+              </Table>
+            </Panel>
+
+            <!-- SLA Uyum Raporu -->
+            <Panel headerText="{i18n>rptSLACompliance}" class="sapUiSmallMarginBottom">
+              <Table items="{report>/warehouseSLA}">
+                <columns>
+                  <Column><Text text="{i18n>rptWarehouseCode}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptTotal}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptWithin24h}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptWithin48h}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptOverdue}" /></Column>
+                  <Column width="200px"><Text text="{i18n>rptSLA24hPct}" /></Column>
+                </columns>
+                <items>
+                  <ColumnListItem>
+                    <Text text="{report>warehouse_code}" />
+                    <Text text="{report>total}" />
+                    <ObjectStatus text="{report>within_24h}" state="Success" />
+                    <Text text="{report>within_48h}" />
+                    <ObjectStatus text="{report>overdue}" state="Error" />
+                    <ProgressIndicator percentValue="{report>sla_24h_pct}" displayValue="{report>sla_24h_pct}%" state="{= ${report>sla_24h_pct} >= 90 ? 'Success' : ${report>sla_24h_pct} >= 70 ? 'Warning' : 'Error'}" />
+                  </ColumnListItem>
+                </items>
+              </Table>
+            </Panel>
+
+            <!-- Islem Bazli Hata Karsilastirmasi -->
+            <Panel headerText="{i18n>rptWarehouseTransactions}">
+              <Table items="{report>/warehouseTransactions}">
+                <columns>
+                  <Column><Text text="{i18n>rptWarehouseCode}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptTotalTransactions}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptAvgDurationMs}" /></Column>
+                  <Column hAlign="End"><Text text="{i18n>rptFailedTransactions}" /></Column>
+                  <Column hAlign="End" width="100px"><Text text="{i18n>rptTxErrorRate}" /></Column>
+                </columns>
+                <items>
+                  <ColumnListItem>
+                    <Text text="{report>warehouse_code}" />
+                    <Text text="{report>total_transactions}" />
+                    <ObjectNumber number="{report>avg_duration_ms}" unit="ms" />
+                    <ObjectStatus text="{report>failed_transactions}" state="Error" />
+                    <ObjectStatus text="{= ${report>tx_error_rate} + '%'}" state="{= ${report>tx_error_rate} > 10 ? 'Error' : ${report>tx_error_rate} > 5 ? 'Warning' : 'Success'}" />
+                  </ColumnListItem>
+                </items>
+              </Table>
+            </Panel>
+
+          </IconTabFilter>
+        </items>
+      </IconTabBar>
+    </content>
+
+  </Page>
+
+</mvc:View>

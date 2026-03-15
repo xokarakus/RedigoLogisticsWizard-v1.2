@@ -107,6 +107,8 @@ sap.ui.define([
             d.smtp_secure_key = d.smtp_secure === true || d.smtp_secure === "true" ? "true" : "false";
             that._oEmailModel.setData(d);
           }
+        }).catch(function () {
+          MessageToast.show("E-posta ayarlar\u0131 y\u00fcklenemedi");
         });
       },
 
@@ -135,6 +137,8 @@ sap.ui.define([
             return;
           }
           MessageToast.show(that._getText("msgSaved"));
+        }).catch(function () {
+          MessageToast.show("E-posta ayarlar\u0131 kaydedilemedi");
         });
       },
 
@@ -168,6 +172,9 @@ sap.ui.define([
                 } else {
                   MessageToast.show(res.message || that._getText("msgSuccess"));
                 }
+                oDialog.close();
+              }).catch(function () {
+                MessageToast.show("Test e-postas\u0131 g\u00f6nderilemedi");
                 oDialog.close();
               });
             }

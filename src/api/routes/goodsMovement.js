@@ -7,6 +7,9 @@ const sapClient = require('../../shared/sap/client');
 const { tenantFilter } = require('../../shared/middleware/auth');
 const { logAudit } = require('../../shared/middleware/auditLog');
 
+const { validate } = require('../../shared/validators/middleware');
+const { GoodsMovementSchema } = require('../../shared/validators/workOrder.schemas');
+
 const workOrderStore = new DbStore('work_orders');
 const transactionStore = new DbStore('transaction_logs');
 const pcStore = new DbStore('process_configs');
@@ -160,11 +163,14 @@ async function handleGoodsMovement(req, res, opts) {
       duration_ms: Date.now() - startTime
     });
 
-    // WO status güncelle
+    // WO status güncelle + arsivle (belge kapandi)
     const oldStatus = wo.status;
+    const now = new Date().toISOString();
     await workOrderStore.update(wo.id, {
       status: targetStatus,
-      sap_posted_at: new Date().toISOString(),
+      sap_posted_at: now,
+      completed_at: now,
+      archived_at: now,
       notes: actionName + ': MAT_DOC=' + (matDoc || '-') + ' DOC_YEAR=' + (docYear || '-')
     });
     logAudit(req, 'work_order', wo.id, 'STATUS_CHANGE', { status: oldStatus }, {
@@ -220,7 +226,7 @@ async function handleGoodsMovement(req, res, opts) {
    POST /api/goods-movement/post-pgi
    SAP'de PGI (mal çıkış) kaydet
    ═══════════════════════════════════════════ */
-router.post('/post-pgi', (req, res) => {
+router.post('/post-pgi', validate(GoodsMovementSchema), (req, res) => {
   handleGoodsMovement(req, res, {
     actionName: 'POST_PGI',
     targetStatus: 'PGI_POSTED'
@@ -231,7 +237,7 @@ router.post('/post-pgi', (req, res) => {
    POST /api/goods-movement/post-gr
    SAP'de GR (mal giriş) kaydet
    ═══════════════════════════════════════════ */
-router.post('/post-gr', (req, res) => {
+router.post('/post-gr', validate(GoodsMovementSchema), (req, res) => {
   handleGoodsMovement(req, res, {
     actionName: 'POST_GR',
     targetStatus: 'GR_POSTED'

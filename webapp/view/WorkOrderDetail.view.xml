@@ -6,7 +6,7 @@
   xmlns:l="sap.ui.layout"
   xmlns:f="sap.ui.layout.form">
 
-  <Page title="{i18n>wodTitle}" showNavButton="true" navButtonPress="onNavBack">
+  <Page title="{i18n>wodTitle}" showNavButton="true" navButtonPress="onNavBack" accessibleRole="Main">
 
     <headerContent>
       <ObjectStatus

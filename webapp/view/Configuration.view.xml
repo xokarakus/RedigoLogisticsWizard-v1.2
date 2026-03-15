@@ -6,7 +6,7 @@
   xmlns:l="sap.ui.layout"
   xmlns:f="sap.ui.layout.form">
 
-  <Page title="{i18n>cfgTitle}" showNavButton="false">
+  <Page title="{i18n>cfgTitle}" showNavButton="false" accessibleRole="Main">
 
     <headerContent>
       <Button text="{i18n>btnRefresh}" icon="sap-icon://refresh" press="onRefresh" type="Transparent" />

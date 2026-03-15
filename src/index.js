@@ -11,11 +11,18 @@ const pgQueue = require('./shared/queue/pgQueue');
 const queueHandlers = require('./modules/work-order/services/WorkOrderQueueHandler');
 const jobScheduler = require('./shared/services/jobScheduler');
 const { runPending } = require('./shared/database/migrate');
+const { setupSwagger } = require('./shared/swagger');
+const { initSentry, sentryErrorHandler, captureException } = require('./shared/sentry');
+const { serialize: serializeMetrics, metricsMiddleware } = require('./shared/utils/metrics');
+const { getAllStatus: getCBStatus } = require('./shared/utils/circuitBreaker');
 
 const API_VERSION = 'v1';
 const APP_VERSION = '1.2.0';
 
 const app = express();
+
+// Sentry (SENTRY_DSN set edilmisse aktif)
+initSentry(app);
 
 // Redis/BullMQ baglanti hatalarinin process'i cokertmesini engelle
 process.on('unhandledRejection', (reason) => {
@@ -28,7 +35,12 @@ process.on('unhandledRejection', (reason) => {
 // Middleware
 app.use(helmet({
   contentSecurityPolicy: false,
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  hsts: {
+    maxAge: 31536000,         // 1 yil
+    includeSubDomains: true,
+    preload: true
+  }
 }));
 
 // CORS — origin whitelist (server-to-server cagrilar Origin gondermez, izin ver)
@@ -46,6 +58,16 @@ app.use(cors({
 
 app.use(compression());
 app.use(express.json({ limit: '5mb' }));
+app.use(metricsMiddleware);
+
+// ── Request Correlation ID ──
+// Her istege benzersiz bir correlation ID atar (distributed tracing)
+const { v4: uuidv4 } = require('uuid');
+app.use((req, res, next) => {
+  req.correlationId = req.headers['x-correlation-id'] || uuidv4();
+  res.set('X-Correlation-Id', req.correlationId);
+  next();
+});
 
 // Rate Limiting
 const authLimiter = rateLimit({
@@ -60,6 +82,16 @@ const apiLimiter = rateLimit({
   max: parseInt(process.env.RATE_LIMIT_API || '100', 10),
   standardHeaders: true,
   legacyHeaders: false,
+  // Per-tenant rate limiting: authenticate middleware sonra tenantId set edilir
+  keyGenerator: function (req) {
+    if (req.user && req.user.tenant_id) {
+      return 'tenant:' + req.user.tenant_id;
+    }
+    // Fallback: Authorization header hash (henuz parse edilmemis tenant)
+    const auth = req.headers.authorization || '';
+    if (auth) return 'auth:' + auth.substring(0, 40);
+    return 'anon';
+  },
   message: { error: 'Too many requests, please try again later' }
 });
 const webhookLimiter = rateLimit({
@@ -67,11 +99,18 @@ const webhookLimiter = rateLimit({
   max: parseInt(process.env.RATE_LIMIT_WEBHOOK || '300', 10),
   standardHeaders: true,
   legacyHeaders: false,
+  // Webhook'larda X-API-Key bazli rate limiting
+  keyGenerator: function (req) {
+    return 'wh:' + (req.headers['x-api-key'] || 'unknown');
+  },
   message: { error: 'Too many requests, please try again later' }
 });
 
 // XSUAA JWT Authentication (BTP'de aktif, local dev'de skip)
 setupAuth(app);
+
+// Swagger UI (auth gerekmez)
+setupSwagger(app);
 
 // Health check (auth gerekmez)
 app.get('/health', async (req, res) => {
@@ -107,6 +146,17 @@ app.get('/health', async (req, res) => {
   res.status(health.status === 'ok' ? 200 : 503).json(health);
 });
 
+// Prometheus metrics endpoint (auth gerekmez)
+app.get('/metrics', (req, res) => {
+  res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+  res.send(serializeMetrics());
+});
+
+// Circuit breaker durumu (auth gerekmez — monitoring icin)
+app.get('/health/circuit-breakers', (req, res) => {
+  res.json(getCBStatus());
+});
+
 // ══════════════════════════════════════
 // API v1 Router
 // ══════════════════════════════════════
@@ -134,6 +184,11 @@ v1.use('/goods-movement', authenticate, require('./api/routes/goodsMovement'));
 v1.use('/scheduled-jobs', authenticate, require('./api/routes/scheduledJobs'));
 v1.use('/master-data', authenticate, require('./api/routes/masterData'));
 v1.use('/db-cockpit', authenticate, require('./api/routes/dbCockpit'));
+v1.use('/archive', authenticate, require('./api/routes/archive'));
+v1.use('/bulk', authenticate, require('./api/routes/bulk'));
+v1.use('/gdpr', authenticate, require('./api/routes/gdpr'));
+v1.use('/secrets', authenticate, require('./api/routes/secrets'));
+v1.use('/reports', authenticate, require('./api/routes/reports'));
 
 // Queue API
 v1.get('/queue/stats', authenticate, async (req, res) => {
@@ -194,10 +249,51 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-// Error handler
+// Sentry Error Handler (centralized handler'dan once)
+app.use(sentryErrorHandler());
+
+// Centralized Error Handler
 app.use((err, req, res, _next) => {
-  logger.error('Unhandled error', { error: err.message, stack: err.stack });
-  res.status(500).json({ error: 'Internal server error' });
+  const correlationId = req.correlationId || '-';
+
+  // Zod validation hatalari (validate middleware'den gecmemis durumlar)
+  if (err.name === 'ZodError') {
+    return res.status(400).json({
+      error: 'Dogrulama hatasi',
+      correlationId,
+      details: err.errors
+    });
+  }
+
+  // CORS hatalari
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ error: 'CORS policy violation', correlationId });
+  }
+
+  // JSON parse hatalari
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'Gecersiz JSON formati', correlationId });
+  }
+
+  // Payload too large
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Istek boyutu cok buyuk (max 5MB)', correlationId });
+  }
+
+  // Genel hata
+  logger.error('Unhandled error', {
+    error: err.message,
+    stack: err.stack,
+    correlationId,
+    method: req.method,
+    url: req.originalUrl
+  });
+  captureException(err, {
+    correlationId,
+    tenantId: req.tenantId,
+    user: req.user ? { id: req.user.user_id, username: req.user.username } : undefined
+  });
+  res.status(500).json({ error: 'Internal server error', correlationId });
 });
 
 // Startup
@@ -228,10 +324,13 @@ async function start() {
   });
 }
 
-start().catch((err) => {
-  logger.error('Failed to start', { error: err.message });
-  process.exit(1);
-});
+// Test ortaminda sunucuyu otomatik baslatma (supertest kendi handle eder)
+if (process.env.NODE_ENV !== 'test') {
+  start().catch((err) => {
+    logger.error('Failed to start', { error: err.message });
+    process.exit(1);
+  });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

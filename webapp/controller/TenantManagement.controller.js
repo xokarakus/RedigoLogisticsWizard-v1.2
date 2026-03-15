@@ -450,6 +450,16 @@ sap.ui.define([
         selectionChange: function (oEv) {
           var oItem = oEv.getParameter("listItem");
           var oProvider = oItem.data("provider");
+
+          // Daha once uygulanan template tekrar secilemez
+          if (oProvider.already_applied) {
+            oProviderList.removeSelections(true);
+            oStep1.setValidated(false);
+            oWizModel.setProperty("/selectedProvider", null);
+            MessageToast.show(that._getText("wizAlreadyAppliedError"));
+            return;
+          }
+
           oWizModel.setProperty("/selectedProvider", oProvider);
           oWizModel.setProperty("/selectedSubServices", []);
 
@@ -535,18 +545,30 @@ sap.ui.define([
         afterClose: function () { oDialog.destroy(); }
       });
 
-      // Load providers
-      API.get("/api/v1/config/wizard/providers").then(function (res) {
+      // Load providers (tenant_id gondererek daha once uygulananlari isaretler)
+      API.get("/api/v1/config/wizard/providers", { tenant_id: sTenantId }).then(function (res) {
         var aProviders = res.data || [];
         oWizModel.setProperty("/providers", aProviders);
         aProviders.forEach(function (p) {
           var sDesc = (p.auth_type || "") + " | " +
             oBundle.getText("wizProviderInfo", [p.counts.warehouses, p.counts.process_configs, p.counts.field_mappings]);
+
+          // Daha once uygulanan template'i isaretle
+          if (p.already_applied) {
+            var dApplied = new Date(p.applied_at);
+            var sAppliedSubs = "";
+            if (p.applied_sub_services && p.applied_sub_services.length > 0) {
+              sAppliedSubs = " [" + p.applied_sub_services.join(", ") + "]";
+            }
+            sDesc = "\u2705 " + oBundle.getText("wizAlreadyApplied", [dApplied.toLocaleDateString("tr-TR")]) + sAppliedSubs;
+          }
+
           var oItem = new StandardListItem({
             title: p.name + " (" + p.code + ")",
             description: sDesc,
-            icon: "sap-icon://shipping-status",
-            type: "Active"
+            icon: p.already_applied ? "sap-icon://accept" : "sap-icon://shipping-status",
+            type: p.already_applied ? "Inactive" : "Active",
+            highlight: p.already_applied ? "Success" : "None"
           });
           oItem.data("provider", p);
           oProviderList.addItem(oItem);

@@ -13,7 +13,8 @@
 
           <FlexBox justifyContent="Center" class="sapUiMediumMarginBottom">
             <VBox alignItems="Center">
-              <core:Icon src="sap-icon://factory" size="3rem" color="#0854A0" class="sapUiSmallMarginBottom" />
+              <core:Icon src="sap-icon://factory" size="3rem" color="#0854A0" class="sapUiSmallMarginBottom"
+                decorative="true" />
               <Title text="{i18n>setupTitle}" level="H1" class="sapUiSmallMarginBottom" />
               <Text text="{i18n>setupDesc}" class="sapUiTinyMarginBottom" />
             </VBox>
@@ -28,28 +29,29 @@
               text="{setup>/errorText}"
               class="sapUiSmallMarginBottom" />
 
-            <Label text="{i18n>setupCompanyName}" required="true" />
+            <Label text="{i18n>setupCompanyName}" required="true" labelFor="companyNameInput" />
             <Input id="companyNameInput"
               value="{setup>/companyName}"
               placeholder="{i18n>setupCompanyName}"
               width="100%"
               class="sapUiSmallMarginBottom" />
 
-            <Label text="{i18n>setupCompanyCode}" required="true" />
+            <Label text="{i18n>setupCompanyCode}" required="true" labelFor="companyCodeInput" />
             <Input id="companyCodeInput"
               value="{setup>/companyCode}"
               placeholder="{i18n>setupCompanyCode}"
               width="100%"
               class="sapUiSmallMarginBottom" />
 
-            <Label text="{i18n>setupUsername}" required="true" />
-            <Input id="setupUsernameInput"
-              value="{setup>/username}"
-              placeholder="{i18n>setupUsername}"
+            <Label text="{i18n>setupEmail}" required="true" labelFor="setupEmailInput" />
+            <Input id="setupEmailInput"
+              value="{setup>/email}"
+              placeholder="{i18n>setupEmail}"
+              type="Email"
               width="100%"
               class="sapUiSmallMarginBottom" />
 
-            <Label text="{i18n>setupPassword}" required="true" />
+            <Label text="{i18n>setupPassword}" required="true" labelFor="setupPasswordInput" />
             <Input id="setupPasswordInput"
               value="{setup>/password}"
               placeholder="{i18n>setupPassword}"
@@ -57,7 +59,7 @@
               width="100%"
               class="sapUiSmallMarginBottom" />
 
-            <Label text="{i18n>setupConfirmPassword}" required="true" />
+            <Label text="{i18n>setupConfirmPassword}" required="true" labelFor="setupConfirmPasswordInput" />
             <Input id="setupConfirmPasswordInput"
               value="{setup>/confirmPassword}"
               placeholder="{i18n>setupConfirmPassword}"

@@ -1,0 +1,266 @@
+<mvc:View
+  controllerName="com.redigo.logistics.cockpit.controller.Archive"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  xmlns:t="sap.ui.table"
+  xmlns:l="sap.ui.layout"
+  height="100%">
+
+  <Page title="{i18n>archiveTitle}" showNavButton="false" enableScrolling="false" accessibleRole="Main">
+
+    <content>
+
+      <!-- Gelismis Arama Paneli -->
+      <Panel id="searchPanel" expandable="true" expanded="true" headerText="{i18n>archiveSearchCriteria}">
+        <content>
+          <l:Grid defaultSpan="L3 M6 S12" class="sapUiSmallMarginBottom">
+
+            <!-- Metin arama -->
+            <SearchField id="archiveSearch" placeholder="{i18n>archiveSearchPlaceholder}"
+              search="onSearch" liveChange="onSearchLive" width="100%">
+              <layoutData><l:GridData span="L6 M12 S12" /></layoutData>
+            </SearchField>
+
+            <!-- Durum -->
+            <Select id="archiveStatusFilter" change="onFilterChange" width="100%">
+              <core:Item key="ALL" text="{i18n>woFilterAll}" />
+              <core:Item key="PGI_POSTED" text="{i18n>woPGIPosted}" />
+              <core:Item key="GR_POSTED" text="{i18n>woGRPosted}" />
+              <core:Item key="COMPLETED" text="{i18n>woCompleted2}" />
+              <core:Item key="CANCELLED" text="{i18n>archiveCancelled}" />
+            </Select>
+
+            <!-- Yon -->
+            <Select id="archiveTypeFilter" change="onFilterChange" width="100%">
+              <core:Item key="ALL" text="{i18n>woFilterAll}" />
+              <core:Item key="OUTBOUND" text="{i18n>woOutbound}" />
+              <core:Item key="INBOUND" text="{i18n>woInbound}" />
+            </Select>
+
+            <!-- Teslimat Tipi -->
+            <Select id="archiveDeliveryTypeFilter" change="onFilterChange" width="100%"
+              items="{archive>/deliveryTypeOptions}">
+              <core:Item key="{archive>key}" text="{archive>text}" />
+            </Select>
+
+            <!-- Depo -->
+            <Select id="archiveWarehouseFilter" change="onFilterChange" width="100%"
+              items="{archive>/warehouseOptions}">
+              <core:Item key="{archive>key}" text="{archive>text}" />
+            </Select>
+
+            <!-- Surec Tipi -->
+            <Select id="archiveProcessTypeFilter" change="onFilterChange" width="100%"
+              items="{archive>/processTypeOptions}">
+              <core:Item key="{archive>key}" text="{archive>text}" />
+            </Select>
+
+            <!-- Oncelik -->
+            <Select id="archivePriorityFilter" change="onFilterChange" width="100%">
+              <core:Item key="ALL" text="{i18n>woFilterAll}" />
+              <core:Item key="HIGH" text="{i18n>woPriorityHigh}" />
+              <core:Item key="MEDIUM" text="{i18n>woPriorityMedium}" />
+              <core:Item key="LOW" text="{i18n>woPriorityLow}" />
+            </Select>
+
+            <!-- Arsivlenme Tarihi -->
+            <DateRangeSelection id="archiveDateFilter"
+              placeholder="{i18n>archiveDateRange}"
+              displayFormat="dd.MM.yyyy"
+              change="onFilterChange">
+              <layoutData><l:GridData span="L3 M6 S12" /></layoutData>
+            </DateRangeSelection>
+
+            <!-- Alinma Tarihi -->
+            <DateRangeSelection id="archiveReceivedDateFilter"
+              placeholder="{i18n>archiveReceivedDateRange}"
+              displayFormat="dd.MM.yyyy"
+              change="onFilterChange">
+              <layoutData><l:GridData span="L3 M6 S12" /></layoutData>
+            </DateRangeSelection>
+
+          </l:Grid>
+        </content>
+      </Panel>
+
+      <!-- Arsiv Tablosu (read-only) -->
+      <t:Table
+        id="archiveTable"
+        rows="{archive>/data}"
+        selectionMode="None"
+        visibleRowCountMode="Auto"
+        minAutoRowCount="3"
+        enableColumnReordering="true"
+        enableCellFilter="true"
+        enableColumnFreeze="true"
+        enableBusyIndicator="true"
+        alternateRowColors="true"
+        fixedColumnCount="1"
+        cellClick="onCellClick">
+
+        <t:rowSettingsTemplate>
+          <t:RowSettings highlight="{= ${archive>status} === 'PGI_POSTED' || ${archive>status} === 'GR_POSTED' || ${archive>status} === 'COMPLETED' ? 'Success' : ${archive>status} === 'CANCELLED' ? 'Error' : 'None'}" />
+        </t:rowSettingsTemplate>
+
+        <t:extension>
+          <OverflowToolbar>
+            <ToolbarSpacer />
+            <Button icon="sap-icon://excel-attachment" tooltip="{i18n>btnExport}" press="onExport" type="Transparent" />
+            <Button icon="sap-icon://refresh" tooltip="{i18n>btnRefresh}" press="onRefresh" type="Transparent" />
+            <ToolbarSeparator />
+            <ObjectStatus text="{archive>/countText}" state="Information" />
+          </OverflowToolbar>
+        </t:extension>
+
+        <t:columns>
+          <!-- Teslimat No -->
+          <t:Column sortProperty="sap_delivery_no" filterProperty="sap_delivery_no" autoResizable="true" width="140px">
+            <Label text="{i18n>woDeliveryNo}" />
+            <t:template>
+              <Link text="{archive>sap_delivery_no}" press="onDeliveryPress" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- Teslimat Tipi -->
+          <t:Column sortProperty="sap_delivery_type" filterProperty="sap_delivery_type" autoResizable="true" width="100px">
+            <Label text="{i18n>woDeliveryType}" />
+            <t:template>
+              <ObjectStatus
+                text="{archive>sap_delivery_type}"
+                icon="{= ${archive>sap_delivery_type} === 'LF' ? 'sap-icon://shipping-status' : ${archive>sap_delivery_type} === 'NL' ? 'sap-icon://inventory' : ${archive>sap_delivery_type} === 'EL' ? 'sap-icon://inbox' : ${archive>sap_delivery_type} === 'RL' ? 'sap-icon://undo' : ${archive>sap_delivery_type} === 'UL' ? 'sap-icon://transfer' : 'sap-icon://document'}"
+                state="{= ${archive>sap_delivery_type} === 'LF' ? 'Information' : ${archive>sap_delivery_type} === 'NL' ? 'Warning' : ${archive>sap_delivery_type} === 'EL' ? 'Success' : ${archive>sap_delivery_type} === 'RL' ? 'Error' : 'Information'}" />
+            </t:template>
+          </t:Column>
+
+          <!-- Yon -->
+          <t:Column sortProperty="order_type" filterProperty="order_type" autoResizable="true" width="130px">
+            <Label text="{i18n>woType}" />
+            <t:template>
+              <ObjectStatus
+                text="{archive>order_type}"
+                state="{= ${archive>order_type} === 'OUTBOUND' ? 'Information' : 'Success'}"
+                icon="{= ${archive>order_type} === 'OUTBOUND' ? 'sap-icon://shipping-status' : 'sap-icon://cart-3'}" />
+            </t:template>
+          </t:Column>
+
+          <!-- Surec Tipi -->
+          <t:Column sortProperty="process_type" filterProperty="process_type" autoResizable="true" width="120px">
+            <Label text="{i18n>woProcessType}" />
+            <t:template>
+              <Text text="{archive>process_type}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- Durum -->
+          <t:Column sortProperty="status" filterProperty="status" autoResizable="true" width="130px">
+            <Label text="{i18n>woStatus}" />
+            <t:template>
+              <ObjectStatus
+                text="{archive>status}"
+                state="{= ${archive>status} === 'PGI_POSTED' || ${archive>status} === 'GR_POSTED' || ${archive>status} === 'COMPLETED' ? 'Success' : ${archive>status} === 'CANCELLED' ? 'Error' : 'None'}" />
+            </t:template>
+          </t:Column>
+
+          <!-- Uretim Yeri -->
+          <t:Column sortProperty="plant_code" filterProperty="plant_code" autoResizable="true" width="90px">
+            <Label text="{i18n>woSendingPlant}" />
+            <t:template>
+              <Text text="{archive>plant_code}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- Depo -->
+          <t:Column sortProperty="warehouse_code" filterProperty="warehouse_code" autoResizable="true" width="100px">
+            <Label text="{i18n>woWarehouse}" />
+            <t:template>
+              <Text text="{archive>warehouse_code}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- Hareket Tipi -->
+          <t:Column sortProperty="mvt_type" filterProperty="mvt_type" autoResizable="true" width="90px" hAlign="Center">
+            <Label text="{i18n>cfgMvtType}" />
+            <t:template>
+              <ObjectNumber number="{archive>mvt_type}" emphasized="true" />
+            </t:template>
+          </t:Column>
+
+          <!-- Musteri -->
+          <t:Column sortProperty="sap_ship_to" filterProperty="sap_ship_to" autoResizable="true" width="140px">
+            <Label text="{i18n>woShipTo}" />
+            <t:template>
+              <Text text="{archive>sap_ship_to}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- Oncelik -->
+          <t:Column sortProperty="priority" filterProperty="priority" autoResizable="true" width="90px" hAlign="Center">
+            <Label text="{i18n>woPriority}" />
+            <t:template>
+              <ObjectStatus
+                text="{archive>priority}"
+                state="{= ${archive>priority} === 'HIGH' ? 'Error' : ${archive>priority} === 'MEDIUM' ? 'Warning' : 'Success'}" />
+            </t:template>
+          </t:Column>
+
+          <!-- Kalem Sayisi -->
+          <t:Column sortProperty="line_count" autoResizable="true" width="70px" hAlign="Center">
+            <Label text="{i18n>woLines}" />
+            <t:template>
+              <ObjectNumber number="{archive>line_count}" />
+            </t:template>
+          </t:Column>
+
+          <!-- Alinma Tarihi -->
+          <t:Column sortProperty="received_at" autoResizable="true" width="150px">
+            <Label text="{i18n>woReceivedAt}" />
+            <t:template>
+              <Text text="{archive>received_at_fmt}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- Tamamlanma Tarihi -->
+          <t:Column sortProperty="completed_at" autoResizable="true" width="150px">
+            <Label text="{i18n>woCompletedAt}" />
+            <t:template>
+              <Text text="{archive>completed_at_fmt}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- Arsivlenme Tarihi -->
+          <t:Column sortProperty="archived_at" autoResizable="true" width="150px">
+            <Label text="{i18n>archiveArchivedAt}" />
+            <t:template>
+              <Text text="{archive>archived_at_fmt}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+          <!-- Notlar -->
+          <t:Column autoResizable="true" width="200px">
+            <Label text="{i18n>archiveNotes}" />
+            <t:template>
+              <Text text="{archive>notes}" wrapping="false" />
+            </t:template>
+          </t:Column>
+
+        </t:columns>
+
+      </t:Table>
+
+      <!-- Sayfalama -->
+      <OverflowToolbar class="sapUiSmallMarginTop">
+        <ToolbarSpacer />
+        <Button icon="sap-icon://navigation-left-arrow" press="onPrevPage"
+          enabled="{= ${archive>/offset} > 0}" tooltip="{i18n>auditPrevPage}" />
+        <Text text="{archive>/pageText}" />
+        <Button icon="sap-icon://navigation-right-arrow" press="onNextPage"
+          enabled="{= (${archive>/offset} + ${archive>/limit}) &lt; ${archive>/total}}" tooltip="{i18n>auditNextPage}" />
+        <ToolbarSpacer />
+      </OverflowToolbar>
+
+    </content>
+
+  </Page>
+
+</mvc:View>

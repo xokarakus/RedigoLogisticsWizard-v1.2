@@ -33,6 +33,8 @@ sap.ui.define([
         oModel.setProperty("/pendingSAP", data.pendingSAP || 0);
         oModel.setProperty("/dlqCount", data.dlqCount || 0);
         oModel.setProperty("/avgLatency", data.avgLatency || 0);
+      }).catch(function () {
+        MessageToast.show("Dashboard verileri y\u00fcklenemedi");
       });
       API.get("/api/work-orders", { limit: 20 }).then(function (data) {
         var aRaw = data.data || [];
@@ -41,6 +43,8 @@ sap.ui.define([
           return o;
         });
         oModel.setProperty("/recentOrders", aOrders);
+      }).catch(function () {
+        MessageToast.show("Son i\u015f emirleri y\u00fcklenemedi");
       });
     },
 

@@ -6,6 +6,12 @@ const { tenantFilter } = require('../../shared/middleware/auth');
 const { CLOSED_STATUSES } = require('../../shared/constants/statuses');
 const { processTypeCache, processConfigCache } = require('../../shared/utils/cacheStore');
 
+const { validate } = require('../../shared/validators/middleware');
+const {
+  WorkOrderListQuery, WorkOrderDetailQuery,
+  UpdateWorkOrderSchema, IngestWorkOrderSchema
+} = require('../../shared/validators/workOrder.schemas');
+
 const store = new DbStore('work_orders');
 const pcStore = new DbStore('process_configs');
 const ptStore = new DbStore('process_types');
@@ -71,11 +77,14 @@ function flattenHeader(wo) {
   return wo;
 }
 
-// GET /api/work-orders - List work orders
-router.get('/', async (req, res) => {
+// GET /api/work-orders - List work orders (sadece aktif / arsivlenmemis)
+router.get('/', validate(WorkOrderListQuery, 'query'), async (req, res) => {
   try {
     const { status, type, limit = 100, offset = 0, date_from, date_to } = req.query;
     let data = await store.readAll({ filter: tf(req) });
+
+    // Arsivlenmemis (aktif) is emirlerini goster
+    data = data.filter(o => !o.archived_at);
 
     if (status) {
       data = data.filter(o => o.status === status);
@@ -188,7 +197,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT /api/work-orders/:id - Update work order (kapali durumda engellenir)
-router.put('/:id', async (req, res) => {
+router.put('/:id', validate(UpdateWorkOrderSchema), async (req, res) => {
   try {
     const item = await store.findById(req.params.id);
     if (!item) return res.status(404).json({ error: 'Kayit bulunamadi' });
@@ -215,9 +224,11 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // CANCELLED yapilirken completed_at set et
+    // CANCELLED yapilirken completed_at + archived_at set et
     if (updates.status === 'CANCELLED') {
-      updates.completed_at = new Date().toISOString();
+      const now = new Date().toISOString();
+      updates.completed_at = now;
+      updates.archived_at = now;
     }
 
     if (Object.keys(updates).length === 0) {
@@ -233,7 +244,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // POST /api/work-orders/ingest - Ingest delivery
-router.post('/ingest', async (req, res) => {
+router.post('/ingest', validate(IngestWorkOrderSchema), async (req, res) => {
   try {
     const payload = req.body;
     const tenantId = req.tenantId || (req.user && req.user.tenant_id) || null;

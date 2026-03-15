@@ -12,7 +12,7 @@ sap.ui.define([
       this._oModel = new JSONModel({
         companyName: "",
         companyCode: "",
-        username: "",
+        email: "",
         password: "",
         confirmPassword: "",
         busy: false,
@@ -32,13 +32,19 @@ sap.ui.define([
     onSetup: function () {
       var sCompanyName = this._oModel.getProperty("/companyName").trim();
       var sCompanyCode = this._oModel.getProperty("/companyCode").trim();
-      var sUsername = this._oModel.getProperty("/username").trim();
+      var sEmail = this._oModel.getProperty("/email").trim();
       var sPassword = this._oModel.getProperty("/password");
       var sConfirmPassword = this._oModel.getProperty("/confirmPassword");
 
       // Validate all fields filled
-      if (!sCompanyName || !sCompanyCode || !sUsername || !sPassword || !sConfirmPassword) {
+      if (!sCompanyName || !sCompanyCode || !sEmail || !sPassword || !sConfirmPassword) {
         this._showError("T\u00fcm alanlar\u0131 doldurun");
+        return;
+      }
+
+      // Validate email format
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sEmail)) {
+        this._showError("Ge\u00e7erli bir e-posta adresi girin");
         return;
       }
 
@@ -63,9 +69,9 @@ sap.ui.define([
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: sUsername,
+          email: sEmail,
           password: sPassword,
-          display_name: sUsername,
+          display_name: sEmail.split("@")[0],
           company_name: sCompanyName,
           company_code: sCompanyCode
         })

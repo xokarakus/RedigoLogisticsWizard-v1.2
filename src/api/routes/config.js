@@ -10,6 +10,17 @@ const adminOnly = requireScope('Admin');
 const { tenantFilter } = require('../../shared/middleware/auth');
 const { fieldMappingCache, processTypeCache, processConfigCache } = require('../../shared/utils/cacheStore');
 
+const { validate } = require('../../shared/validators/middleware');
+const {
+  CreateWarehouseSchema, UpdateWarehouseSchema,
+  CreateMappingSchema, UpdateMappingSchema,
+  CreateProcessConfigSchema, UpdateProcessConfigSchema,
+  CreateProcessTypeSchema, UpdateProcessTypeSchema,
+  CreateFieldMappingSchema, UpdateFieldMappingSchema,
+  CreateSecurityProfileSchema, UpdateSecurityProfileSchema,
+  TestDispatchSchema, EmailTestSchema, ApplyTemplateSchema
+} = require('../../shared/validators/config.schemas');
+
 const configStore = new DbStore('process_configs');
 const typeStore = new DbStore('process_types');
 const warehouseStore = new DbStore('warehouses');
@@ -43,7 +54,7 @@ router.get('/warehouses', async (req, res) => {
   }
 });
 
-router.post('/warehouses', adminOnly, async (req, res) => {
+router.post('/warehouses', adminOnly, validate(CreateWarehouseSchema), async (req, res) => {
   try {
     const item = await warehouseStore.create({ ...req.body, tenant_id: req.tenantId });
     logAudit(req, 'warehouse', item.id, 'CREATE', null, item);
@@ -54,7 +65,7 @@ router.post('/warehouses', adminOnly, async (req, res) => {
   }
 });
 
-router.put('/warehouses/:id', adminOnly, async (req, res) => {
+router.put('/warehouses/:id', adminOnly, validate(UpdateWarehouseSchema), async (req, res) => {
   try {
     const old = await warehouseStore.findById(req.params.id);
     const updated = await warehouseStore.update(req.params.id, req.body);
@@ -96,7 +107,7 @@ router.get('/mappings', async (req, res) => {
   }
 });
 
-router.post('/mappings', adminOnly, async (req, res) => {
+router.post('/mappings', adminOnly, validate(CreateMappingSchema), async (req, res) => {
   try {
     const item = await mappingStore.create({ ...req.body, tenant_id: req.tenantId });
     logAudit(req, 'movement_mapping', item.id, 'CREATE', null, item);
@@ -107,7 +118,7 @@ router.post('/mappings', adminOnly, async (req, res) => {
   }
 });
 
-router.put('/mappings/:id', adminOnly, async (req, res) => {
+router.put('/mappings/:id', adminOnly, validate(UpdateMappingSchema), async (req, res) => {
   try {
     const old = await mappingStore.findById(req.params.id);
     const updated = await mappingStore.update(req.params.id, req.body);
@@ -149,7 +160,7 @@ router.get('/process-configs', async (req, res) => {
   }
 });
 
-router.post('/process-configs', adminOnly, async (req, res) => {
+router.post('/process-configs', adminOnly, validate(CreateProcessConfigSchema), async (req, res) => {
   try {
     const item = await configStore.create({ ...req.body, tenant_id: req.tenantId });
     processConfigCache.invalidate();
@@ -161,7 +172,7 @@ router.post('/process-configs', adminOnly, async (req, res) => {
   }
 });
 
-router.put('/process-configs/:id', adminOnly, async (req, res) => {
+router.put('/process-configs/:id', adminOnly, validate(UpdateProcessConfigSchema), async (req, res) => {
   try {
     const old = await configStore.findById(req.params.id);
     const updated = await configStore.update(req.params.id, req.body);
@@ -205,7 +216,7 @@ router.get('/process-types', async (req, res) => {
   }
 });
 
-router.post('/process-types', adminOnly, async (req, res) => {
+router.post('/process-types', adminOnly, validate(CreateProcessTypeSchema), async (req, res) => {
   try {
     const item = await typeStore.create({ ...req.body, tenant_id: req.tenantId });
     processTypeCache.invalidate();
@@ -217,7 +228,7 @@ router.post('/process-types', adminOnly, async (req, res) => {
   }
 });
 
-router.put('/process-types/:id', adminOnly, async (req, res) => {
+router.put('/process-types/:id', adminOnly, validate(UpdateProcessTypeSchema), async (req, res) => {
   try {
     const old = await typeStore.findById(req.params.id);
     const updated = await typeStore.update(req.params.id, req.body);
@@ -263,7 +274,7 @@ router.get('/field-mappings', async (req, res) => {
   }
 });
 
-router.post('/field-mappings', adminOnly, async (req, res) => {
+router.post('/field-mappings', adminOnly, validate(CreateFieldMappingSchema), async (req, res) => {
   try {
     const item = await fieldMappingStore.create({ ...req.body, tenant_id: req.tenantId });
     fieldMappingCache.invalidate();
@@ -275,7 +286,7 @@ router.post('/field-mappings', adminOnly, async (req, res) => {
   }
 });
 
-router.put('/field-mappings/:id', adminOnly, async (req, res) => {
+router.put('/field-mappings/:id', adminOnly, validate(UpdateFieldMappingSchema), async (req, res) => {
   try {
     const old = await fieldMappingStore.findById(req.params.id);
     const updated = await fieldMappingStore.update(req.params.id, req.body);
@@ -321,7 +332,7 @@ router.get('/security-profiles', async (req, res) => {
   }
 });
 
-router.post('/security-profiles', adminOnly, async (req, res) => {
+router.post('/security-profiles', adminOnly, validate(CreateSecurityProfileSchema), async (req, res) => {
   try {
     const item = await securityStore.create({ ...req.body, tenant_id: req.tenantId });
     logAudit(req, 'security_profile', item.id, 'CREATE', null, maskCredentials(item));
@@ -332,7 +343,7 @@ router.post('/security-profiles', adminOnly, async (req, res) => {
   }
 });
 
-router.put('/security-profiles/:id', adminOnly, async (req, res) => {
+router.put('/security-profiles/:id', adminOnly, validate(UpdateSecurityProfileSchema), async (req, res) => {
   try {
     const old = await securityStore.findById(req.params.id);
     const payload = { ...req.body };
@@ -458,11 +469,8 @@ router.get('/sap-field-aliases', async (req, res) => {
 const { dispatch } = require('../../shared/utils/httpDispatcher');
 const { applyResponseRules } = require('../../shared/utils/fieldTransformer');
 
-router.post('/test-dispatch', adminOnly, async (req, res) => {
+router.post('/test-dispatch', adminOnly, validate(TestDispatchSchema), async (req, res) => {
   const { url, method, headers, securityProfileId, body, responseRules } = req.body;
-  if (!url) {
-    return res.status(400).json({ error: 'url zorunlu' });
-  }
   try {
     const result = await dispatch({
       url,
@@ -527,10 +535,9 @@ router.put('/settings/:key', adminOnly, async (req, res) => {
 });
 
 // Test e-posta gönderimi
-router.post('/settings/email/test', adminOnly, async (req, res) => {
+router.post('/settings/email/test', adminOnly, validate(EmailTestSchema), async (req, res) => {
   try {
     const { to } = req.body;
-    if (!to) return res.status(400).json({ error: 'Alıcı e-posta gerekli' });
     const emailService = require('../../shared/utils/emailService');
     const sent = await emailService.sendEmail(
       to,
@@ -560,10 +567,46 @@ const { getProviders, getTemplateEntities, applyTemplate } = require('./wizardHe
 const { getClient } = require('../../shared/database/pool');
 
 // GET /config/wizard/providers — list available logistics provider templates
+// ?tenant_id=xxx eklenmisse, o tenant icin daha once uygulanan template'leri isaretler
 router.get('/wizard/providers', requireRole('SUPER_ADMIN'), async (req, res) => {
   try {
     const data = getProviders();
-    res.json({ data });
+    const tenantId = req.query.tenant_id;
+
+    // Tenant icin daha once uygulanan template'leri audit_logs'dan cek
+    let appliedProviders = [];
+    if (tenantId) {
+      const auditResult = await dbQuery(
+        `SELECT new_values->>'provider_code' AS provider_code,
+                new_values->>'sub_services' AS sub_services,
+                created_at
+         FROM audit_logs
+         WHERE entity_type = 'wizard' AND action = 'APPLY_TEMPLATE'
+           AND (new_values->>'provider_code') IS NOT NULL
+           AND tenant_id = $1
+         ORDER BY created_at DESC`,
+        [tenantId]
+      );
+      appliedProviders = auditResult.rows.map(r => ({
+        provider_code: r.provider_code,
+        sub_services: r.sub_services ? JSON.parse(r.sub_services) : [],
+        applied_at: r.created_at
+      }));
+    }
+
+    // Her provider'a applied bilgisi ekle
+    data.forEach(p => {
+      const applied = appliedProviders.find(a => a.provider_code === p.code);
+      if (applied) {
+        p.already_applied = true;
+        p.applied_at = applied.applied_at;
+        p.applied_sub_services = applied.sub_services;
+      } else {
+        p.already_applied = false;
+      }
+    });
+
+    res.json({ data, applied_providers: appliedProviders });
   } catch (err) {
     logger.error('GET /config/wizard/providers error', { error: err.message });
     res.status(500).json({ error: err.message });
@@ -587,11 +630,8 @@ router.get('/wizard/preview', requireRole('SUPER_ADMIN'), async (req, res) => {
 });
 
 // POST /config/wizard/apply — bulk-create config for a tenant
-router.post('/wizard/apply', requireRole('SUPER_ADMIN'), async (req, res) => {
+router.post('/wizard/apply', requireRole('SUPER_ADMIN'), validate(ApplyTemplateSchema), async (req, res) => {
   const { tenant_id, provider_code, sub_services } = req.body;
-  if (!tenant_id || !provider_code) {
-    return res.status(400).json({ error: 'tenant_id ve provider_code zorunlu' });
-  }
 
   const client = await getClient();
   try {
@@ -644,6 +684,51 @@ router.post('/wizard/apply', requireRole('SUPER_ADMIN'), async (req, res) => {
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
+  }
+});
+
+// ══════════════════════════════════════
+// Feature Flags
+// ══════════════════════════════════════
+const featureFlags = require('../../shared/utils/featureFlags');
+
+// GET /config/feature-flags — Tum flag'leri getir
+router.get('/feature-flags', async (req, res) => {
+  try {
+    const tenantId = req.tenantId || (req.user && req.user.tenant_id) || null;
+    const flags = await featureFlags.getAll(tenantId);
+    res.json({ data: flags });
+  } catch (err) {
+    logger.error('GET /config/feature-flags error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /config/feature-flags/:key — Flag guncelle
+router.put('/feature-flags/:key', adminOnly, async (req, res) => {
+  try {
+    const { enabled, description, metadata, tenant_id } = req.body;
+    const flagTenantId = tenant_id || req.tenantId || (req.user && req.user.tenant_id) || null;
+
+    await featureFlags.setFlag(req.params.key, !!enabled, flagTenantId, { description, metadata });
+    logAudit(req, 'feature_flag', req.params.key, 'UPDATE', null, { enabled, tenant_id: flagTenantId });
+    res.json({ ok: true, flag_key: req.params.key, enabled: !!enabled });
+  } catch (err) {
+    logger.error('PUT /config/feature-flags error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /config/feature-flags/:key — Flag sil
+router.delete('/feature-flags/:key', adminOnly, async (req, res) => {
+  try {
+    const tenantId = req.body.tenant_id || req.tenantId || (req.user && req.user.tenant_id) || null;
+    await featureFlags.removeFlag(req.params.key, tenantId);
+    logAudit(req, 'feature_flag', req.params.key, 'DELETE', null, null);
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error('DELETE /config/feature-flags error', { error: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 

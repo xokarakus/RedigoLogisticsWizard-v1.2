@@ -5,7 +5,7 @@
   xmlns:core="sap.ui.core"
   xmlns:l="sap.ui.layout">
 
-  <Page title="{i18n>adminTitle}" showNavButton="false">
+  <Page title="{i18n>adminTitle}" showNavButton="false" accessibleRole="Main">
 
     <headerContent>
       <Button icon="sap-icon://refresh" press="onRefresh" tooltip="{i18n>btnRefresh}" />
@@ -28,7 +28,7 @@
               <Select id="roleFilter" change="onUserFilter" width="160px">
                 <layoutData><OverflowToolbarLayoutData priority="High" /></layoutData>
                 <core:Item key="ALL" text="{i18n>woFilterAll}" />
-                <core:Item key="SUPER_ADMIN" text="Super Admin" />
+                <core:Item key="SUPER_ADMIN" text="Super Admin" visible="{appState>/isSuperAdmin}" />
                 <core:Item key="TENANT_ADMIN" text="{i18n>adminTenantAdmin}" />
                 <core:Item key="TENANT_USER" text="{i18n>adminTenantUser}" />
               </Select>

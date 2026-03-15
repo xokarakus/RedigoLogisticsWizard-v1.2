@@ -14,6 +14,15 @@ const {
 } = require('../../shared/middleware/auth');
 
 const { query } = require('../../shared/database/pool');
+const { validate } = require('../../shared/validators/middleware');
+const {
+  SetupSchema, LoginSchema, RefreshTokenSchema,
+  ChangePasswordSchema, ForgotPasswordSchema, ResetPasswordSchema,
+  SendResetSchema, ImpersonateSchema, UnlockAccountSchema,
+  CreateTenantSchema, UpdateTenantSchema,
+  CreateUserSchema, UpdateUserSchema,
+  CreateRoleSchema, UpdateRoleSchema
+} = require('../../shared/validators/auth.schemas');
 
 const userStore = new DbStore('users');
 const tenantStore = new DbStore('tenants');
@@ -41,23 +50,18 @@ router.get('/setup-status', async (req, res) => {
    POST /api/auth/setup
    Ilk kurulum: tenant + super admin olustur
    ═══════════════════════════════════════════ */
-router.post('/setup', async (req, res) => {
+router.post('/setup', validate(SetupSchema), async (req, res) => {
   try {
     const existingUsers = await userStore.readAll({ limit: 1 });
     if (existingUsers.length > 0) {
       return res.status(403).json({ error: 'Sistem zaten kurulu' });
     }
 
-    const { username, password, display_name, company_name, company_code } = req.body;
-    if (!username || !password || !company_name || !company_code) {
-      return res.status(400).json({ error: 'Kullan\u0131c\u0131 ad\u0131, \u015fifre, \u015firket ad\u0131 ve kodu gerekli' });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ error: '\u015eifre en az 6 karakter olmal\u0131' });
-    }
+    const { email, password, display_name, company_name, company_code } = req.body;
+    const emailLower = email.toLowerCase();
 
     const tenant = await tenantStore.create({
-      code: company_code.toUpperCase(),
+      code: (company_code || company_name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10)).toUpperCase(),
       name: company_name,
       title: company_name,
       is_active: true,
@@ -67,19 +71,20 @@ router.post('/setup', async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
     await userStore.create({
       tenant_id: tenant.id,
-      username,
+      username: emailLower,
       password_hash: hash,
-      display_name: display_name || username,
+      display_name: display_name || emailLower.split('@')[0],
+      email: emailLower,
       role: 'SUPER_ADMIN',
       is_super_admin: true,
       is_active: true
     });
 
-    logger.info('System setup completed', { username, tenant: tenant.code });
+    logger.info('System setup completed', { email: emailLower, tenant: tenant.code });
     res.status(201).json({ message: 'Sistem kurulumu tamamland\u0131' });
   } catch (err) {
     if (err.message && err.message.includes('duplicate key')) {
-      return res.status(409).json({ error: 'Bu kullan\u0131c\u0131 ad\u0131 veya \u015firket kodu zaten mevcut' });
+      return res.status(409).json({ error: 'Bu e-posta veya \u015firket kodu zaten mevcut' });
     }
     res.status(500).json({ error: err.message });
   }
@@ -88,17 +93,14 @@ router.post('/setup', async (req, res) => {
 /* ═══════════════════════════════════════════
    POST /api/auth/login
    ═══════════════════════════════════════════ */
-router.post('/login', async (req, res) => {
+router.post('/login', validate(LoginSchema), async (req, res) => {
   try {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Kullan\u0131c\u0131 ad\u0131 ve \u015fifre gerekli' });
-    }
+    const { email, password } = req.body;
 
-    const users = await userStore.readAll({ filter: { username } });
+    const users = await userStore.readAll({ filter: { email: email.toLowerCase() } });
     const user = users[0];
     if (!user || !user.is_active) {
-      return res.status(401).json({ error: 'Ge\u00e7ersiz kullan\u0131c\u0131 ad\u0131 veya \u015fifre' });
+      return res.status(401).json({ error: 'Ge\u00e7ersiz e-posta veya \u015fifre' });
     }
 
     // Hesap kilitleme kontrolu
@@ -164,7 +166,7 @@ router.post('/login', async (req, res) => {
           remaining_minutes: LOCKOUT_MINUTES
         });
       }
-      return res.status(401).json({ error: 'Ge\u00e7ersiz kullan\u0131c\u0131 ad\u0131 veya \u015fifre' });
+      return res.status(401).json({ error: 'Ge\u00e7ersiz e-posta veya \u015fifre' });
     }
 
     const tenant = await tenantStore.findById(user.tenant_id);
@@ -247,12 +249,9 @@ router.post('/login', async (req, res) => {
 /* ═══════════════════════════════════════════
    POST /api/auth/refresh — Token rotation
    ═══════════════════════════════════════════ */
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', validate(RefreshTokenSchema), async (req, res) => {
   try {
     const { refreshToken } = req.body;
-    if (!refreshToken) {
-      return res.status(400).json({ error: 'refreshToken gerekli' });
-    }
 
     const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
@@ -380,15 +379,9 @@ router.get('/me', async (req, res) => {
 /* ═══════════════════════════════════════════
    PUT /api/auth/password
    ═══════════════════════════════════════════ */
-router.put('/password', authenticate, async (req, res) => {
+router.put('/password', authenticate, validate(ChangePasswordSchema), async (req, res) => {
   try {
     const { current_password, new_password, force_change } = req.body;
-    if (!new_password) {
-      return res.status(400).json({ error: 'Yeni \u015fifre gerekli' });
-    }
-    if (new_password.length < 6) {
-      return res.status(400).json({ error: '\u015eifre en az 6 karakter olmal\u0131' });
-    }
 
     const user = await userStore.findById(req.user.user_id);
     if (!user) return res.status(404).json({ error: 'Kullan\u0131c\u0131 bulunamad\u0131' });
@@ -421,12 +414,9 @@ router.put('/password', authenticate, async (req, res) => {
 /* ═══════════════════════════════════════════
    POST /api/auth/forgot-password
    ═══════════════════════════════════════════ */
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', validate(ForgotPasswordSchema), async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: 'E-posta adresi gerekli' });
-    }
 
     const users = await userStore.readAll({ filter: { email: email.toLowerCase() } });
     const user = users[0];
@@ -458,15 +448,9 @@ router.post('/forgot-password', async (req, res) => {
 /* ═══════════════════════════════════════════
    POST /api/auth/reset-password
    ═══════════════════════════════════════════ */
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', validate(ResetPasswordSchema), async (req, res) => {
   try {
     const { token, new_password } = req.body;
-    if (!token || !new_password) {
-      return res.status(400).json({ error: 'Token ve yeni şifre gerekli' });
-    }
-    if (new_password.length < 6) {
-      return res.status(400).json({ error: 'Şifre en az 6 karakter olmalı' });
-    }
 
     const users = await userStore.readAll({ filter: { password_reset_token: token } });
     const user = users[0];
@@ -509,12 +493,9 @@ router.post('/reset-password', async (req, res) => {
 /* ═══════════════════════════════════════════
    POST /api/auth/send-reset — Admin tetiklemeli
    ═══════════════════════════════════════════ */
-router.post('/send-reset', authenticate, requireRole('TENANT_ADMIN'), async (req, res) => {
+router.post('/send-reset', authenticate, requireRole('TENANT_ADMIN'), validate(SendResetSchema), async (req, res) => {
   try {
     const { user_id } = req.body;
-    if (!user_id) {
-      return res.status(400).json({ error: 'user_id gerekli' });
-    }
 
     const targetUser = await userStore.findById(user_id);
     if (!targetUser) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
@@ -557,12 +538,9 @@ router.post('/send-reset', authenticate, requireRole('TENANT_ADMIN'), async (req
 /* ═══════════════════════════════════════════
    POST /api/auth/impersonate — Yerine geçme
    ═══════════════════════════════════════════ */
-router.post('/impersonate', authenticate, requireSuperAdmin, async (req, res) => {
+router.post('/impersonate', authenticate, requireSuperAdmin, validate(ImpersonateSchema), async (req, res) => {
   try {
     const { tenant_id } = req.body;
-    if (!tenant_id) {
-      return res.status(400).json({ error: 'tenant_id gerekli' });
-    }
 
     const tenant = await tenantStore.findById(tenant_id);
     if (!tenant || !tenant.is_active) {
@@ -752,7 +730,7 @@ router.get('/tenants/stats', authenticate, requireSuperAdmin, async (req, res) =
   }
 });
 
-router.post('/tenants', authenticate, requireSuperAdmin, async (req, res) => {
+router.post('/tenants', authenticate, requireSuperAdmin, validate(CreateTenantSchema), async (req, res) => {
   try {
     const { code, name, domain, tax_id, tax_office, address, iban, contact_person, phone, plan, title, admin_user } = req.body;
 
@@ -782,13 +760,13 @@ router.post('/tenants', authenticate, requireSuperAdmin, async (req, res) => {
     }
     finalCode = candidate;
 
-    // Admin user varsa username benzersizliğini önceden kontrol et
-    if (admin_user && admin_user.username) {
+    // Admin user varsa email benzersizliğini önceden kontrol et
+    if (admin_user && admin_user.email) {
       const existingUser = await query(
-        'SELECT id FROM users WHERE username = $1', [admin_user.username]
+        'SELECT id FROM users WHERE email = $1', [admin_user.email.toLowerCase()]
       );
       if (existingUser.rows.length > 0) {
-        return res.status(409).json({ error: 'Bu kullanıcı adı zaten mevcut: ' + admin_user.username });
+        return res.status(409).json({ error: 'Bu e-posta zaten mevcut: ' + admin_user.email });
       }
     }
 
@@ -809,7 +787,8 @@ router.post('/tenants', authenticate, requireSuperAdmin, async (req, res) => {
     logAudit(req, 'tenant', tenant.id, 'CREATE', null, tenant);
 
     let adminResult = null;
-    if (admin_user && admin_user.username && admin_user.email) {
+    if (admin_user && admin_user.email) {
+      const adminEmail = admin_user.email.toLowerCase();
       // Rastgele geçici şifre oluştur (kullanıcı bunu bilmeyecek)
       const tempPassword = crypto.randomBytes(16).toString('hex');
       const hash = await bcrypt.hash(tempPassword, 10);
@@ -820,10 +799,10 @@ router.post('/tenants', authenticate, requireSuperAdmin, async (req, res) => {
 
       adminResult = await userStore.create({
         tenant_id: tenant.id,
-        username: admin_user.username,
+        username: adminEmail,
         password_hash: hash,
-        display_name: admin_user.display_name || admin_user.username,
-        email: admin_user.email,
+        display_name: admin_user.display_name || adminEmail.split('@')[0],
+        email: adminEmail,
         role: 'TENANT_ADMIN',
         is_active: true,
         must_change_password: true,
@@ -832,15 +811,15 @@ router.post('/tenants', authenticate, requireSuperAdmin, async (req, res) => {
       });
 
       logAudit(req, 'user', adminResult.id, 'CREATE', null, {
-        username: adminResult.username, role: 'TENANT_ADMIN', tenant: tenant.code
+        email: adminEmail, role: 'TENANT_ADMIN', tenant: tenant.code
       });
 
       // Hesap kurulum e-postası gönder
       try {
-        await emailService.sendPasswordReset(admin_user.email, resetToken);
-        logger.info('Admin setup email sent', { email: admin_user.email, tenant: tenant.code });
+        await emailService.sendPasswordReset(adminEmail, resetToken);
+        logger.info('Admin setup email sent', { email: adminEmail, tenant: tenant.code });
       } catch (emailErr) {
-        logger.warn('Admin setup email failed', { email: admin_user.email, error: emailErr.message });
+        logger.warn('Admin setup email failed', { email: adminEmail, error: emailErr.message });
       }
     }
 
@@ -866,7 +845,7 @@ router.post('/tenants', authenticate, requireSuperAdmin, async (req, res) => {
       tenant,
       admin: adminResult ? {
         id: adminResult.id,
-        username: adminResult.username,
+        email: adminResult.email,
         role: adminResult.role
       } : null
     });
@@ -876,8 +855,8 @@ router.post('/tenants', authenticate, requireSuperAdmin, async (req, res) => {
       if (detail.includes('code')) {
         return res.status(409).json({ error: 'Bu şirket kodu zaten mevcut: ' + finalCode });
       }
-      if (detail.includes('username')) {
-        return res.status(409).json({ error: 'Bu kullanıcı adı zaten mevcut' });
+      if (detail.includes('email')) {
+        return res.status(409).json({ error: 'Bu e-posta zaten mevcut' });
       }
       return res.status(409).json({ error: 'Çakışan kayıt: ' + detail });
     }
@@ -885,7 +864,7 @@ router.post('/tenants', authenticate, requireSuperAdmin, async (req, res) => {
   }
 });
 
-router.put('/tenants/:id', authenticate, requireSuperAdmin, async (req, res) => {
+router.put('/tenants/:id', authenticate, requireSuperAdmin, validate(UpdateTenantSchema), async (req, res) => {
   try {
     const tenant = await tenantStore.findById(req.params.id);
     if (!tenant) return res.status(404).json({ error: 'Şirket bulunamadı' });
@@ -957,7 +936,12 @@ router.get('/users', authenticate, requireRole('TENANT_ADMIN'), async (req, res)
     const tenantMap = {};
     tenants.forEach(t => { tenantMap[t.id] = t; });
 
-    const data = users.map(u => ({
+    // Super admin kullanıcıları sadece super admin görebilir
+    const filteredUsers = req.user.is_super_admin === true
+      ? users
+      : users.filter(u => u.is_super_admin !== true);
+
+    const data = filteredUsers.map(u => ({
       id: u.id,
       username: u.username,
       display_name: u.display_name,
@@ -978,15 +962,10 @@ router.get('/users', authenticate, requireRole('TENANT_ADMIN'), async (req, res)
   }
 });
 
-router.post('/users', authenticate, requireRole('TENANT_ADMIN'), async (req, res) => {
+router.post('/users', authenticate, requireRole('TENANT_ADMIN'), validate(CreateUserSchema), async (req, res) => {
   try {
-    const { username, password, display_name, email, role, tenant_id, is_super_admin } = req.body;
-    if (!username) {
-      return res.status(400).json({ error: 'Kullanıcı adı gerekli' });
-    }
-    if (password && password.length < 6) {
-      return res.status(400).json({ error: 'Şifre en az 6 karakter olmalı' });
-    }
+    const { email, password, display_name, role, tenant_id, is_super_admin } = req.body;
+    const emailLower = email.toLowerCase();
     // Şifre verilmezse rastgele oluştur + ilk girişte değiştirme zorunlu
     const effectivePassword = password || require('crypto').randomBytes(16).toString('hex');
     const mustChangePassword = !password;
@@ -1005,7 +984,7 @@ router.post('/users', authenticate, requireRole('TENANT_ADMIN'), async (req, res
       if (req.user.is_super_admin !== true) {
         return res.status(403).json({ error: 'SUPER_ADMIN yetkisi atanamaz' });
       }
-      if (!validateSuperAdminEmail(email)) {
+      if (!validateSuperAdminEmail(emailLower)) {
         return res.status(400).json({
           error: 'Süper Admin için ' + SUPER_ADMIN_DOMAIN + ' uzantılı e-posta zorunludur'
         });
@@ -1016,10 +995,10 @@ router.post('/users', authenticate, requireRole('TENANT_ADMIN'), async (req, res
     const hash = await bcrypt.hash(effectivePassword, 10);
     const user = await userStore.create({
       tenant_id: effectiveTenantId,
-      username,
+      username: emailLower,
       password_hash: hash,
-      display_name: display_name || username,
-      email: email ? email.toLowerCase() : null,
+      display_name: display_name || emailLower.split('@')[0],
+      email: emailLower,
       role: effectiveRole,
       is_super_admin: superFlag,
       is_active: true,
@@ -1027,29 +1006,34 @@ router.post('/users', authenticate, requireRole('TENANT_ADMIN'), async (req, res
     });
 
     logAudit(req, 'user', user.id, 'CREATE', null, {
-      username, role: effectiveRole, tenant_id: effectiveTenantId
+      email: emailLower, role: effectiveRole, tenant_id: effectiveTenantId
     });
-    logger.info('User created', { username, role: effectiveRole, by: req.user.username });
+    logger.info('User created', { email: emailLower, role: effectiveRole, by: req.user.username });
 
     res.status(201).json({
-      id: user.id, username: user.username, email: user.email,
+      id: user.id, email: user.email,
       role: user.role, is_super_admin: user.is_super_admin, tenant_id: user.tenant_id
     });
   } catch (err) {
     if (err.message && err.message.includes('duplicate key')) {
-      return res.status(409).json({ error: 'Bu kullanıcı adı veya e-posta zaten mevcut' });
+      return res.status(409).json({ error: 'Bu e-posta zaten mevcut' });
     }
     res.status(500).json({ error: err.message });
   }
 });
 
-router.put('/users/:id', authenticate, requireRole('TENANT_ADMIN'), async (req, res) => {
+router.put('/users/:id', authenticate, requireRole('TENANT_ADMIN'), validate(UpdateUserSchema), async (req, res) => {
   try {
     const targetUser = await userStore.findById(req.params.id);
     if (!targetUser) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
 
     if (req.userRole === 'TENANT_ADMIN' && targetUser.tenant_id !== req.tenantId) {
       return res.status(403).json({ error: 'Farklı şirketin kullanıcısı düzenlenemez' });
+    }
+
+    // Super admin kullanıcıyı sadece super admin düzenleyebilir
+    if (targetUser.is_super_admin === true && req.user.is_super_admin !== true) {
+      return res.status(403).json({ error: 'Süper Admin kullanıcısı düzenlenemez' });
     }
 
     const updates = {};
@@ -1131,7 +1115,7 @@ router.post('/logout', authenticate, async (req, res) => {
 /* ═══════════════════════════════════════════
    POST /api/auth/unlock-account
    ═══════════════════════════════════════════ */
-router.post('/unlock-account', authenticate, requireRole('TENANT_ADMIN'), async (req, res) => {
+router.post('/unlock-account', authenticate, requireRole('TENANT_ADMIN'), validate(UnlockAccountSchema), async (req, res) => {
   try {
     const { user_id } = req.body;
     if (!user_id) {
@@ -1265,7 +1249,7 @@ router.get('/roles', authenticate, requireRole('TENANT_ADMIN'), async (req, res)
 });
 
 // POST /api/auth/roles — Yeni rol olustur
-router.post('/roles', authenticate, requireRole('TENANT_ADMIN'), async (req, res) => {
+router.post('/roles', authenticate, requireRole('TENANT_ADMIN'), validate(CreateRoleSchema), async (req, res) => {
   try {
     const { code, name, description, permissions } = req.body;
     if (!code || !name) {
@@ -1298,7 +1282,7 @@ router.post('/roles', authenticate, requireRole('TENANT_ADMIN'), async (req, res
 });
 
 // PUT /api/auth/roles/:id — Rol guncelle (yetkiler dahil)
-router.put('/roles/:id', authenticate, requireRole('TENANT_ADMIN'), async (req, res) => {
+router.put('/roles/:id', authenticate, requireRole('TENANT_ADMIN'), validate(UpdateRoleSchema), async (req, res) => {
   try {
     const role = await roleStore.findById(req.params.id);
     if (!role) return res.status(404).json({ error: 'Rol bulunamadı' });

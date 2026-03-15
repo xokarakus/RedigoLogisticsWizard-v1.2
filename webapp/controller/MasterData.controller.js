@@ -55,6 +55,8 @@ sap.ui.define([
         oModel.setProperty("/materials", data);
         oModel.setProperty("/allMaterials", data);
         oModel.setProperty("/materialCount", data.length);
+      }).catch(function () {
+        MessageToast.show("Malzeme verileri y\u00fcklenemedi");
       });
     },
 
@@ -68,6 +70,8 @@ sap.ui.define([
         oModel.setProperty("/partners", data);
         oModel.setProperty("/allPartners", data);
         oModel.setProperty("/partnerCount", data.length);
+      }).catch(function () {
+        MessageToast.show("\u0130\u015f orta\u011f\u0131 verileri y\u00fcklenemedi");
       });
     },
 
@@ -199,6 +203,8 @@ sap.ui.define([
               MessageToast.show(oBundle.getText("msgSaved"));
               that._loadMaterials();
               oDialog.close();
+            }).catch(function () {
+              MessageToast.show("Malzeme kaydedilemedi");
             });
           }
         }),
@@ -225,6 +231,8 @@ sap.ui.define([
             API.del("/api/master-data/materials/" + oItem.id).then(function () {
               MessageToast.show(oBundle.getText("msgDeleted"));
               that._loadMaterials();
+            }).catch(function () {
+              MessageToast.show("Malzeme silme i\u015flemi ba\u015far\u0131s\u0131z");
             });
           }
         }
@@ -293,6 +301,8 @@ sap.ui.define([
               MessageToast.show(oBundle.getText("msgSaved"));
               that._loadPartners();
               oDialog.close();
+            }).catch(function () {
+              MessageToast.show("\u0130\u015f orta\u011f\u0131 kaydedilemedi");
             });
           }
         }),
@@ -319,6 +329,8 @@ sap.ui.define([
             API.del("/api/master-data/partners/" + oItem.id).then(function () {
               MessageToast.show(oBundle.getText("msgDeleted"));
               that._loadPartners();
+            }).catch(function () {
+              MessageToast.show("\u0130\u015f orta\u011f\u0131 silme i\u015flemi ba\u015far\u0131s\u0131z");
             });
           }
         }
@@ -393,6 +405,8 @@ sap.ui.define([
         });
 
         oDialog.open();
+      }).catch(function () {
+        MessageToast.show("E\u015fle\u015ftirme profilleri y\u00fcklenemedi");
       });
     },
 

@@ -4,7 +4,7 @@
   xmlns="sap.m"
   xmlns:core="sap.ui.core">
 
-  <Page title="{i18n>txTitle}" showNavButton="false">
+  <Page title="{i18n>txTitle}" showNavButton="false" accessibleRole="Main">
 
     <headerContent>
       <Button icon="sap-icon://refresh" press="onRefresh" type="Transparent" />

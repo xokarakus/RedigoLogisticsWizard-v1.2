@@ -16,8 +16,9 @@ sap.ui.define([
   "sap/m/MessageStrip",
   "sap/m/BusyIndicator",
   "sap/m/MessageBox",
+  "sap/m/MessageToast",
   "com/redigo/logistics/cockpit/util/API"
-], function (Controller, JSONModel, Filter, FilterOperator, Dialog, Button, IconTabBar, IconTabFilter, VBox, HBox, Label, Text, TextArea, ObjectStatus, MessageStrip, BusyIndicator, MessageBox, API) {
+], function (Controller, JSONModel, Filter, FilterOperator, Dialog, Button, IconTabBar, IconTabFilter, VBox, HBox, Label, Text, TextArea, ObjectStatus, MessageStrip, BusyIndicator, MessageBox, MessageToast, API) {
   "use strict";
 
   var MAX_JSON_DISPLAY = 50000; // 50KB limit for JSON display
@@ -101,6 +102,8 @@ sap.ui.define([
             : that._getText("txTransactionCount", [aData.length]));
         that._buildActionOptions(aData);
         that._applyFilters();
+      }).catch(function () {
+        MessageToast.show("\u0130\u015flem kay\u0131tlar\u0131 y\u00fcklenemedi");
       });
     },
 
@@ -375,6 +378,14 @@ sap.ui.define([
 
           oContainer.addItem(oStepBox);
         });
+      }).catch(function () {
+        oContainer.removeItem(oBusy);
+        oBusy.destroy();
+        oContainer.addItem(new MessageStrip({
+          text: "\u0130\u015flem zinciri y\u00fcklenemedi",
+          type: "Error",
+          showIcon: true
+        }));
       });
     }
   });

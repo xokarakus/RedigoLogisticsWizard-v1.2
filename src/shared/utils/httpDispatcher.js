@@ -1,5 +1,6 @@
 const logger = require('./logger');
 const DbStore = require('../database/dbStore');
+const { breakers } = require('./circuitBreaker');
 
 const securityStore = new DbStore('security_profiles');
 
@@ -149,6 +150,20 @@ async function dispatch(opts) {
   const { url, method = 'POST', headers = [], securityProfileId, body, timeout_ms } = opts;
   const timeoutMs = timeout_ms && timeout_ms > 0 ? timeout_ms : 30000; // default 30sn
 
+  // Circuit breaker kontrolu (3PL dispatch)
+  if (breakers.threepl.state === 'OPEN') {
+    const status = breakers.threepl.getStatus();
+    logger.warn('3PL circuit breaker OPEN, skipping dispatch', { url, retryAfterMs: status.cooldownMs });
+    return {
+      ok: false,
+      statusCode: 503,
+      statusText: 'Service Unavailable',
+      responseBody: null,
+      duration_ms: 0,
+      error: 'Circuit breaker OPEN: 3PL gecici olarak devre disi (retry: ' + Math.ceil(status.cooldownMs / 1000) + 's)'
+    };
+  }
+
   // ── BTP Destination Service: dest://DEST_NAME/path ──
   if (url && url.startsWith('dest://')) {
     const withoutPrefix = url.substring(7); // "DEST_NAME/path"
@@ -209,7 +224,7 @@ async function dispatch(opts) {
     let responseBody;
     try { responseBody = JSON.parse(responseText); } catch (_) { responseBody = responseText; }
 
-    return {
+    const result = {
       ok: response.ok,
       statusCode: response.status,
       statusText: response.statusText,
@@ -217,11 +232,23 @@ async function dispatch(opts) {
       duration_ms,
       error: response.ok ? null : 'HTTP ' + response.status + ' ' + response.statusText
     };
+
+    // Circuit breaker: basari/basarisizlik kaydet
+    if (response.ok) {
+      breakers.threepl._onSuccess();
+    } else if (response.status >= 500) {
+      breakers.threepl._onFailure(new Error('HTTP ' + response.status));
+    }
+
+    return result;
   } catch (err) {
     const duration_ms = Date.now() - startTime;
     const isTimeout = err.name === 'AbortError';
     const errorMsg = isTimeout ? 'Timeout (' + timeoutMs + 'ms)' : err.message;
     logger.error('Dispatch error', { url, error: errorMsg, timeout: isTimeout });
+
+    // Circuit breaker: network/timeout hataları
+    breakers.threepl._onFailure(err);
     return {
       ok: false,
       statusCode: isTimeout ? 408 : 0,

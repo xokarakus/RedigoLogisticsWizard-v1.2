@@ -3,8 +3,12 @@ const { WmsConfirmationSchema } = require('../../modules/work-order/validators/w
 const deliveryService = require('../../modules/work-order/services/DeliveryExecutionService');
 const { query } = require('../../shared/database/pool');
 const logger = require('../../shared/utils/logger');
+const { webhookAuth } = require('../../shared/middleware/webhookAuth');
 
 const router = Router();
+
+// Webhook auth: X-API-Key dogrulamasi (WEBHOOK_API_KEY env var veya DB)
+router.use(webhookAuth({ settingsKey: 'webhook_wms' }));
 
 // POST /api/wms/confirmation - WMS sends pick/receipt confirmation
 router.post('/confirmation', async (req, res) => {

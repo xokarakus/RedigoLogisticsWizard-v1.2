@@ -8,6 +8,13 @@ const { applyFieldRules } = require('../../shared/utils/fieldTransformer');
 const { dispatch } = require('../../shared/utils/httpDispatcher');
 
 const adminOnly = requireScope('Admin');
+const { validate } = require('../../shared/validators/middleware');
+const {
+  MaterialListQuery, CreateMaterialSchema, UpdateMaterialSchema,
+  PartnerListQuery, CreatePartnerSchema, UpdatePartnerSchema,
+  DispatchSchema
+} = require('../../shared/validators/masterData.schemas');
+
 const materialStore = new DbStore('materials');
 const partnerStore = new DbStore('business_partners');
 const mappingStore = new DbStore('field_mappings');
@@ -19,7 +26,7 @@ function tf(req) { return tenantFilter(req); }
    Malzeme Kodları (Materials)
    ═══════════════════════════════════════════ */
 
-router.get('/materials', async (req, res) => {
+router.get('/materials', validate(MaterialListQuery, 'query'), async (req, res) => {
   try {
     const { limit = 100, offset, search } = req.query;
     const opts = { filter: tf(req), limit: Number(limit) };
@@ -53,7 +60,7 @@ router.get('/materials/:id', async (req, res) => {
   }
 });
 
-router.post('/materials', adminOnly, async (req, res) => {
+router.post('/materials', adminOnly, validate(CreateMaterialSchema), async (req, res) => {
   try {
     const item = await materialStore.create({ ...req.body, tenant_id: req.tenantId });
     logAudit(req, 'material', item.id, 'CREATE', null, item);
@@ -64,7 +71,7 @@ router.post('/materials', adminOnly, async (req, res) => {
   }
 });
 
-router.put('/materials/:id', adminOnly, async (req, res) => {
+router.put('/materials/:id', adminOnly, validate(UpdateMaterialSchema), async (req, res) => {
   try {
     const old = await materialStore.findById(req.params.id);
     const updated = await materialStore.update(req.params.id, req.body);
@@ -93,7 +100,7 @@ router.delete('/materials/:id', adminOnly, async (req, res) => {
    Müşteri/Satıcı (Business Partners)
    ═══════════════════════════════════════════ */
 
-router.get('/partners', async (req, res) => {
+router.get('/partners', validate(PartnerListQuery, 'query'), async (req, res) => {
   try {
     const { limit = 100, offset, search, type } = req.query;
     const opts = { filter: tf(req), limit: Number(limit) };
@@ -130,7 +137,7 @@ router.get('/partners/:id', async (req, res) => {
   }
 });
 
-router.post('/partners', adminOnly, async (req, res) => {
+router.post('/partners', adminOnly, validate(CreatePartnerSchema), async (req, res) => {
   try {
     const item = await partnerStore.create({ ...req.body, tenant_id: req.tenantId });
     logAudit(req, 'business_partner', item.id, 'CREATE', null, item);
@@ -141,7 +148,7 @@ router.post('/partners', adminOnly, async (req, res) => {
   }
 });
 
-router.put('/partners/:id', adminOnly, async (req, res) => {
+router.put('/partners/:id', adminOnly, validate(UpdatePartnerSchema), async (req, res) => {
   try {
     const old = await partnerStore.findById(req.params.id);
     const updated = await partnerStore.update(req.params.id, req.body);
@@ -181,13 +188,9 @@ router.get('/mappings', async (req, res) => {
   }
 });
 
-router.post('/dispatch', adminOnly, async (req, res) => {
+router.post('/dispatch', adminOnly, validate(DispatchSchema), async (req, res) => {
   try {
     const { type, ids, mapping_id } = req.body;
-    if (!mapping_id) return res.status(400).json({ error: 'mapping_id gerekli' });
-    if (!type || !['materials', 'partners'].includes(type)) {
-      return res.status(400).json({ error: 'type: materials veya partners olmalı' });
-    }
 
     // Mapping profili çek
     const mapping = await mappingStore.findById(mapping_id);

@@ -88,6 +88,8 @@ sap.ui.define([
         that._buildDeliveryTypeOptions(aData);
         that._buildProcessTypeOptions(aData);
         that._applyFilters();
+      }).catch(function () {
+        MessageToast.show("\u0130\u015f emirleri y\u00fcklenemedi");
       });
 
       // Load warehouses for filter dropdown
@@ -98,6 +100,8 @@ sap.ui.define([
           aOptions.push({ key: w.code, text: w.code + " \u2013 " + w.name });
         });
         that._oModel.setProperty("/warehouseOptions", aOptions);
+      }).catch(function () {
+        MessageToast.show("Depo listesi y\u00fcklenemedi");
       });
     },
 
@@ -150,17 +154,11 @@ sap.ui.define([
         }
       }
 
-      // Status filter (OPEN = acik is emirleri)
+      // Status filter (backend zaten sadece aktif/arsivlenmemis emirleri dondurur)
       var oStatusFilter = this.byId("statusFilter");
       if (oStatusFilter) {
         var sStatus = oStatusFilter.getSelectedKey();
-        if (sStatus === "OPEN") {
-          var aOpenStatuses = ["RECEIVED", "SENT_TO_WMS", "IN_PROGRESS", "PARTIALLY_DONE", "DISPATCH_FAILED"];
-          var aStatusFilters = aOpenStatuses.map(function (s) {
-            return new Filter("status", FilterOperator.EQ, s);
-          });
-          aFilters.push(new Filter({ filters: aStatusFilters, and: false }));
-        } else if (sStatus && sStatus !== "ALL") {
+        if (sStatus && sStatus !== "ALL") {
           aFilters.push(new Filter("status", FilterOperator.EQ, sStatus));
         }
       }

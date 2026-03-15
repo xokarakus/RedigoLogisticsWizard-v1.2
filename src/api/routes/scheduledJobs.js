@@ -4,6 +4,8 @@ const { query } = require('../../shared/database/pool');
 const logger = require('../../shared/utils/logger');
 const { logAudit } = require('../../shared/middleware/auditLog');
 const jobScheduler = require('../../shared/services/jobScheduler');
+const { validate } = require('../../shared/validators/middleware');
+const { JobListQuery, CreateJobSchema, UpdateJobSchema } = require('../../shared/validators/scheduledJobs.schemas');
 
 // Tenant filtresi helper
 function tf(req) {
@@ -14,7 +16,7 @@ function tf(req) {
 }
 
 // ── GET /api/scheduled-jobs ── Liste
-router.get('/', async (req, res) => {
+router.get('/', validate(JobListQuery, 'query'), async (req, res) => {
   try {
     const filter = tf(req);
     const conditions = [];
@@ -96,17 +98,13 @@ router.get('/:id/executions', async (req, res) => {
 });
 
 // ── POST /api/scheduled-jobs ── Oluştur
-router.post('/', async (req, res) => {
+router.post('/', validate(CreateJobSchema), async (req, res) => {
   try {
     const {
       name, description, job_type, job_class,
       schedule_type, cron_expression, scheduled_at,
       is_active, config
     } = req.body;
-
-    if (!name || !job_type) {
-      return res.status(400).json({ error: 'name and job_type are required' });
-    }
 
     const tenantId = tf(req).tenant_id || req.body.tenant_id || req.tenantId;
 
@@ -148,7 +146,7 @@ router.post('/', async (req, res) => {
 });
 
 // ── PUT /api/scheduled-jobs/:id ── Güncelle
-router.put('/:id', async (req, res) => {
+router.put('/:id', validate(UpdateJobSchema), async (req, res) => {
   try {
     const oldResult = await query('SELECT * FROM scheduled_jobs WHERE id = $1', [req.params.id]);
     if (oldResult.rows.length === 0) {

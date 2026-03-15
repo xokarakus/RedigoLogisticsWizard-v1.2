@@ -99,6 +99,8 @@ sap.ui.define([
         data = that._formatDetail(data);
         that._oModel.setData(data);
         that._loadTransactions(sOrderId);
+      }).catch(function () {
+        MessageToast.show("\u0130\u015f emri detay\u0131 y\u00fcklenemedi");
       });
     },
 
@@ -121,6 +123,8 @@ sap.ui.define([
         that._oModel.setProperty("/lineCount", aExisting.length + aNewLines.length);
         that._oModel.setProperty("/lines_has_more", data.lines_has_more);
         that._oModel.setProperty("/lines_total", data.lines_total);
+      }).catch(function () {
+        MessageToast.show("Ek kalemler y\u00fcklenemedi");
       });
     },
 
@@ -207,10 +211,16 @@ sap.ui.define([
         });
         that._oModel.setProperty("/transactions", aTx);
         that._oModel.setProperty("/txCount", aTx.length);
+      }).catch(function () {
+        MessageToast.show("\u0130\u015flem ge\u00e7mi\u015fi y\u00fcklenemedi");
       });
     },
 
-    onNavBack: function () { this.getOwnerComponent().showView("workOrders"); },
+    onNavBack: function () {
+      var oCtx = this.getOwnerComponent().getNavContext();
+      var sSource = (oCtx && oCtx.source) || "workOrders";
+      this.getOwnerComponent().showView(sSource);
+    },
     onSendToWMS: function () { MessageToast.show(this._getText("msgSentToWMSDemo")); },
 
     _placeholder: true

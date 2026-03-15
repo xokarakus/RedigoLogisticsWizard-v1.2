@@ -6,7 +6,7 @@
   xmlns:t="sap.ui.table"
   height="100%">
 
-  <Page title="{i18n>dbCockpitTitle}" showNavButton="false" enableScrolling="false">
+  <Page title="{i18n>dbCockpitTitle}" showNavButton="false" enableScrolling="false" accessibleRole="Main">
     <content>
       <HBox height="100%" width="100%">
 

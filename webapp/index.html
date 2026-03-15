@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html dir="ltr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,12 +23,24 @@
       var stack = e.reason && e.reason.stack ? "\n" + e.reason.stack : "";
       document.body.insertAdjacentHTML("beforeend", '<div class="errBox">Unhandled Promise: ' + msg + stack + '</div>');
     });
+
+    // Detect language: localStorage > browser/OS > fallback "en"
+    (function() {
+      var supported = ["tr", "en", "de", "fr", "es"];
+      var stored = localStorage.getItem("redigo_language");
+      if (stored && supported.indexOf(stored) >= 0) {
+        window._redigoLang = stored;
+      } else {
+        var browserLang = (navigator.language || navigator.userLanguage || "en").toLowerCase().split("-")[0];
+        window._redigoLang = (supported.indexOf(browserLang) >= 0) ? browserLang : "en";
+      }
+      document.documentElement.lang = window._redigoLang;
+    })();
   </script>
   <script
     id="sap-ui-bootstrap"
     src="https://ui5.sap.com/resources/sap-ui-core.js"
     data-sap-ui-theme="sap_horizon"
-    data-sap-ui-language="tr"
     data-sap-ui-resourceroots='{"com.redigo.logistics.cockpit": "./"}'
     data-sap-ui-compatVersion="edge"
     data-sap-ui-async="true"
@@ -49,6 +61,9 @@
       "sap/ui/model/resource/ResourceModel"
     ], function (Component, ComponentContainer, XMLView, ResourceModel) {
 
+      // Dili SAPUI5 core'a uygula (bootstrap'tan sonra, runtime'da)
+      sap.ui.getCore().getConfiguration().setLanguage(window._redigoLang);
+
       // Tema uygula (bootstrap'tan SONRA)
       var themePref = localStorage.getItem("redigo_theme") || "auto";
       if (themePref === "dark" || (themePref === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
@@ -62,7 +77,20 @@
         });
       }
 
-      var oI18nModel = new ResourceModel({ bundleName: "com.redigo.logistics.cockpit.i18n.i18n" });
+      var oI18nModel = new ResourceModel({
+        bundleName: "com.redigo.logistics.cockpit.i18n.i18n",
+        supportedLocales: ["", "tr", "en", "de", "fr", "es"],
+        fallbackLocale: "en"
+      });
+
+      // Login controller'dan dil degistiginde i18n modelini guncelle
+      window._redigoUpdateI18n = function(sLang) {
+        oI18nModel = new ResourceModel({
+          bundleName: "com.redigo.logistics.cockpit.i18n.i18n",
+          supportedLocales: ["", "tr", "en", "de", "fr", "es"],
+          fallbackLocale: "en"
+        });
+      };
 
       // ── Auth Gate ──
       function checkSetup() {
@@ -200,7 +228,7 @@
   </script>
 </head>
 <body class="sapUiBody sapUiSizeCompact">
-  <div id="loadMsg">SAPUI5 yukleniyor...</div>
-  <div id="uiArea" style="height:100%"></div>
+  <div id="loadMsg" role="status" aria-live="polite">Y\u00fckleniyor...</div>
+  <div id="uiArea" role="main" aria-label="Redigo Logistics Cockpit" style="height:100%"></div>
 </body>
 </html>

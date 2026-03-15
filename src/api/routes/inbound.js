@@ -8,6 +8,10 @@ const pgQueue = require('../../shared/queue/pgQueue');
 const { ACTIVE_STATUSES, CLOSED_STATUSES } = require('../../shared/constants/statuses');
 const { fieldMappingCache } = require('../../shared/utils/cacheStore');
 const { sanitizePayload } = require('../../shared/utils/securityUtils');
+const { webhookAuth } = require('../../shared/middleware/webhookAuth');
+
+// Webhook auth: X-API-Key dogrulamasi
+router.use(webhookAuth({ settingsKey: 'webhook_inbound' }));
 
 const fieldMappingStore = new DbStore('field_mappings');
 const transactionStore = new DbStore('transaction_logs');

@@ -50,8 +50,8 @@
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
           "bundleName": "com.redigo.logistics.cockpit.i18n.i18n",
-          "supportedLocales": ["", "tr"],
-          "fallbackLocale": "tr"
+          "supportedLocales": ["", "tr", "de", "fr", "es"],
+          "fallbackLocale": ""
         }
       },
       "": {

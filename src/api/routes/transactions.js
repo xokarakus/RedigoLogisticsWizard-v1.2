@@ -4,13 +4,16 @@ const DbStore = require('../../shared/database/dbStore');
 const logger = require('../../shared/utils/logger');
 const { tenantFilter } = require('../../shared/middleware/auth');
 
+const { validate } = require('../../shared/validators/middleware');
+const { TransactionListQuery } = require('../../shared/validators/workOrder.schemas');
+
 const store = new DbStore('transaction_logs');
 const woStore = new DbStore('work_orders');
 
 function tf(req) { return tenantFilter(req); }
 
 // GET /api/transactions - List transactions with filtering
-router.get('/', async (req, res) => {
+router.get('/', validate(TransactionListQuery, 'query'), async (req, res) => {
   try {
     const { status, work_order_id, action_like, limit = 100, date_from, date_to } = req.query;
     let data = await store.readAll({ filter: tf(req) });

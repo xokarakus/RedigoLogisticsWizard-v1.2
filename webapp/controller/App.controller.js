@@ -14,6 +14,7 @@ sap.ui.define([
   var VIEW_MAP = {
     dashboard: "com.redigo.logistics.cockpit.view.Dashboard",
     workOrders: "com.redigo.logistics.cockpit.view.WorkOrders",
+    archive: "com.redigo.logistics.cockpit.view.Archive",
     workOrderDetail: "com.redigo.logistics.cockpit.view.WorkOrderDetail",
     inventory: "com.redigo.logistics.cockpit.view.Inventory",
     transactionLog: "com.redigo.logistics.cockpit.view.TransactionLog",
@@ -25,7 +26,8 @@ sap.ui.define([
     auditLog: "com.redigo.logistics.cockpit.view.AuditLog",
     jobManagement: "com.redigo.logistics.cockpit.view.JobManagement",
     dlq: "com.redigo.logistics.cockpit.view.DeadLetterQueue",
-    dbCockpit: "com.redigo.logistics.cockpit.view.DbCockpit"
+    dbCockpit: "com.redigo.logistics.cockpit.view.DbCockpit",
+    reports: "com.redigo.logistics.cockpit.view.Reports"
   };
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.App", {
@@ -70,6 +72,12 @@ sap.ui.define([
           reconciliation_run: bCanConfigure,
           config_view: bCanConfigure,
           config_edit: bCanConfigure,
+          transactions_view: true,
+          master_data_view: true,
+          master_data_edit: bCanConfigure,
+          master_data_dispatch: bCanConfigure,
+          jobs_view: bCanConfigure,
+          jobs_manage: bCanConfigure,
           users_view: bCanConfigure,
           users_manage: bCanConfigure,
           audit_view: bCanConfigure,
@@ -91,6 +99,8 @@ sap.ui.define([
           // canConfigure'i da guncelle
           oAppState.setProperty("/canConfigure", oPerm.config_view || oPerm.users_view || oPerm.audit_view);
         }
+      }).catch(function () {
+        MessageToast.show("Yetki bilgileri y\u00fcklenemedi");
       });
 
       // Session monitoring baslat
@@ -128,6 +138,14 @@ sap.ui.define([
         if (oCached.getController && oCached.getController() && oCached.getController()._onBeforeShow) {
           oCached.getController()._onBeforeShow();
         }
+        // A11y: Focus yonetimi
+        setTimeout(function () {
+          var oPage = oCached.getContent && oCached.getContent()[0];
+          if (oPage && oPage.getDomRef) {
+            var oDom = oPage.getDomRef();
+            if (oDom) { oDom.setAttribute("tabindex", "-1"); oDom.focus(); }
+          }
+        }, 100);
         return;
       }
 
@@ -143,6 +161,14 @@ sap.ui.define([
         that._viewCache[sKey] = oView;
         oNavContainer.addPage(oView);
         oNavContainer.to(oView.getId());
+        // A11y: Focus yonetimi — view degistiginde sayfa basligina focus at
+        setTimeout(function () {
+          var oPage = oView.getContent && oView.getContent()[0];
+          if (oPage && oPage.getDomRef) {
+            var oDom = oPage.getDomRef();
+            if (oDom) { oDom.setAttribute("tabindex", "-1"); oDom.focus(); }
+          }
+        }, 300);
       }).catch(function (err) {
         var sMsg = err.message || String(err);
         console.error("View load FAILED: " + sViewName, err);
@@ -250,6 +276,8 @@ sap.ui.define([
 
         oDialog.setModel(oTenantsModel);
         oDialog.open();
+      }).catch(function () {
+        MessageToast.show("\u015eirket listesi y\u00fcklenemedi");
       });
     },
 
@@ -260,6 +288,8 @@ sap.ui.define([
           MessageToast.show(res.message || "Impersonation aktif");
           location.reload();
         }
+      }).catch(function () {
+        MessageToast.show("\u015eirket de\u011fi\u015ftirme ba\u015far\u0131s\u0131z");
       });
     },
 
@@ -270,6 +300,8 @@ sap.ui.define([
           MessageToast.show(res.message || "Yerine ge\u00e7me sonland\u0131r\u0131ld\u0131");
           location.reload();
         }
+      }).catch(function () {
+        MessageToast.show("Yerine ge\u00e7me sonland\u0131r\u0131lamad\u0131");
       });
     }
   });

@@ -6,7 +6,8 @@
   xmlns:t="sap.ui.table"
   height="100%">
 
-  <Page title="{i18n>woTitle}" showNavButton="false" enableScrolling="false">
+  <Page title="{i18n>woTitle}" showNavButton="false" enableScrolling="false"
+    accessibleRole="Main">
 
     <content>
       <t:Table
@@ -41,17 +42,14 @@
             <SearchField width="220px" placeholder="{i18n>woSearchPlaceholder}" liveChange="onSearch">
               <layoutData><OverflowToolbarLayoutData priority="High" /></layoutData>
             </SearchField>
-            <Select id="statusFilter" selectedKey="OPEN" change="onFilterChange">
+            <Select id="statusFilter" selectedKey="ALL" change="onFilterChange">
               <layoutData><OverflowToolbarLayoutData priority="High" /></layoutData>
-              <core:Item key="OPEN" text="{i18n>woFilterOpen}" />
               <core:Item key="ALL" text="{i18n>woFilterAll}" />
               <core:Item key="RECEIVED" text="{i18n>woReceived}" />
               <core:Item key="SENT_TO_WMS" text="{i18n>woSentToWMS}" />
               <core:Item key="IN_PROGRESS" text="{i18n>woInProgress}" />
               <core:Item key="PARTIALLY_DONE" text="{i18n>woPartiallyDone}" />
-              <core:Item key="COMPLETED" text="{i18n>woCompleted2}" />
-              <core:Item key="PGI_POSTED" text="{i18n>woPGIPosted}" />
-              <core:Item key="GR_POSTED" text="{i18n>woGRPosted}" />
+              <core:Item key="DISPATCH_FAILED" text="{i18n>woDispatchFailed}" />
               <core:Item key="FAILED" text="{i18n>woFailed}" />
             </Select>
             <Select id="warehouseFilter" change="onFilterChange"

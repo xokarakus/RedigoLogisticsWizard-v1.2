@@ -364,19 +364,40 @@ async function runJobByType(job) {
     }
 
     case 'CLEANUP_LOGS': {
-      const days = Number(cfg.retention_days) || 90;
-      let delSql, delParams;
-      if (tid) {
-        delSql = "DELETE FROM job_executions WHERE completed_at < NOW() - ($1 || ' days')::interval AND job_id IN (SELECT id FROM scheduled_jobs WHERE tenant_id = $2)";
-        delParams = [String(days), tid];
-      } else {
-        delSql = "DELETE FROM job_executions WHERE completed_at < NOW() - ($1 || ' days')::interval";
-        delParams = [String(days)];
-      }
-      const delResult = await query(delSql, delParams);
-      result.processed = delResult.rowCount;
-      result.success = delResult.rowCount;
-      result.details.push({ message: delResult.rowCount + ' eski kay\u0131t temizlendi (' + days + ' g\u00fcn \u00f6ncesi)' });
+      const auditDays = Number(cfg.audit_retention_days) || 90;
+      const jobDays = Number(cfg.job_retention_days) || 180;
+      let totalDeleted = 0;
+
+      // 1. Audit log temizligi
+      const auditResult = await query('SELECT cleanup_old_audit_logs($1) AS deleted', [auditDays]);
+      const auditDeleted = auditResult.rows[0].deleted;
+      totalDeleted += auditDeleted;
+      result.details.push({ message: auditDeleted + ' audit log silindi (' + auditDays + ' gun oncesi)' });
+
+      // 2. Suresi dolmus token temizligi
+      const tokenResult = await query('SELECT cleanup_expired_tokens() AS deleted');
+      const tokenDeleted = tokenResult.rows[0].deleted;
+      totalDeleted += tokenDeleted;
+      result.details.push({ message: tokenDeleted + ' suresi dolmus token silindi' });
+
+      // 3. Eski job execution temizligi
+      const jobExecResult = await query('SELECT cleanup_old_job_executions($1) AS deleted', [jobDays]);
+      const jobExecDeleted = jobExecResult.rows[0].deleted;
+      totalDeleted += jobExecDeleted;
+      result.details.push({ message: jobExecDeleted + ' eski job execution silindi (' + jobDays + ' gun oncesi)' });
+
+      result.processed = totalDeleted;
+      result.success = totalDeleted;
+      break;
+    }
+
+    case 'CLEANUP_IDEMPOTENCY': {
+      const retentionHours = Number(cfg.retention_hours) || 48;
+      const idempResult = await query('SELECT cleanup_idempotency_keys($1) AS deleted', [retentionHours]);
+      const idempDeleted = idempResult.rows[0].deleted;
+      result.processed = idempDeleted;
+      result.success = idempDeleted;
+      result.details.push({ message: idempDeleted + ' idempotency key silindi (' + retentionHours + ' saat oncesi)' });
       break;
     }
 

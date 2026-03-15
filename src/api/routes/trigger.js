@@ -9,6 +9,9 @@ const { applyFieldRules } = require('../../shared/utils/fieldTransformer');
 const { tenantFilter } = require('../../shared/middleware/auth');
 const { logAudit } = require('../../shared/middleware/auditLog');
 
+const { validate } = require('../../shared/validators/middleware');
+const { deliveryBody } = require('../../shared/validators/common');
+
 const workOrderStore = new DbStore('work_orders');
 const transactionStore = new DbStore('transaction_logs');
 const pcStore = new DbStore('process_configs');
@@ -32,7 +35,7 @@ async function findProcessConfig(plantCode, warehouseCode, deliveryType) {
    POST /api/trigger/fetch-from-sap
    SAP'den teslimat verisini çeker (RFC)
    ═══════════════════════════════════════════ */
-router.post('/fetch-from-sap', async (req, res) => {
+router.post('/fetch-from-sap', validate(deliveryBody), async (req, res) => {
   const startTime = Date.now();
   const startedAt = new Date().toISOString();
 
@@ -135,7 +138,7 @@ router.post('/fetch-from-sap', async (req, res) => {
    POST /api/trigger/send-to-3pl
    İş emrini 3PL/WMS'e gönderir
    ═══════════════════════════════════════════ */
-router.post('/send-to-3pl', async (req, res) => {
+router.post('/send-to-3pl', validate(deliveryBody), async (req, res) => {
   const startTime = Date.now();
   const startedAt = new Date().toISOString();
 
@@ -283,7 +286,7 @@ router.post('/send-to-3pl', async (req, res) => {
    POST /api/trigger/query-status
    3PL'den sipariş durumu sorgula
    ═══════════════════════════════════════════ */
-router.post('/query-status', async (req, res) => {
+router.post('/query-status', validate(deliveryBody), async (req, res) => {
   const startTime = Date.now();
   const startedAt = new Date().toISOString();
 

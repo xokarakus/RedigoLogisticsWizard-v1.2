@@ -25,6 +25,18 @@ const PERMISSIONS = [
   { key: 'users.view', group: 'users', label_en: 'View Users', label_tr: 'Kullan\u0131c\u0131 G\u00f6r\u00fcnt\u00fcleme' },
   { key: 'users.manage', group: 'users', label_en: 'Manage Users', label_tr: 'Kullan\u0131c\u0131 Y\u00f6netimi' },
 
+  // Transactions
+  { key: 'transactions.view', group: 'transactions', label_en: 'View Transactions', label_tr: '\u0130\u015flem Ge\u00e7mi\u015fi G\u00f6r\u00fcnt\u00fcleme' },
+
+  // Master Data
+  { key: 'master_data.view', group: 'master_data', label_en: 'View Master Data', label_tr: 'Ana Veri G\u00f6r\u00fcnt\u00fcleme' },
+  { key: 'master_data.edit', group: 'master_data', label_en: 'Edit Master Data', label_tr: 'Ana Veri D\u00fczenleme' },
+  { key: 'master_data.dispatch', group: 'master_data', label_en: 'Dispatch to 3PL', label_tr: '3PL\'e G\u00f6nderim' },
+
+  // Jobs
+  { key: 'jobs.view', group: 'jobs', label_en: 'View Jobs', label_tr: '\u0130\u015f Zamanlama G\u00f6r\u00fcnt\u00fcleme' },
+  { key: 'jobs.manage', group: 'jobs', label_en: 'Manage Jobs', label_tr: '\u0130\u015f Zamanlama Y\u00f6netimi' },
+
   // Audit
   { key: 'audit.view', group: 'audit', label_en: 'View Audit Log', label_tr: 'Denetim G\u00fcnl\u00fc\u011f\u00fc G\u00f6r\u00fcnt\u00fcleme' },
 
@@ -38,6 +50,9 @@ const GROUPS = [
   { key: 'inventory', label_en: 'Inventory', label_tr: 'Envanter' },
   { key: 'reconciliation', label_en: 'Reconciliation', label_tr: 'Mutabakat' },
   { key: 'config', label_en: 'Configuration', label_tr: 'Yap\u0131land\u0131rma' },
+  { key: 'transactions', label_en: 'Transactions', label_tr: '\u0130\u015flem Ge\u00e7mi\u015fi' },
+  { key: 'master_data', label_en: 'Master Data', label_tr: 'Ana Veri' },
+  { key: 'jobs', label_en: 'Job Scheduler', label_tr: '\u0130\u015f Zamanlama' },
   { key: 'users', label_en: 'Users', label_tr: 'Kullan\u0131c\u0131lar' },
   { key: 'audit', label_en: 'Audit', label_tr: 'Denetim' },
   { key: 'tenants', label_en: 'Tenants', label_tr: '\u015eirketler' }
@@ -56,6 +71,12 @@ const DEFAULTS = {
     'reconciliation.run': false,
     'config.view': false,
     'config.edit': false,
+    'transactions.view': true,
+    'master_data.view': true,
+    'master_data.edit': false,
+    'master_data.dispatch': false,
+    'jobs.view': false,
+    'jobs.manage': false,
     'users.view': false,
     'users.manage': false,
     'audit.view': false,

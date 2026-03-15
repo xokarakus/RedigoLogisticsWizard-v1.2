@@ -7,36 +7,74 @@ sap.ui.define([
   "sap/m/Label",
   "sap/m/MessageStrip",
   "sap/m/VBox",
+  "sap/ui/model/resource/ResourceModel",
   "com/redigo/logistics/cockpit/util/API"
-], function (Controller, JSONModel, Dialog, Button, Input, Label, MessageStrip, VBox, API) {
+], function (Controller, JSONModel, Dialog, Button, Input, Label, MessageStrip, VBox, ResourceModel, API) {
   "use strict";
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.Login", {
 
     onInit: function () {
+      // Detect stored or OS language
+      var sLang = localStorage.getItem("redigo_language") || this._detectOSLanguage();
+
       this._oModel = new JSONModel({
-        username: "",
+        email: "",
         password: "",
         busy: false,
         errorVisible: false,
-        errorText: ""
+        errorText: "",
+        language: sLang
       });
       this.getView().setModel(this._oModel, "login");
 
-      // Focus username input
+      // Focus email input
       var that = this;
       setTimeout(function () {
-        var oInput = that.byId("usernameInput");
+        var oInput = that.byId("emailInput");
         if (oInput) { oInput.focus(); }
       }, 500);
     },
 
+    _detectOSLanguage: function () {
+      var aSupported = ["tr", "en", "de", "fr", "es"];
+      var sBrowserLang = (navigator.language || navigator.userLanguage || "en").toLowerCase();
+      // "tr-TR" -> "tr", "de-DE" -> "de"
+      var sShort = sBrowserLang.split("-")[0];
+      if (aSupported.indexOf(sShort) >= 0) {
+        return sShort;
+      }
+      return "en";
+    },
+
+    onLanguageChange: function (oEvent) {
+      var sLang = oEvent.getParameter("selectedItem").getKey();
+      localStorage.setItem("redigo_language", sLang);
+
+      // SAPUI5 dil degistir
+      sap.ui.getCore().getConfiguration().setLanguage(sLang);
+
+      // i18n modelini yeniden yukle
+      var oNewI18n = new ResourceModel({
+        bundleName: "com.redigo.logistics.cockpit.i18n.i18n",
+        supportedLocales: ["", "tr", "en", "de", "fr", "es"],
+        fallbackLocale: "en"
+      });
+      this.getView().setModel(oNewI18n, "i18n");
+
+      // Global i18n model de guncelle (index.html'deki)
+      if (window._redigoUpdateI18n) {
+        window._redigoUpdateI18n(sLang);
+      }
+    },
+
     onLogin: function () {
-      var sUsername = this._oModel.getProperty("/username").trim();
+      var sEmail = this._oModel.getProperty("/email").trim();
       var sPassword = this._oModel.getProperty("/password");
 
-      if (!sUsername || !sPassword) {
-        this._showError("Kullan\u0131c\u0131 ad\u0131 ve \u015fifre gerekli");
+      if (!sEmail || !sPassword) {
+        var oBundle = this.getView().getModel("i18n").getResourceBundle();
+        this._showError(oBundle.getText("loginEmailRequired"));
         return;
       }
 
@@ -48,7 +86,7 @@ sap.ui.define([
       fetch(API._baseUrl + "/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: sUsername, password: sPassword })
+        body: JSON.stringify({ email: sEmail, password: sPassword })
       })
         .then(function (res) {
           return res.json().then(function (body) {
@@ -59,13 +97,14 @@ sap.ui.define([
           that._oModel.setProperty("/busy", false);
 
           if (!result.ok) {
-            // Faz B: Hesap kilitli (423 Locked)
+            // Hesap kilitli (423 Locked)
             if (result.body.locked) {
               var oBundle = that.getView().getModel("i18n").getResourceBundle();
               var sMsg = oBundle.getText("loginLocked", [result.body.remaining_minutes]);
               that._showError(sMsg);
             } else {
-              that._showError(result.body.error || "Giri\u015f ba\u015far\u0131s\u0131z");
+              var oBundle2 = that.getView().getModel("i18n").getResourceBundle();
+              that._showError(result.body.error || oBundle2.getText("loginError"));
             }
             return;
           }
@@ -76,7 +115,7 @@ sap.ui.define([
           // Kullanici bilgisini kaydet
           sessionStorage.setItem("redigo_user", JSON.stringify(result.body.user));
 
-          // Faz C: must_change_password kontrolu
+          // must_change_password kontrolu
           if (result.body.must_change_password) {
             that._showChangePasswordDialog();
             return;
@@ -93,14 +132,12 @@ sap.ui.define([
         });
     },
 
-    // Faz A: Sifremi Unuttum
     onForgotPassword: function () {
       if (window._redigoShowForgotPassword) {
         window._redigoShowForgotPassword();
       }
     },
 
-    // Faz C: Zorunlu sifre degistirme dialog'u
     _showChangePasswordDialog: function () {
       var that = this;
       var oBundle = this.getView().getModel("i18n").getResourceBundle();
@@ -187,7 +224,6 @@ sap.ui.define([
                 }
                 oDialog.close();
                 oDialog.destroy();
-                // Sifre degisti, app'i yukle
                 if (window._redigoLoadApp) {
                   window._redigoLoadApp();
                 }

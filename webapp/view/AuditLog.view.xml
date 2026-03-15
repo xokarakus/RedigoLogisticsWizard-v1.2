@@ -5,7 +5,7 @@
   xmlns:core="sap.ui.core"
   xmlns:t="sap.ui.table">
 
-  <Page title="{i18n>auditTitle}" showNavButton="false" enableScrolling="false">
+  <Page title="{i18n>auditTitle}" showNavButton="false" enableScrolling="false" accessibleRole="Main">
 
     <content>
       <t:Table

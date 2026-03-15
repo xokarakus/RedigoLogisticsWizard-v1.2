@@ -28,11 +28,13 @@
 
         <!-- User bilgisi -->
         <core:Icon src="sap-icon://factory" class="sapUiTinyMarginEnd"
-          visible="{= !${appState>/isImpersonating} &amp;&amp; !!${appState>/tenantName} }" />
+          visible="{= !${appState>/isImpersonating} &amp;&amp; !!${appState>/tenantName} }"
+          alt="{appState>/tenantName}" decorative="false" />
         <Text text="{appState>/tenantName}" class="sapUiTinyMarginEnd"
           visible="{= !${appState>/isImpersonating} &amp;&amp; !!${appState>/tenantName} }" />
         <core:Icon src="sap-icon://person-placeholder" class="sapUiTinyMarginEnd"
-          visible="{= !${appState>/isImpersonating} }" />
+          visible="{= !${appState>/isImpersonating} }"
+          alt="{appState>/displayName}" decorative="false" />
         <Title text="{appState>/displayName}" level="H6"
           visible="{= !${appState>/isImpersonating} }" />
 
@@ -44,7 +46,8 @@
         <ToolbarSeparator />
 
         <!-- Tema secimi -->
-        <Select id="themeSelect" selectedKey="{appState>/theme}" change="onThemeChange" width="110px">
+        <Select id="themeSelect" selectedKey="{appState>/theme}" change="onThemeChange" width="110px"
+          tooltip="{i18n>themeAuto}">
           <core:Item key="auto" text="{i18n>themeAuto}" />
           <core:Item key="light" text="{i18n>themeLight}" />
           <core:Item key="dark" text="{i18n>themeDark}" />
@@ -65,14 +68,18 @@
             visible="{appState>/perm/dashboard_view}" />
           <tnt:NavigationListItem text="{i18n>navWorkOrders}" icon="sap-icon://shipping-status" key="workOrders"
             visible="{appState>/perm/work_orders_view}" />
+          <tnt:NavigationListItem text="{i18n>navArchive}" icon="sap-icon://folder-full" key="archive"
+            visible="{appState>/perm/work_orders_view}" />
           <tnt:NavigationListItem text="{i18n>navInventory}" icon="sap-icon://inventory" key="inventory"
             visible="{appState>/perm/inventory_view}" />
           <tnt:NavigationListItem text="{i18n>navReconciliation}" icon="sap-icon://compare-2" key="reconciliation"
             visible="{appState>/perm/reconciliation_view}" />
+          <tnt:NavigationListItem text="{i18n>navReports}" icon="sap-icon://bar-chart" key="reports"
+            visible="{appState>/perm/dashboard_view}" />
 
           <!-- Ana Veri + Yonetim -->
           <tnt:NavigationListItem text="{i18n>navMasterData}" icon="sap-icon://database"
-            key="masterData" visible="{appState>/perm/config_view}" />
+            key="masterData" visible="{appState>/perm/master_data_view}" />
           <tnt:NavigationListItem text="{i18n>navConfiguration}" icon="sap-icon://action-settings"
             key="configuration" visible="{appState>/perm/config_view}" />
           <tnt:NavigationListItem text="{i18n>navAdministration}" icon="sap-icon://employee"
@@ -80,7 +87,7 @@
           <tnt:NavigationListItem text="{i18n>navAuditLog}" icon="sap-icon://history"
             key="auditLog" visible="{appState>/perm/audit_view}" />
           <tnt:NavigationListItem text="{i18n>navJobs}" icon="sap-icon://date-time"
-            key="jobManagement" visible="{appState>/perm/config_edit}" />
+            key="jobManagement" visible="{appState>/perm/jobs_view}" />
 
           <!-- Sistem (super_admin) -->
           <tnt:NavigationListItem text="{i18n>navTenants}" icon="sap-icon://building"

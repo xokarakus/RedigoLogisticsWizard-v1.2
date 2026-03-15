@@ -4,6 +4,8 @@ const { query, getClient } = require('../../shared/database/pool');
 const { requireSuperAdmin } = require('../../shared/middleware/auth');
 const { logAudit } = require('../../shared/middleware/auditLog');
 const logger = require('../../shared/utils/logger');
+const { validate } = require('../../shared/validators/middleware');
+const { DbCockpitQuerySchema } = require('../../shared/validators/workOrder.schemas');
 
 // Tum endpoint'ler super admin gerektirir
 router.use(requireSuperAdmin);
@@ -148,11 +150,8 @@ router.get('/tables/:name/data', async (req, res) => {
 /* ═══════════════════════════════════════════
    POST /query — Custom SELECT sorgusu
    ═══════════════════════════════════════════ */
-router.post('/query', async (req, res) => {
+router.post('/query', validate(DbCockpitQuerySchema), async (req, res) => {
   const { sql } = req.body;
-  if (!sql || typeof sql !== 'string') {
-    return res.status(400).json({ error: 'SQL sorgusu gerekli' });
-  }
 
   const trimmed = sql.trim();
   const upper = trimmed.toUpperCase();

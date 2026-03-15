@@ -1,5 +1,6 @@
 const config = require('../config');
 const logger = require('../utils/logger');
+const { breakers } = require('../utils/circuitBreaker');
 
 // SAP RFC connection pool wrapper
 // In production: uses node-rfc. In dev/test: mock mode.
@@ -45,13 +46,15 @@ class SapClient {
       return this._mockCall(functionName, params);
     }
 
-    const client = await this.pool.acquire();
-    try {
-      const result = await client.call(functionName, params);
-      return result;
-    } finally {
-      await this.pool.release(client);
-    }
+    return breakers.sapRfc.exec(async () => {
+      const client = await this.pool.acquire();
+      try {
+        const result = await client.call(functionName, params);
+        return result;
+      } finally {
+        await this.pool.release(client);
+      }
+    });
   }
 
   _mockCall(functionName, params) {
