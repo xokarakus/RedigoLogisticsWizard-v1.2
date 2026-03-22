@@ -19,7 +19,7 @@ sap.ui.define([
 
   function fmtDate(val) {
     if (!val) return "";
-    try { return new Date(val).toLocaleString("tr-TR"); } catch (e) { return val; }
+    try { return new Date(val).toLocaleString(); } catch (e) { return val; }
   }
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.MasterData", {
@@ -375,7 +375,7 @@ sap.ui.define([
         var oMappingSelect = new Select({
           width: "100%",
           items: aMappings.map(function (m) {
-            var sText = (m.company_code || "") + " — " + (m.description || m.process_type || "");
+            var sText = (m.company_code || "") + " — " + (m.description || m.name || "");
             return new Item({ key: m.id, text: sText });
           })
         });

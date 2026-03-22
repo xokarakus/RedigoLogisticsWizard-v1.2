@@ -8,23 +8,18 @@ const { logAudit } = require('../../shared/middleware/auditLog');
 
 const adminOnly = requireScope('Admin');
 const { tenantFilter } = require('../../shared/middleware/auth');
-const { fieldMappingCache, processTypeCache, processConfigCache } = require('../../shared/utils/cacheStore');
+const { fieldMappingCache } = require('../../shared/utils/cacheStore');
 
 const { validate } = require('../../shared/validators/middleware');
 const {
   CreateWarehouseSchema, UpdateWarehouseSchema,
-  CreateMappingSchema, UpdateMappingSchema,
-  CreateProcessConfigSchema, UpdateProcessConfigSchema,
-  CreateProcessTypeSchema, UpdateProcessTypeSchema,
   CreateFieldMappingSchema, UpdateFieldMappingSchema,
   CreateSecurityProfileSchema, UpdateSecurityProfileSchema,
-  TestDispatchSchema, EmailTestSchema, ApplyTemplateSchema
+  TestDispatchSchema, EmailTestSchema, ApplyTemplateSchema,
+  CreateProviderTemplateSchema, UpdateProviderTemplateSchema, ExportTenantTemplateSchema
 } = require('../../shared/validators/config.schemas');
 
-const configStore = new DbStore('process_configs');
-const typeStore = new DbStore('process_types');
 const warehouseStore = new DbStore('warehouses');
-const mappingStore = new DbStore('movement_mappings');
 const fieldMappingStore = new DbStore('field_mappings');
 const securityStore = new DbStore('security_profiles');
 const aliasStore = new DbStore('sap_field_aliases');
@@ -84,171 +79,6 @@ router.delete('/warehouses/:id', adminOnly, async (req, res) => {
     if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
     await warehouseStore.remove(req.params.id);
     logAudit(req, 'warehouse', req.params.id, 'DELETE', old, null);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(409).json({ error: err.message });
-  }
-});
-
-/* ═══════════════════════════════════════════
-   Hareket Eslemeleri (Mappings) CRUD
-   ═══════════════════════════════════════════ */
-
-router.get('/mappings', async (req, res) => {
-  try {
-    const { limit, offset } = req.query;
-    const opts = { filter: tf(req) };
-    if (limit) opts.limit = Number(limit);
-    if (offset) opts.offset = Number(offset);
-    res.json({ data: await mappingStore.readAll(opts) });
-  } catch (err) {
-    logger.error('GET /config/mappings error', { error: err.message });
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.post('/mappings', adminOnly, validate(CreateMappingSchema), async (req, res) => {
-  try {
-    const item = await mappingStore.create({ ...req.body, tenant_id: req.tenantId });
-    logAudit(req, 'movement_mapping', item.id, 'CREATE', null, item);
-    res.status(201).json({ data: item });
-  } catch (err) {
-    logger.error('POST /config/mappings error', { error: err.message });
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.put('/mappings/:id', adminOnly, validate(UpdateMappingSchema), async (req, res) => {
-  try {
-    const old = await mappingStore.findById(req.params.id);
-    const updated = await mappingStore.update(req.params.id, req.body);
-    if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
-    logAudit(req, 'movement_mapping', req.params.id, 'UPDATE', old, updated);
-    res.json({ data: updated });
-  } catch (err) {
-    logger.error('PUT /config/mappings error', { error: err.message, id: req.params.id });
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.delete('/mappings/:id', adminOnly, async (req, res) => {
-  try {
-    const old = await mappingStore.findById(req.params.id);
-    if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
-    await mappingStore.remove(req.params.id);
-    logAudit(req, 'movement_mapping', req.params.id, 'DELETE', old, null);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(409).json({ error: err.message });
-  }
-});
-
-/* ═══════════════════════════════════════════
-   Süreç Uyarlamaları (Process Configs) CRUD
-   ═══════════════════════════════════════════ */
-
-router.get('/process-configs', async (req, res) => {
-  try {
-    const { limit, offset } = req.query;
-    const opts = { filter: tf(req) };
-    if (limit) opts.limit = Number(limit);
-    if (offset) opts.offset = Number(offset);
-    res.json({ data: await configStore.readAll(opts) });
-  } catch (err) {
-    logger.error('GET /config/process-configs error', { error: err.message });
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.post('/process-configs', adminOnly, validate(CreateProcessConfigSchema), async (req, res) => {
-  try {
-    const item = await configStore.create({ ...req.body, tenant_id: req.tenantId });
-    processConfigCache.invalidate();
-    logAudit(req, 'process_config', item.id, 'CREATE', null, item);
-    res.status(201).json({ data: item });
-  } catch (err) {
-    logger.error('POST /config/process-configs error', { error: err.message });
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.put('/process-configs/:id', adminOnly, validate(UpdateProcessConfigSchema), async (req, res) => {
-  try {
-    const old = await configStore.findById(req.params.id);
-    const updated = await configStore.update(req.params.id, req.body);
-    if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
-    processConfigCache.invalidate();
-    logAudit(req, 'process_config', req.params.id, 'UPDATE', old, updated);
-    res.json({ data: updated });
-  } catch (err) {
-    logger.error('PUT /config/process-configs error', { error: err.message, id: req.params.id });
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.delete('/process-configs/:id', adminOnly, async (req, res) => {
-  try {
-    const old = await configStore.findById(req.params.id);
-    if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
-    await configStore.remove(req.params.id);
-    processConfigCache.invalidate();
-    logAudit(req, 'process_config', req.params.id, 'DELETE', old, null);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(409).json({ error: err.message });
-  }
-});
-
-/* ═══════════════════════════════════════════
-   Süreç Tipleri (Process Types) CRUD
-   ═══════════════════════════════════════════ */
-
-router.get('/process-types', async (req, res) => {
-  try {
-    const { limit, offset } = req.query;
-    const opts = { filter: tf(req) };
-    if (limit) opts.limit = Number(limit);
-    if (offset) opts.offset = Number(offset);
-    res.json({ data: await typeStore.readAll(opts) });
-  } catch (err) {
-    logger.error('GET /config/process-types error', { error: err.message });
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.post('/process-types', adminOnly, validate(CreateProcessTypeSchema), async (req, res) => {
-  try {
-    const item = await typeStore.create({ ...req.body, tenant_id: req.tenantId });
-    processTypeCache.invalidate();
-    logAudit(req, 'process_type', item.id, 'CREATE', null, item);
-    res.status(201).json({ data: item });
-  } catch (err) {
-    logger.error('POST /config/process-types error', { error: err.message });
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.put('/process-types/:id', adminOnly, validate(UpdateProcessTypeSchema), async (req, res) => {
-  try {
-    const old = await typeStore.findById(req.params.id);
-    const updated = await typeStore.update(req.params.id, req.body);
-    if (!updated) return res.status(404).json({ error: 'Kayit bulunamadi' });
-    processTypeCache.invalidate();
-    logAudit(req, 'process_type', req.params.id, 'UPDATE', old, updated);
-    res.json({ data: updated });
-  } catch (err) {
-    logger.error('PUT /config/process-types error', { error: err.message, id: req.params.id });
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.delete('/process-types/:id', adminOnly, async (req, res) => {
-  try {
-    const old = await typeStore.findById(req.params.id);
-    if (!old) return res.status(404).json({ error: 'Kayit bulunamadi' });
-    await typeStore.remove(req.params.id);
-    processTypeCache.invalidate();
-    logAudit(req, 'process_type', req.params.id, 'DELETE', old, null);
     res.json({ success: true });
   } catch (err) {
     res.status(409).json({ error: err.message });
@@ -388,68 +218,6 @@ router.delete('/security-profiles/:id', adminOnly, async (req, res) => {
 });
 
 /* ═══════════════════════════════════════════
-   İşlem Adımları (process-steps lookup)
-   ═══════════════════════════════════════════ */
-
-router.get('/process-steps', async (req, res) => {
-  try {
-    const { plant_code, warehouse_code, delivery_type } = req.query;
-    if (!plant_code || !warehouse_code || !delivery_type) {
-      return res.status(400).json({ error: 'plant_code, warehouse_code, delivery_type zorunlu' });
-    }
-
-    const configs = await configStore.readAll({ filter: tf(req) });
-    const config = configs.find(c =>
-      c.plant_code === plant_code &&
-      c.warehouse_code === warehouse_code &&
-      c.delivery_type === delivery_type
-    );
-
-    if (!config) {
-      return res.status(404).json({ error: 'Bu kombinasyon icin uyarlama bulunamadi' });
-    }
-
-    const types = await typeStore.readAll({ filter: tf(req) });
-    const pType = types.find(t => t.code === config.process_type);
-    const templates = pType ? pType.steps : [];
-
-    res.json({
-      process_config: {
-        plant_code: config.plant_code,
-        warehouse_code: config.warehouse_code,
-        delivery_type: config.delivery_type,
-        delivery_type_desc: config.delivery_type_desc,
-        process_type: config.process_type,
-        mvt_type: config.mvt_type,
-        company_name: config.company_name,
-        company_code: config.company_code,
-        api_base_url: config.api_base_url,
-        bapi_name: config.bapi_name,
-        gm_code: config.gm_code
-      },
-      steps: templates.map(t => ({
-        step_no: t.step_no,
-        name: t.name,
-        source_system: t.source === "3PL" ? config.company_name : t.source,
-        target_system: t.target === "3PL" ? config.company_name : t.target,
-        direction: t.direction,
-        api_endpoint: t.api,
-        status: "BEKLIYOR",
-        enabled: true,
-        company_name: config.company_name,
-        company_api_url: config.api_base_url,
-        bapi_name: config.bapi_name,
-        mvt_type: config.mvt_type,
-        gm_code: config.gm_code
-      }))
-    });
-  } catch (err) {
-    logger.error('GET /config/process-steps error', { error: err.message });
-    res.status(500).json({ error: err.message });
-  }
-});
-
-/* ═══════════════════════════════════════════
    SAP Alan Alias Sözlüğü
    ═══════════════════════════════════════════ */
 
@@ -563,15 +331,15 @@ router.post('/settings/email/test', adminOnly, validate(EmailTestSchema), async 
    ═══════════════════════════════════════════ */
 
 const { requireRole } = require('../../shared/middleware/auth');
-const { getProviders, getTemplateEntities, applyTemplate } = require('./wizardHelper');
+const { getProviders, getTemplateEntities, applyTemplate, exportTenantConfig, templateStore, HOROZ_SUB_CODES } = require('./wizardHelper');
 const { getClient } = require('../../shared/database/pool');
 
 // GET /config/wizard/providers — list available logistics provider templates
 // ?tenant_id=xxx eklenmisse, o tenant icin daha once uygulanan template'leri isaretler
-router.get('/wizard/providers', requireRole('SUPER_ADMIN'), async (req, res) => {
+router.get('/wizard/providers', requireRole('TENANT_ADMIN'), async (req, res) => {
   try {
-    const data = getProviders();
-    const tenantId = req.query.tenant_id;
+    const data = await getProviders();
+    const tenantId = req.query.tenant_id || req.tenantId;
 
     // Tenant icin daha once uygulanan template'leri audit_logs'dan cek
     let appliedProviders = [];
@@ -614,14 +382,14 @@ router.get('/wizard/providers', requireRole('SUPER_ADMIN'), async (req, res) => 
 });
 
 // GET /config/wizard/preview?provider=ABC_LOG&sub_services=HOROZ,HOROZ_DIST
-router.get('/wizard/preview', requireRole('SUPER_ADMIN'), async (req, res) => {
+router.get('/wizard/preview', requireRole('TENANT_ADMIN'), async (req, res) => {
   try {
     const { provider, sub_services } = req.query;
     if (!provider) {
       return res.status(400).json({ error: 'provider parametresi zorunlu' });
     }
     const subArr = sub_services ? sub_services.split(',').map(s => s.trim()) : [];
-    const result = getTemplateEntities(provider, subArr);
+    const result = await getTemplateEntities(provider, subArr);
     res.json({ provider, ...result });
   } catch (err) {
     logger.error('GET /config/wizard/preview error', { error: err.message });
@@ -630,8 +398,18 @@ router.get('/wizard/preview', requireRole('SUPER_ADMIN'), async (req, res) => {
 });
 
 // POST /config/wizard/apply — bulk-create config for a tenant
-router.post('/wizard/apply', requireRole('SUPER_ADMIN'), validate(ApplyTemplateSchema), async (req, res) => {
-  const { tenant_id, provider_code, sub_services } = req.body;
+router.post('/wizard/apply', requireRole('TENANT_ADMIN'), validate(ApplyTemplateSchema), async (req, res) => {
+  const { provider_code, sub_services } = req.body;
+  // TENANT_ADMIN kendi tenant'ına uygular, SUPER_ADMIN body'den gönderebilir
+  const tenant_id = req.body.tenant_id || req.tenantId;
+  if (!tenant_id) {
+    return res.status(400).json({ error: 'tenant_id zorunlu' });
+  }
+  // TENANT_ADMIN başka tenant'a uygulayamaz
+  const isSuperAdmin = req.user && req.user.role === 'SUPER_ADMIN';
+  if (!isSuperAdmin && tenant_id !== req.tenantId) {
+    return res.status(403).json({ error: 'Sadece kendi tenant\'ınıza şablon uygulayabilirsiniz' });
+  }
 
   const client = await getClient();
   try {
@@ -642,6 +420,20 @@ router.post('/wizard/apply', requireRole('SUPER_ADMIN'), validate(ApplyTemplateS
       return res.status(404).json({ error: 'Tenant bulunamadı' });
     }
 
+    // Ayni template ayni tenant'a tekrar uygulanamaz
+    const { rows: alreadyApplied } = await client.query(
+      `SELECT id FROM audit_logs
+       WHERE entity_type = 'wizard' AND action = 'APPLY_TEMPLATE'
+         AND tenant_id = $1
+         AND new_values->>'provider_code' = $2
+       LIMIT 1`,
+      [tenant_id, provider_code]
+    );
+    if (alreadyApplied.length > 0) {
+      client.release();
+      return res.status(409).json({ error: 'Bu şablon daha önce bu şirkete uygulanmış. Aynı şablon tekrar uygulanamaz.' });
+    }
+
     // Check existing config count
     const { rows: existCheck } = await client.query(
       'SELECT COUNT(*) as cnt FROM warehouses WHERE tenant_id = $1',
@@ -650,7 +442,7 @@ router.post('/wizard/apply', requireRole('SUPER_ADMIN'), validate(ApplyTemplateS
     const hasExisting = Number(existCheck[0].cnt) > 0;
 
     // Get template entities
-    const entities = getTemplateEntities(provider_code, sub_services || []);
+    const entities = await getTemplateEntities(provider_code, sub_services || []);
 
     await client.query('BEGIN');
     const result = await applyTemplate(client, tenant_id, entities);
@@ -658,8 +450,6 @@ router.post('/wizard/apply', requireRole('SUPER_ADMIN'), validate(ApplyTemplateS
 
     // Invalidate caches
     fieldMappingCache.invalidate();
-    processTypeCache.invalidate();
-    processConfigCache.invalidate();
 
     // Audit log
     logAudit(req, 'wizard', tenant_id, 'APPLY_TEMPLATE', null, {
@@ -684,6 +474,96 @@ router.post('/wizard/apply', requireRole('SUPER_ADMIN'), validate(ApplyTemplateS
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
+  }
+});
+
+/* ═══════════════════════════════════════════
+   Provider Template CRUD (SUPER_ADMIN only)
+   ═══════════════════════════════════════════ */
+
+// POST /config/wizard/providers — yeni provider template oluştur
+router.post('/wizard/providers', requireRole('SUPER_ADMIN'), validate(CreateProviderTemplateSchema), async (req, res) => {
+  try {
+    const data = { ...req.body, is_active: req.body.is_active !== false };
+    const created = await templateStore.create(data);
+    logAudit(req, 'provider_template', created.id, 'CREATE', null, data);
+    res.status(201).json({ data: created });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Bu code ile template zaten mevcut' });
+    }
+    logger.error('POST /config/wizard/providers error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /config/wizard/providers/:id — template güncelle
+router.put('/wizard/providers/:id', requireRole('SUPER_ADMIN'), validate(UpdateProviderTemplateSchema), async (req, res) => {
+  try {
+    const existing = await templateStore.findById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Template bulunamadı' });
+    const updated = await templateStore.update(req.params.id, req.body);
+    logAudit(req, 'provider_template', req.params.id, 'UPDATE', existing, req.body);
+    res.json({ data: updated });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Bu code ile template zaten mevcut' });
+    }
+    logger.error('PUT /config/wizard/providers error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /config/wizard/providers/:id — template sil
+router.delete('/wizard/providers/:id', requireRole('SUPER_ADMIN'), async (req, res) => {
+  try {
+    const existing = await templateStore.findById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Template bulunamadı' });
+    await templateStore.remove(req.params.id);
+    logAudit(req, 'provider_template', req.params.id, 'DELETE', existing, null);
+    res.json({ success: true });
+  } catch (err) {
+    logger.error('DELETE /config/wizard/providers error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /config/wizard/providers/from-tenant — mevcut tenant config'inden şablon çıkar
+router.post('/wizard/providers/from-tenant', requireRole('SUPER_ADMIN'), validate(ExportTenantTemplateSchema), async (req, res) => {
+  try {
+    const { code, name, description } = req.body;
+    const tenant_id = req.body.tenant_id || req.user.tenant_id;
+    const templateData = await exportTenantConfig(tenant_id);
+    const totalEntities = Object.values(templateData).reduce((sum, arr) => sum + arr.length, 0);
+    if (totalEntities === 0) {
+      return res.status(400).json({ error: 'Bu tenant için dışa aktarılacak konfigürasyon bulunamadı' });
+    }
+    const data = {
+      code,
+      name,
+      description: description || null,
+      template_data: templateData,
+      is_active: true
+    };
+    const created = await templateStore.create(data);
+    logAudit(req, 'provider_template', created.id, 'EXPORT_FROM_TENANT', null, {
+      tenant_id,
+      code,
+      counts: {
+        warehouses: templateData.warehouses.length,
+        field_mappings: templateData.field_mappings.length
+      }
+    });
+    res.status(201).json({ data: created, counts: {
+      warehouses: templateData.warehouses.length,
+      field_mappings: templateData.field_mappings.length
+    }});
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Bu code ile template zaten mevcut' });
+    }
+    logger.error('POST /config/wizard/providers/from-tenant error', { error: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 

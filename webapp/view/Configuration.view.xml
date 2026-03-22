@@ -62,131 +62,7 @@
             </Table>
           </IconTabFilter>
 
-          <!-- TAB 2: Process Configurations (Süreç Uyarlamaları) -->
-          <IconTabFilter text="{i18n>cfgProcessConfigs}" icon="sap-icon://process" key="processConfigs"
-            count="{cfg>/processConfigCount}">
-
-            <OverflowToolbar>
-              <Title text="{i18n>cfgProcessConfigs}" level="H5" />
-              <ToolbarSpacer />
-              <Button text="{i18n>cfgAddProcessConfig}" icon="sap-icon://add" press="onAddProcessConfig" type="Emphasized" />
-            </OverflowToolbar>
-
-            <Table id="processConfigTable" items="{cfg>/processConfigs}" mode="None" autoPopinMode="true">
-              <columns>
-                <Column importance="Medium" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }"><Text text="{i18n>cfgTenant}" /></Column>
-                <Column importance="High"><Text text="{i18n>cfgPlant}" /></Column>
-                <Column importance="High"><Text text="{i18n>invWarehouse}" /></Column>
-                <Column importance="High"><Text text="{i18n>cfgDeliveryType}" /></Column>
-                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgDeliveryTypeDesc}" /></Column>
-                <Column importance="High"><Text text="{i18n>cfgProcessType}" /></Column>
-                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgMvtType}" /></Column>
-                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgCompany}" /></Column>
-                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgApiBaseUrl}" /></Column>
-                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgBapiName}" /></Column>
-                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>cfgGmCode}" /></Column>
-                <Column importance="High" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
-              </columns>
-              <items>
-                <ColumnListItem>
-                  <cells>
-                    <ObjectStatus text="{cfg>tenant_code}" state="None" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }" />
-                    <ObjectNumber number="{cfg>plant_code}" emphasized="true" />
-                    <Text text="{cfg>warehouse_code}" />
-                    <ObjectStatus text="{cfg>delivery_type}" state="Information" />
-                    <Text text="{cfg>delivery_type_desc}" />
-                    <ObjectStatus text="{cfg>process_type}" state="{= ${cfg>process_type} === 'GI' ? 'Warning' : ${cfg>process_type} === 'GR' ? 'Success' : 'Information'}" />
-                    <ObjectNumber number="{cfg>mvt_type}" emphasized="true" />
-                    <ObjectStatus text="{= ${cfg>company_name} + ' (' + ${cfg>company_code} + ')'}" state="Information" />
-                    <Text text="{cfg>api_base_url}" wrapping="false" />
-                    <Text text="{cfg>bapi_name}" />
-                    <Text text="{cfg>gm_code}" />
-                    <HBox justifyContent="Center">
-                      <Button icon="sap-icon://edit" press="onEditProcessConfig" type="Transparent" />
-                      <Button icon="sap-icon://delete" press="onDeleteProcessConfig" type="Transparent" />
-                    </HBox>
-                  </cells>
-                </ColumnListItem>
-              </items>
-            </Table>
-          </IconTabFilter>
-
-          <!-- TAB 4: Process Types (Süreç Tipleri) -->
-          <IconTabFilter text="{i18n>cfgProcessTypes}" icon="sap-icon://workflow-tasks" key="processTypes"
-            count="{cfg>/processTypeCount}">
-
-            <OverflowToolbar>
-              <Title text="{i18n>cfgProcessTypes}" level="H5" />
-              <ToolbarSpacer />
-              <Button text="{i18n>cfgAddProcessType}" icon="sap-icon://add" press="onAddProcessType" type="Emphasized" />
-            </OverflowToolbar>
-
-            <Table id="processTypeTable" items="{cfg>/processTypes}" mode="SingleSelectMaster"
-              autoPopinMode="true" selectionChange="onSelectProcessType">
-              <columns>
-                <Column importance="Medium" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }"><Text text="{i18n>cfgTenant}" /></Column>
-                <Column importance="High"><Text text="{i18n>cfgTypeCode}" /></Column>
-                <Column importance="High"><Text text="{i18n>cfgTypeName}" /></Column>
-                <Column importance="Medium" hAlign="Center" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgStepCount}" /></Column>
-                <Column importance="High" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
-              </columns>
-              <items>
-                <ColumnListItem>
-                  <cells>
-                    <ObjectStatus text="{cfg>tenant_code}" state="None" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }" />
-                    <ObjectStatus text="{cfg>code}" state="Information" />
-                    <Text text="{cfg>name}" />
-                    <ObjectNumber number="{cfg>stepCount}" />
-                    <HBox justifyContent="Center">
-                      <Button icon="sap-icon://edit" press="onEditProcessType" type="Transparent" />
-                      <Button icon="sap-icon://delete" press="onDeleteProcessType" type="Transparent" />
-                    </HBox>
-                  </cells>
-                </ColumnListItem>
-              </items>
-            </Table>
-
-            <!-- Steps of selected type -->
-            <Panel headerText="{i18n>cfgTypeSteps}" visible="{= !!${cfg>/selectedType}}">
-              <OverflowToolbar>
-                <Title text="{cfg>/selectedTypeName}" level="H5" />
-                <ToolbarSpacer />
-                <Button text="{i18n>cfgAddStep}" icon="sap-icon://add" press="onAddStep" type="Emphasized" />
-              </OverflowToolbar>
-
-              <Table items="{cfg>/selectedTypeSteps}" autoPopinMode="true">
-                <columns>
-                  <Column importance="High"><Text text="{i18n>cfgStepNo}" /></Column>
-                  <Column importance="High"><Text text="{i18n>cfgStepName}" /></Column>
-                  <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgStepSource}" /></Column>
-                  <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgStepTarget}" /></Column>
-                  <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgStepDirection}" /></Column>
-                  <Column importance="High" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
-                </columns>
-                <items>
-                  <ColumnListItem>
-                    <cells>
-                      <ObjectNumber number="{cfg>step_no}" />
-                      <Text text="{cfg>name}" />
-                      <Text text="{cfg>source}" />
-                      <Text text="{cfg>target}" />
-                      <ObjectStatus text="{cfg>direction}" state="{= ${cfg>direction} === 'INBOUND' ? 'Success' : 'Warning'}" />
-                      <HBox justifyContent="Center">
-                        <Button icon="sap-icon://edit" press="onEditStep" type="Transparent" />
-                        <Button icon="sap-icon://delete" press="onDeleteStep" type="Transparent" />
-                      </HBox>
-                    </cells>
-                  </ColumnListItem>
-                </items>
-              </Table>
-            </Panel>
-
-            <MessageStrip text="{i18n>cfgSelectType}" type="Information" showIcon="true"
-              visible="{= !${cfg>/selectedType}}" class="sapUiSmallMargin" />
-
-          </IconTabFilter>
-
-          <!-- TAB 5: Field Mappings (Alan Eşleştirmeleri) -->
+          <!-- TAB 2: Field Mappings (Alan Eşleştirmeleri) -->
           <IconTabFilter text="{i18n>fmTitle}" icon="sap-icon://journey-arrive" key="fieldMappings"
             count="{cfg>/fieldMappingCount}">
 
@@ -203,8 +79,9 @@
               autoPopinMode="true" selectionChange="onSelectFieldMapping">
               <columns>
                 <Column importance="Medium" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }"><Text text="{i18n>cfgTenant}" /></Column>
-                <Column importance="High"><Text text="{i18n>cfgProcessType}" /></Column>
                 <Column importance="High"><Text text="{i18n>fmCompanyCode}" /></Column>
+                <Column importance="High"><Text text="{i18n>fmWarehouse}" /></Column>
+                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>fmPlant}" /></Column>
                 <Column importance="High"><Text text="{i18n>fmCategory}" /></Column>
                 <Column importance="High"><Text text="{i18n>cfgDescription}" /></Column>
                 <Column importance="Medium" hAlign="Center" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>fmDirection}" /></Column>
@@ -216,9 +93,9 @@
                 <ColumnListItem>
                   <cells>
                     <ObjectStatus text="{cfg>tenant_code}" state="None" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }" />
-                    <ObjectStatus text="{cfg>process_type}"
-                      state="{= ${cfg>process_type} === 'GI' || ${cfg>process_type} === 'SUBCONTRACT_GI' ? 'Warning' : ${cfg>process_type} === 'GR' || ${cfg>process_type} === 'SUBCONTRACT_GR' ? 'Success' : ${cfg>process_type} === 'RETURN' ? 'Error' : 'Information'}" />
                     <ObjectStatus text="{cfg>company_code}" state="Information" />
+                    <Text text="{cfg>_warehouse_name}" />
+                    <Text text="{cfg>_sap_plant}" />
                     <ObjectStatus text="{= ${cfg>category} === 'MASTER_DATA' ? ${i18n>fmCategoryMasterData} : ${i18n>fmCategoryWorkOrder}}"
                       state="{= ${cfg>category} === 'MASTER_DATA' ? 'Success' : 'Warning'}" />
                     <Text text="{cfg>description}" />
@@ -243,6 +120,12 @@
               <!-- Baslik -->
               <OverflowToolbar>
                 <Title text="{cfg>/selectedFMTitle}" level="H5" />
+                <ToolbarSpacer />
+                <Button text="{i18n>cfgSave}" icon="sap-icon://save"
+                  press="onSaveFieldMappingAll" type="Emphasized" />
+                <Button text="{i18n>cfgSaveAsTemplate}" icon="sap-icon://add-product"
+                  press="onSaveAsTemplate"
+                  visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }" />
               </OverflowToolbar>
 
               <!-- Kaynak / Hedef API Ayarlari -->

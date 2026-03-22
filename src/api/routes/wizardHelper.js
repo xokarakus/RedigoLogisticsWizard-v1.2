@@ -1,8 +1,8 @@
 /**
  * Configuration Wizard Helper
  *
- * Reads seed JSON files from src/data/ and provides provider listing,
- * template preview, and bulk-insert logic for tenant configuration wizard.
+ * Provider template'leri önce DB'den (provider_templates tablosu), yoksa
+ * src/data/ JSON dosyalarından okur.
  *
  * EXCLUDED from templates: security_profiles, system_settings (email), users
  */
@@ -10,6 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const logger = require('../../shared/utils/logger');
+const DbStore = require('../../shared/database/dbStore');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 
@@ -37,6 +38,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // Table column cache
 const _colCache = {};
 
+const templateStore = new DbStore('provider_templates');
+
 function loadSeedFile(filename) {
   const filepath = path.join(DATA_DIR, filename);
   if (!fs.existsSync(filepath)) return [];
@@ -49,27 +52,68 @@ function loadSeedFile(filename) {
 }
 
 /**
- * List available logistics providers from seed data.
- * Groups HOROZ sub-variants under a single parent.
+ * List available logistics providers.
+ * Önce DB'deki provider_templates, sonra JSON seed fallback.
+ * DB ve JSON'dan gelenler birleştirilir (DB öncelikli).
  */
-function getProviders() {
-  const processConfigs = loadSeedFile('process_configs.json');
-  const warehouses = loadSeedFile('warehouses.json');
-  const fieldMappings = loadSeedFile('field_mappings.json');
-  const movementMappings = loadSeedFile('movement_mappings.json');
-  const securityProfiles = loadSeedFile('security_profiles.json');
+async function getProviders() {
+  const result = [];
+  const seenCodes = new Set();
 
-  // Extract distinct providers from process_configs
-  const providerMap = {};
-  for (const pc of processConfigs) {
-    const code = pc.company_code;
-    if (!code || code === 'REDIGO') continue;
-    if (!providerMap[code]) {
-      providerMap[code] = { code, name: pc.company_name, api_base_url: pc.api_base_url };
+  // ── 1. DB template'leri ──
+  try {
+    const dbTemplates = await templateStore.readAll();
+    for (const t of dbTemplates) {
+      if (!t.is_active) continue;
+      seenCodes.add(t.code);
+      const td = t.template_data || {};
+      result.push({
+        id: t.id,
+        code: t.code,
+        name: t.name,
+        description: t.description,
+        auth_type: t.auth_type || '',
+        sub_services: t.sub_services || null,
+        source: 'db',
+        counts: {
+          warehouses: (td.warehouses || []).length,
+          field_mappings: (td.field_mappings || []).length
+        }
+      });
+    }
+  } catch (err) {
+    // provider_templates tablosu henüz yoksa sessizce devam et
+    logger.debug('DB provider_templates not available, using JSON fallback', { error: err.message });
+  }
+
+  // ── 2. JSON seed fallback ──
+  const jsonProviders = getProvidersFromJson();
+  for (const jp of jsonProviders) {
+    if (!seenCodes.has(jp.code)) {
+      result.push({ ...jp, source: 'json' });
     }
   }
 
-  // Get auth_type per provider from security_profiles (display only)
+  return result;
+}
+
+/**
+ * JSON seed dosyalarından provider listesi (eski mantık).
+ */
+function getProvidersFromJson() {
+  const warehouses = loadSeedFile('warehouses.json');
+  const fieldMappings = loadSeedFile('field_mappings.json');
+  const securityProfiles = loadSeedFile('security_profiles.json');
+
+  const providerMap = {};
+  for (const w of warehouses) {
+    const code = w.company_code;
+    if (!code || code === 'REDIGO') continue;
+    if (!providerMap[code]) {
+      providerMap[code] = { code, name: w.company_name || w.name };
+    }
+  }
+
   const authTypes = {};
   for (const sp of securityProfiles) {
     if (sp.company_code && !authTypes[sp.company_code]) {
@@ -77,17 +121,10 @@ function getProviders() {
     }
   }
 
-  // Count entities per company_code
   const whCodes = {};
   for (const w of warehouses) {
     if (!w.company_code || w.company_code === 'REDIGO') continue;
     whCodes[w.company_code] = (whCodes[w.company_code] || 0) + 1;
-  }
-
-  const pcCounts = {};
-  for (const pc of processConfigs) {
-    if (!pc.company_code || pc.company_code === 'REDIGO') continue;
-    pcCounts[pc.company_code] = (pcCounts[pc.company_code] || 0) + 1;
   }
 
   const fmCounts = {};
@@ -96,20 +133,6 @@ function getProviders() {
     fmCounts[fm.company_code] = (fmCounts[fm.company_code] || 0) + 1;
   }
 
-  // Movement mappings are by warehouse_code, map warehouse_code → company_code
-  const whToCompany = {};
-  for (const w of warehouses) {
-    if (w.code && w.company_code) whToCompany[w.code] = w.company_code;
-  }
-  const mmCounts = {};
-  for (const mm of movementMappings) {
-    const cc = whToCompany[mm.warehouse_code];
-    if (cc && cc !== 'REDIGO') {
-      mmCounts[cc] = (mmCounts[cc] || 0) + 1;
-    }
-  }
-
-  // Build result, grouping HOROZ under single parent
   const result = [];
   const horozAdded = { done: false };
 
@@ -117,13 +140,10 @@ function getProviders() {
     if (HOROZ_SUB_CODES.includes(code)) {
       if (!horozAdded.done) {
         horozAdded.done = true;
-        // Aggregate HOROZ counts
-        let totalWh = 0, totalPc = 0, totalFm = 0, totalMm = 0;
+        let totalWh = 0, totalFm = 0;
         for (const sc of HOROZ_SUB_CODES) {
           totalWh += whCodes[sc] || 0;
-          totalPc += pcCounts[sc] || 0;
           totalFm += fmCounts[sc] || 0;
-          totalMm += mmCounts[sc] || 0;
         }
         result.push({
           code: 'HOROZ',
@@ -135,9 +155,7 @@ function getProviders() {
           })),
           counts: {
             warehouses: totalWh,
-            process_configs: totalPc,
-            field_mappings: totalFm,
-            movement_mappings: totalMm
+            field_mappings: totalFm
           }
         });
       }
@@ -151,9 +169,7 @@ function getProviders() {
       sub_services: null,
       counts: {
         warehouses: whCodes[code] || 0,
-        process_configs: pcCounts[code] || 0,
-        field_mappings: fmCounts[code] || 0,
-        movement_mappings: mmCounts[code] || 0
+        field_mappings: fmCounts[code] || 0
       }
     });
   }
@@ -163,16 +179,44 @@ function getProviders() {
 
 /**
  * Get template entities for a given provider.
- * @param {string} providerCode - e.g. 'ABC_LOG', 'HOROZ'
- * @param {string[]} [subServices] - for HOROZ: which sub-service codes to include
- * @returns {{ warehouses, process_types, process_configs, field_mappings, movement_mappings, counts }}
+ * Önce DB'de ara, yoksa JSON seed'den oku.
  */
-function getTemplateEntities(providerCode, subServices) {
-  // Determine which company_codes to filter by
+async function getTemplateEntities(providerCode, subServices) {
+  // ── 1. DB'den dene ──
+  try {
+    const dbTemplates = await templateStore.readAll();
+    const dbTemplate = dbTemplates.find(t => t.code === providerCode && t.is_active);
+    if (dbTemplate && dbTemplate.template_data) {
+      const td = dbTemplate.template_data;
+      const strip = arr => (arr || []).map(item => {
+        const copy = { ...item };
+        delete copy.id;
+        return copy;
+      });
+      return {
+        warehouses: strip(td.warehouses),
+        field_mappings: strip(td.field_mappings),
+        counts: {
+          warehouses: (td.warehouses || []).length,
+          field_mappings: (td.field_mappings || []).length
+        }
+      };
+    }
+  } catch (err) {
+    logger.debug('DB template lookup failed, using JSON fallback', { providerCode, error: err.message });
+  }
+
+  // ── 2. JSON fallback ──
+  return getTemplateEntitiesFromJson(providerCode, subServices);
+}
+
+/**
+ * JSON seed dosyalarından template entity'leri (eski mantık).
+ */
+function getTemplateEntitiesFromJson(providerCode, subServices) {
   let companyCodes;
   if (providerCode === 'HOROZ') {
     companyCodes = (subServices && subServices.length > 0) ? subServices : HOROZ_SUB_CODES;
-    // Ensure only valid HOROZ codes
     companyCodes = companyCodes.filter(c => HOROZ_SUB_CODES.includes(c));
   } else {
     companyCodes = [providerCode];
@@ -180,26 +224,12 @@ function getTemplateEntities(providerCode, subServices) {
 
   const codeSet = new Set(companyCodes);
 
-  // Load seed files
   const allWarehouses = loadSeedFile('warehouses.json');
-  const allProcessTypes = loadSeedFile('process_types.json');
-  const allProcessConfigs = loadSeedFile('process_configs.json');
   const allFieldMappings = loadSeedFile('field_mappings.json');
-  const allMovementMappings = loadSeedFile('movement_mappings.json');
 
-  // Filter by company_code
   const warehouses = allWarehouses.filter(w => codeSet.has(w.company_code));
-  const processConfigs = allProcessConfigs.filter(pc => codeSet.has(pc.company_code));
   const fieldMappings = allFieldMappings.filter(fm => codeSet.has(fm.company_code));
 
-  // Process types are universal (not company-specific) — include all
-  const processTypes = allProcessTypes;
-
-  // Movement mappings: filter by the warehouse codes we're including
-  const whCodeSet = new Set(warehouses.map(w => w.code));
-  const movementMappings = allMovementMappings.filter(mm => whCodeSet.has(mm.warehouse_code));
-
-  // Strip IDs (DB will generate new UUIDs)
   const strip = arr => arr.map(item => {
     const copy = { ...item };
     delete copy.id;
@@ -208,26 +238,46 @@ function getTemplateEntities(providerCode, subServices) {
 
   return {
     warehouses: strip(warehouses),
-    process_types: strip(processTypes),
-    process_configs: strip(processConfigs),
     field_mappings: strip(fieldMappings),
-    movement_mappings: strip(movementMappings),
     counts: {
       warehouses: warehouses.length,
-      process_types: processTypes.length,
-      process_configs: processConfigs.length,
-      field_mappings: fieldMappings.length,
-      movement_mappings: movementMappings.length
+      field_mappings: fieldMappings.length
     }
   };
 }
 
 /**
+ * Tenant'ın mevcut config'ini template_data formatında export et.
+ */
+async function exportTenantConfig(tenantId) {
+  const whStore = new DbStore('warehouses');
+  const fmStore = new DbStore('field_mappings');
+
+  const [warehouses, fieldMappings] = await Promise.all([
+    whStore.readAll({ filter: { tenant_id: tenantId } }),
+    fmStore.readAll({ filter: { tenant_id: tenantId } })
+  ]);
+
+  // ID ve tenant_id'leri strip et (template olarak kullanılacak)
+  const strip = arr => arr.map(item => {
+    const copy = { ...item };
+    delete copy.id;
+    delete copy.tenant_id;
+    delete copy.created_at;
+    delete copy.updated_at;
+    return copy;
+  });
+
+  return {
+    warehouses: strip(warehouses),
+    field_mappings: strip(fieldMappings)
+  };
+}
+
+/**
  * Insert a single row into a table using a dedicated client.
- * Reuses seed.js logic: strips non-UUID IDs, serializes JSONB, skips unknown columns.
  */
 async function insertRow(client, table, row) {
-  // Get table columns (cached)
   if (!_colCache[table]) {
     const { rows } = await client.query(
       `SELECT column_name FROM information_schema.columns WHERE table_name = $1 AND table_schema = 'public'`,
@@ -238,12 +288,10 @@ async function insertRow(client, table, row) {
   const tableCols = _colCache[table];
 
   const data = { ...row };
-  // Strip non-UUID IDs
   if (data.id && !UUID_RE.test(data.id)) {
     delete data.id;
   }
 
-  // Only keep columns that exist in the table
   const keys = Object.keys(data).filter(k => tableCols.has(k));
   if (keys.length === 0) return null;
 
@@ -271,20 +319,13 @@ async function insertRow(client, table, row) {
 
 /**
  * Apply template entities to a tenant within a transaction.
- * @param {object} client - dedicated pg client (from pool.connect())
- * @param {string} tenantId
- * @param {object} entities - from getTemplateEntities()
- * @returns {{ counts }} - per-table insert counts
  */
 async function applyTemplate(client, tenantId, entities) {
-  const counts = { process_types: 0, warehouses: 0, process_configs: 0, field_mappings: 0, movement_mappings: 0 };
+  const counts = { warehouses: 0, field_mappings: 0 };
 
   const tables = [
-    { key: 'process_types', table: 'process_types' },
     { key: 'warehouses', table: 'warehouses' },
-    { key: 'process_configs', table: 'process_configs' },
-    { key: 'field_mappings', table: 'field_mappings' },
-    { key: 'movement_mappings', table: 'movement_mappings' }
+    { key: 'field_mappings', table: 'field_mappings' }
   ];
 
   for (const { key, table } of tables) {
@@ -314,5 +355,7 @@ module.exports = {
   getProviders,
   getTemplateEntities,
   applyTemplate,
+  exportTenantConfig,
+  templateStore,
   HOROZ_SUB_CODES
 };

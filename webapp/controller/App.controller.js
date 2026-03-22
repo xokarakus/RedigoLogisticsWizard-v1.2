@@ -16,7 +16,6 @@ sap.ui.define([
     workOrders: "com.redigo.logistics.cockpit.view.WorkOrders",
     archive: "com.redigo.logistics.cockpit.view.Archive",
     workOrderDetail: "com.redigo.logistics.cockpit.view.WorkOrderDetail",
-    inventory: "com.redigo.logistics.cockpit.view.Inventory",
     transactionLog: "com.redigo.logistics.cockpit.view.TransactionLog",
     reconciliation: "com.redigo.logistics.cockpit.view.Reconciliation",
     masterData: "com.redigo.logistics.cockpit.view.MasterData",
@@ -42,10 +41,11 @@ sap.ui.define([
       var bCanConfigure = bSuperAdmin || sRole === "TENANT_ADMIN";
       var bImpersonating = oUser.impersonating === true;
 
+      var oBundle = this.getView().getModel("i18n").getResourceBundle();
       var ROLE_LABELS = {
-        SUPER_ADMIN: "S\u00fcper Y\u00f6netici",
-        TENANT_ADMIN: "Firma Y\u00f6neticisi",
-        TENANT_USER: "Kullan\u0131c\u0131"
+        SUPER_ADMIN: oBundle.getText("roleSuperAdmin"),
+        TENANT_ADMIN: oBundle.getText("roleTenantAdmin"),
+        TENANT_USER: oBundle.getText("roleTenantUser")
       };
 
       var oAppState = new JSONModel({
@@ -67,7 +67,6 @@ sap.ui.define([
           dashboard_view: true,
           work_orders_view: true,
           work_orders_process: bCanConfigure,
-          inventory_view: true,
           reconciliation_view: true,
           reconciliation_run: bCanConfigure,
           config_view: bCanConfigure,
@@ -100,7 +99,7 @@ sap.ui.define([
           oAppState.setProperty("/canConfigure", oPerm.config_view || oPerm.users_view || oPerm.audit_view);
         }
       }).catch(function () {
-        MessageToast.show("Yetki bilgileri y\u00fcklenemedi");
+        MessageToast.show(that.getView().getModel("i18n").getResourceBundle().getText("errPermissionsLoad"));
       });
 
       // Session monitoring baslat
@@ -239,7 +238,7 @@ sap.ui.define([
         var aTenants = res.data || [];
 
         if (aTenants.length === 0) {
-          MessageToast.show("Hi\u00e7 \u015firket bulunamad\u0131");
+          MessageToast.show(oBundle.getText("errNoCompaniesFound"));
           return;
         }
 
@@ -277,31 +276,33 @@ sap.ui.define([
         oDialog.setModel(oTenantsModel);
         oDialog.open();
       }).catch(function () {
-        MessageToast.show("\u015eirket listesi y\u00fcklenemedi");
+        MessageToast.show(that.getView().getModel("i18n").getResourceBundle().getText("errCompanyListLoad"));
       });
     },
 
     _doImpersonate: function (sTenantId) {
+      var that = this;
       API.post("/api/auth/impersonate", { tenant_id: sTenantId }).then(function (res) {
         if (res && res.token) {
           API.setToken(res.token);
-          MessageToast.show(res.message || "Impersonation aktif");
+          MessageToast.show(res.message || that.getView().getModel("i18n").getResourceBundle().getText("errImpersonationActive"));
           location.reload();
         }
       }).catch(function () {
-        MessageToast.show("\u015eirket de\u011fi\u015ftirme ba\u015far\u0131s\u0131z");
+        MessageToast.show(that.getView().getModel("i18n").getResourceBundle().getText("errCompanySwitchFailed"));
       });
     },
 
     onStopImpersonation: function () {
+      var that = this;
       API.post("/api/auth/stop-impersonation").then(function (res) {
         if (res && res.token) {
           API.setToken(res.token);
-          MessageToast.show(res.message || "Yerine ge\u00e7me sonland\u0131r\u0131ld\u0131");
+          MessageToast.show(res.message || that.getView().getModel("i18n").getResourceBundle().getText("errImpersonationEnded"));
           location.reload();
         }
       }).catch(function () {
-        MessageToast.show("Yerine ge\u00e7me sonland\u0131r\u0131lamad\u0131");
+        MessageToast.show(that.getView().getModel("i18n").getResourceBundle().getText("errImpersonationEndFailed"));
       });
     }
   });

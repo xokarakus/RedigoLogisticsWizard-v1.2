@@ -53,12 +53,8 @@ class CacheStore {
 
 // Singleton instance'lar — hot path'ler icin
 const fieldMappingCache = new CacheStore(5 * 60 * 1000);   // 5 dk
-const processTypeCache = new CacheStore(10 * 60 * 1000);   // 10 dk
-const processConfigCache = new CacheStore(10 * 60 * 1000); // 10 dk
 
 module.exports = {
   CacheStore,
-  fieldMappingCache,
-  processTypeCache,
-  processConfigCache
+  fieldMappingCache
 };

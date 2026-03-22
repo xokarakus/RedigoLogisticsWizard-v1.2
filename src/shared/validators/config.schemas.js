@@ -4,64 +4,24 @@
 const { z } = require('zod');
 
 const CreateWarehouseSchema = z.object({
-  warehouse_code: z.string().min(1).max(20),
-  warehouse_name: z.string().min(1).max(100),
-  plant_code: z.string().min(1).max(10),
+  code: z.string().min(1).max(20),
+  name: z.string().min(1).max(100),
+  sap_plant: z.string().min(1).max(10),
+  sap_stor_loc: z.string().max(10).optional(),
+  wms_code: z.string().max(20).optional(),
   company_code: z.string().max(20).optional(),
   company_name: z.string().max(100).optional(),
+  sap_partner_no: z.string().max(20).optional(),
   address: z.string().max(500).optional(),
   is_active: z.boolean().optional()
 }).passthrough();
 
 const UpdateWarehouseSchema = CreateWarehouseSchema.partial();
 
-const CreateMappingSchema = z.object({
-  name: z.string().min(1).max(100),
-  delivery_type: z.string().max(10).optional(),
-  direction: z.enum(['INBOUND', 'OUTBOUND', 'BOTH']).optional(),
-  mvt_type: z.string().max(10).optional(),
-  gm_code: z.string().max(5).optional(),
-  is_active: z.boolean().optional()
-}).passthrough();
-
-const UpdateMappingSchema = CreateMappingSchema.partial();
-
-const CreateProcessConfigSchema = z.object({
-  plant_code: z.string().min(1).max(10),
-  warehouse_code: z.string().min(1).max(20),
-  delivery_type: z.string().min(1).max(10),
-  delivery_type_desc: z.string().max(100).optional(),
-  process_type: z.string().min(1).max(30),
-  mvt_type: z.string().max(10).optional(),
-  gm_code: z.string().max(5).optional(),
-  company_name: z.string().max(100).optional(),
-  company_code: z.string().max(20).optional(),
-  api_base_url: z.string().url().max(500).or(z.literal('')).optional(),
-  bapi_name: z.string().max(50).optional()
-}).passthrough();
-
-const UpdateProcessConfigSchema = CreateProcessConfigSchema.partial();
-
-const CreateProcessTypeSchema = z.object({
-  code: z.string().min(1).max(30),
-  name: z.string().min(1).max(100),
-  description: z.string().max(500).optional(),
-  steps: z.array(z.object({
-    step_no: z.number().int().min(1),
-    name: z.string().min(1),
-    source: z.string().optional(),
-    target: z.string().optional(),
-    direction: z.string().optional(),
-    api: z.string().optional()
-  })).optional(),
-  is_active: z.boolean().optional()
-}).passthrough();
-
-const UpdateProcessTypeSchema = CreateProcessTypeSchema.partial();
-
 const CreateFieldMappingSchema = z.object({
-  name: z.string().min(1).max(100),
+  name: z.string().max(100).optional(),
   process_type: z.string().max(30).optional(),
+  warehouse_id: z.string().uuid().nullable().optional(),
   company_code: z.string().max(20).optional(),
   category: z.string().max(30).optional(),
   api_endpoint: z.string().max(500).optional(),
@@ -86,6 +46,7 @@ const UpdateFieldMappingSchema = CreateFieldMappingSchema.partial();
 const CreateSecurityProfileSchema = z.object({
   name: z.string().min(1).max(100),
   auth_type: z.enum(['NONE', 'BASIC', 'BEARER', 'API_KEY', 'OAUTH2', 'CERTIFICATE']),
+  environment: z.enum(['PROD', 'QAS', 'DEV']).optional(),
   company_code: z.string().max(20).optional(),
   config: z.record(z.any()).optional(),
   is_active: z.boolean().optional()
@@ -110,25 +71,44 @@ const EmailTestSchema = z.object({
 });
 
 const ApplyTemplateSchema = z.object({
-  tenant_id: z.string().uuid('Gecerli bir tenant_id gerekli'),
+  tenant_id: z.string().uuid('Gecerli bir tenant_id gerekli').optional(),
   provider_code: z.string().min(1, 'provider_code zorunlu'),
   sub_services: z.array(z.string()).optional()
+});
+
+const CreateProviderTemplateSchema = z.object({
+  code: z.string().min(1, 'code zorunlu').max(30),
+  name: z.string().min(1, 'name zorunlu').max(100),
+  description: z.string().max(500).nullish(),
+  auth_type: z.string().max(20).nullish(),
+  sub_services: z.array(z.object({
+    code: z.string().min(1),
+    name: z.string().min(1)
+  })).nullish(),
+  template_data: z.record(z.any()).optional(),
+  is_active: z.boolean().optional()
+}).passthrough();
+
+const UpdateProviderTemplateSchema = CreateProviderTemplateSchema.partial();
+
+const ExportTenantTemplateSchema = z.object({
+  tenant_id: z.string().uuid('Gecerli bir tenant_id gerekli').optional(),
+  code: z.string().min(1, 'code zorunlu').max(30),
+  name: z.string().min(1, 'name zorunlu').max(100),
+  description: z.string().max(500).nullish()
 });
 
 module.exports = {
   CreateWarehouseSchema,
   UpdateWarehouseSchema,
-  CreateMappingSchema,
-  UpdateMappingSchema,
-  CreateProcessConfigSchema,
-  UpdateProcessConfigSchema,
-  CreateProcessTypeSchema,
-  UpdateProcessTypeSchema,
   CreateFieldMappingSchema,
   UpdateFieldMappingSchema,
   CreateSecurityProfileSchema,
   UpdateSecurityProfileSchema,
   TestDispatchSchema,
   EmailTestSchema,
-  ApplyTemplateSchema
+  ApplyTemplateSchema,
+  CreateProviderTemplateSchema,
+  UpdateProviderTemplateSchema,
+  ExportTenantTemplateSchema
 };

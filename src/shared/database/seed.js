@@ -132,9 +132,6 @@ async function seed() {
 
     // Config tabloları (bağımlılık sırası önemli)
     await seedTable(client, 'warehouses', 'warehouses.json');
-    await seedTable(client, 'process_types', 'process_types.json');
-    await seedTable(client, 'process_configs', 'process_configs.json');
-    await seedTable(client, 'movement_mappings', 'movement_mappings.json');
     await seedTable(client, 'security_profiles', 'security_profiles.json');
     await seedTable(client, 'field_mappings', 'field_mappings.json');
 

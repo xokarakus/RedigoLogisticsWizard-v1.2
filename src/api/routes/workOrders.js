@@ -4,7 +4,6 @@ const DbStore = require('../../shared/database/dbStore');
 const logger = require('../../shared/utils/logger');
 const { tenantFilter } = require('../../shared/middleware/auth');
 const { CLOSED_STATUSES } = require('../../shared/constants/statuses');
-const { processTypeCache, processConfigCache } = require('../../shared/utils/cacheStore');
 
 const { validate } = require('../../shared/validators/middleware');
 const {
@@ -13,15 +12,8 @@ const {
 } = require('../../shared/validators/workOrder.schemas');
 
 const store = new DbStore('work_orders');
-const pcStore = new DbStore('process_configs');
-const ptStore = new DbStore('process_types');
 
 function tf(req) { return tenantFilter(req); }
-
-// Build lookup key from work order fields
-function configKey(plantCode, warehouseCode, deliveryType) {
-  return plantCode + '|' + warehouseCode + '|' + deliveryType;
-}
 
 // Gecersiz SAP tarihlerini temizle (00000000, null, undefined → '')
 function safeSapDate(val) {
@@ -103,35 +95,7 @@ router.get('/', validate(WorkOrderListQuery, 'query'), async (req, res) => {
       data = data.filter(o => o.received_at && new Date(o.received_at) <= dTo);
     }
 
-    // process_types tablosundan kod→ad eşleştirmesi (cached)
-    let processTypes = processTypeCache.get('all');
-    if (!processTypes) {
-      processTypes = await ptStore.readAll();
-      processTypeCache.set('all', processTypes);
-    }
-    const ptMap = {};
-    processTypes.forEach(pt => { ptMap[pt.code] = pt.name; });
-
-    // Enrich: process_type zaten work_order'da varsa kullan, yoksa process_configs'den bul (cached)
-    let configs = processConfigCache.get('all');
-    if (!configs) {
-      configs = await pcStore.readAll();
-      processConfigCache.set('all', configs);
-    }
-    const configMap = {};
-    configs.forEach(c => {
-      configMap[configKey(c.plant_code, c.warehouse_code, c.delivery_type)] = c;
-    });
     data = data.map(o => {
-      if (!o.process_type) {
-        const key = configKey(o.plant_code || '1000', o.warehouse_code, o.sap_delivery_type);
-        const cfg = configMap[key];
-        if (cfg) {
-          o.process_type = cfg.process_type;
-        }
-      }
-      // process_type_desc her zaman process_types tablosundan gelsin
-      o.process_type_desc = ptMap[o.process_type] || '';
       flattenHeader(o);
       // Listelemede buyuk alanlari gonderme (performans)
       // Shallow copy — DB objesini mutasyona ugratma
@@ -163,19 +127,6 @@ router.get('/:id', async (req, res) => {
     const item = await store.findById(req.params.id);
     if (!item) return res.status(404).json({ error: 'Kayit bulunamadi' });
 
-    // Enrich: process_type zaten varsa kullan, yoksa process_configs'den bul
-    if (!item.process_type) {
-      const configs = await pcStore.readAll();
-      const key = configKey(item.plant_code || '1000', item.warehouse_code, item.sap_delivery_type);
-      const cfg = configs.find(c => configKey(c.plant_code, c.warehouse_code, c.delivery_type) === key);
-      if (cfg) {
-        item.process_type = cfg.process_type;
-      }
-    }
-    // process_type_desc her zaman process_types tablosundan gelsin
-    const processTypes = await ptStore.readAll();
-    const pt = processTypes.find(p => p.code === item.process_type);
-    item.process_type_desc = pt ? pt.name : '';
     flattenHeader(item);
 
     // Kalem sayfalama (skip/top)

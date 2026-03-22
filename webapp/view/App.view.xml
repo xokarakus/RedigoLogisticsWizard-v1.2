@@ -70,9 +70,7 @@
             visible="{appState>/perm/work_orders_view}" />
           <tnt:NavigationListItem text="{i18n>navArchive}" icon="sap-icon://folder-full" key="archive"
             visible="{appState>/perm/work_orders_view}" />
-          <tnt:NavigationListItem text="{i18n>navInventory}" icon="sap-icon://inventory" key="inventory"
-            visible="{appState>/perm/inventory_view}" />
-          <tnt:NavigationListItem text="{i18n>navReconciliation}" icon="sap-icon://compare-2" key="reconciliation"
+<tnt:NavigationListItem text="{i18n>navReconciliation}" icon="sap-icon://compare-2" key="reconciliation"
             visible="{appState>/perm/reconciliation_view}" />
           <tnt:NavigationListItem text="{i18n>navReports}" icon="sap-icon://bar-chart" key="reports"
             visible="{appState>/perm/dashboard_view}" />

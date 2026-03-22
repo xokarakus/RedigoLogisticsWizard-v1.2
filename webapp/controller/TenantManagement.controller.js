@@ -67,8 +67,8 @@ sap.ui.define([
             warehouse_count: s.warehouse_count || 0,
             field_mapping_count: s.field_mapping_count || 0,
             security_profile_count: s.security_profile_count || 0,
-            last_login_fmt: s.last_login ? new Date(s.last_login).toLocaleString("tr-TR") : "",
-            last_order_fmt: s.last_order_at ? new Date(s.last_order_at).toLocaleString("tr-TR") : ""
+            last_login_fmt: s.last_login ? new Date(s.last_login).toLocaleString() : "",
+            last_order_fmt: s.last_order_at ? new Date(s.last_order_at).toLocaleString() : ""
           };
           t.user_count = s.total_users || 0;
         });
@@ -76,7 +76,7 @@ sap.ui.define([
         that._oModel.setProperty("/data", aData);
         that._oModel.setProperty("/filtered", aData);
         var oI18n = that.getView().getModel("i18n");
-        var sSummary = oI18n ? oI18n.getResourceBundle().getText("tmTenantCount", [aData.length]) : aData.length + " firma";
+        var sSummary = oI18n ? oI18n.getResourceBundle().getText("tmTenantCount", [aData.length]) : aData.length + "";
         that._oModel.setProperty("/summary", sSummary);
       });
     },
@@ -121,7 +121,7 @@ sap.ui.define([
 
       this._oModel.setProperty("/filtered", aFiltered);
       var oI18n = oView.getModel("i18n");
-      var sSummary = oI18n ? oI18n.getResourceBundle().getText("tmTenantCount", [aFiltered.length]) : aFiltered.length + " firma";
+      var sSummary = oI18n ? oI18n.getResourceBundle().getText("tmTenantCount", [aFiltered.length]) : aFiltered.length + "";
       this._oModel.setProperty("/summary", sSummary);
     },
 
@@ -140,7 +140,7 @@ sap.ui.define([
       var oTenant = oCtx.getObject();
       var oBundle = this.getView().getModel("i18n").getResourceBundle();
 
-      MessageBox.confirm("\"" + oTenant.name + "\" olarak i\u015flem yapmak istiyor musunuz?", {
+      MessageBox.confirm(oBundle.getText("tmImpersonateConfirm", [oTenant.name]), {
         title: oBundle.getText("tmImpersonate"),
         onClose: function (sAction) {
           if (sAction !== MessageBox.Action.OK) return;
@@ -201,7 +201,7 @@ sap.ui.define([
 
       var oDomainInput = new Input({
         value: bEdit ? (oTenant.domain || "") : "",
-        placeholder: "\u00d6rn: tesla.com"
+        placeholder: oBundle.getText("tmDomainPlaceholder")
       });
 
       var oTaxIdInput = new Input({
@@ -551,7 +551,7 @@ sap.ui.define([
         oWizModel.setProperty("/providers", aProviders);
         aProviders.forEach(function (p) {
           var sDesc = (p.auth_type || "") + " | " +
-            oBundle.getText("wizProviderInfo", [p.counts.warehouses, p.counts.process_configs, p.counts.field_mappings]);
+            oBundle.getText("wizProviderInfo", [p.counts.warehouses, p.counts.field_mappings]);
 
           // Daha once uygulanan template'i isaretle
           if (p.already_applied) {
@@ -560,7 +560,7 @@ sap.ui.define([
             if (p.applied_sub_services && p.applied_sub_services.length > 0) {
               sAppliedSubs = " [" + p.applied_sub_services.join(", ") + "]";
             }
-            sDesc = "\u2705 " + oBundle.getText("wizAlreadyApplied", [dApplied.toLocaleDateString("tr-TR")]) + sAppliedSubs;
+            sDesc = "\u2705 " + oBundle.getText("wizAlreadyApplied", [dApplied.toLocaleDateString()]) + sAppliedSubs;
           }
 
           var oItem = new StandardListItem({
@@ -610,11 +610,8 @@ sap.ui.define([
 
         // Counts
         var aLines = [
-          { label: oBundle.getText("wizProcessTypes", [c.process_types || 0]), icon: "sap-icon://process" },
           { label: oBundle.getText("wizWarehouses", [c.warehouses || 0]), icon: "sap-icon://factory" },
-          { label: oBundle.getText("wizProcessConfigs", [c.process_configs || 0]), icon: "sap-icon://settings" },
-          { label: oBundle.getText("wizFieldMappings", [c.field_mappings || 0]), icon: "sap-icon://connected" },
-          { label: oBundle.getText("wizMovementMappings", [c.movement_mappings || 0]), icon: "sap-icon://move" }
+          { label: oBundle.getText("wizFieldMappings", [c.field_mappings || 0]), icon: "sap-icon://connected" }
         ];
 
         aLines.forEach(function (line) {
@@ -676,11 +673,8 @@ sap.ui.define([
 
         // Detail counts
         var aDetails = [
-          { label: oBundle.getText("wizProcessTypes", [c.process_types || 0]) },
           { label: oBundle.getText("wizWarehouses", [c.warehouses || 0]) },
-          { label: oBundle.getText("wizProcessConfigs", [c.process_configs || 0]) },
-          { label: oBundle.getText("wizFieldMappings", [c.field_mappings || 0]) },
-          { label: oBundle.getText("wizMovementMappings", [c.movement_mappings || 0]) }
+          { label: oBundle.getText("wizFieldMappings", [c.field_mappings || 0]) }
         ];
         aDetails.forEach(function (d) {
           oResultBox.addItem(new Text({ text: "  \u2713 " + d.label }));
@@ -751,6 +745,234 @@ sap.ui.define([
           that._disableAllControls(oChild);
         });
       });
+    },
+
+    /* ═══════════════════════════════════════════
+       Provider Template Y\u00f6netimi (SUPER_ADMIN)
+       ═══════════════════════════════════════════ */
+
+    onManageProviderTemplates: function () {
+      var that = this;
+      var oBundle = this.getView().getModel("i18n").getResourceBundle();
+
+      var oTemplateModel = new JSONModel({ templates: [], busy: true });
+
+      var oTable = new sap.m.Table({
+        growing: true,
+        growingThreshold: 20,
+        items: { path: "pt>/templates", template: new sap.m.ColumnListItem({
+          highlight: "{= ${pt>is_active} ? 'None' : 'Warning'}",
+          cells: [
+            new sap.m.ObjectIdentifier({ title: "{pt>name}", text: "{pt>code}" }),
+            new Text({ text: "{pt>auth_type}" }),
+            new VBox({ items: [
+              new HBox({ items: [
+                new ObjectStatus({ text: "{pt>counts/warehouses}", state: "Information", inverted: true }),
+                new Text({ text: " " }),
+                new ObjectStatus({ text: "{pt>counts/field_mappings}", state: "Warning", inverted: true })
+              ]})
+            ]}),
+            new ObjectStatus({
+              text: "{= ${pt>source} === 'db' ? 'DB' : 'JSON'}",
+              state: "{= ${pt>source} === 'db' ? 'Success' : 'Information'}",
+              inverted: true
+            }),
+            new HBox({ justifyContent: "End", items: [
+              new Button({
+                icon: "sap-icon://edit",
+                type: "Transparent",
+                tooltip: oBundle.getText("ptEditTemplate"),
+                enabled: "{= ${pt>source} === 'db'}",
+                press: that._onEditTemplate.bind(that)
+              }),
+              new Button({
+                icon: "sap-icon://delete",
+                type: "Transparent",
+                tooltip: oBundle.getText("btnDelete"),
+                enabled: "{= ${pt>source} === 'db'}",
+                press: that._onDeleteTemplate.bind(that)
+              })
+            ]})
+          ]
+        })},
+        columns: [
+          new sap.m.Column({ header: new Text({ text: oBundle.getText("ptName") }), importance: "High" }),
+          new sap.m.Column({ header: new Text({ text: oBundle.getText("spAuthType") }), width: "7em" }),
+          new sap.m.Column({ header: new Text({ text: oBundle.getText("ptDataCounts") }), width: "12em", hAlign: "Center" }),
+          new sap.m.Column({ header: new Text({ text: oBundle.getText("ptSource") }), width: "5em", hAlign: "Center" }),
+          new sap.m.Column({ header: new Text({ text: oBundle.getText("cfgActions") }), width: "10em", hAlign: "End" })
+        ]
+      });
+
+      var oToolbar = new sap.m.OverflowToolbar({
+        content: [
+          new Button({
+            text: oBundle.getText("ptAddTemplate"),
+            type: "Emphasized",
+            icon: "sap-icon://add",
+            press: function () { that._openProviderTemplateForm(null, oTemplateModel); }
+          }),
+          new sap.m.ToolbarSpacer(),
+          new MessageStrip({
+            text: oBundle.getText("ptHint"),
+            type: "Information",
+            showIcon: true,
+            showCloseButton: false
+          })
+        ]
+      });
+
+      this._ptDialog = new Dialog({
+        title: oBundle.getText("ptManageTemplates"),
+        contentWidth: "850px",
+        contentHeight: "480px",
+        verticalScrolling: true,
+        content: [oToolbar, oTable],
+        endButton: new Button({
+          text: oBundle.getText("cfgCancel"),
+          press: function () { that._ptDialog.close(); }
+        }),
+        afterClose: function () { that._ptDialog.destroy(); that._ptDialog = null; }
+      });
+
+      this._ptModel = oTemplateModel;
+      this._ptDialog.setModel(oTemplateModel, "pt");
+      this.getView().addDependent(this._ptDialog);
+      this._ptDialog.open();
+      this._loadProviderTemplates(oTemplateModel);
+    },
+
+    _loadProviderTemplates: function (oModel) {
+      oModel.setProperty("/busy", true);
+      API.get("/api/v1/config/wizard/providers").then(function (res) {
+        oModel.setProperty("/templates", res.data || []);
+        oModel.setProperty("/busy", false);
+      });
+    },
+
+    /* ── \u015eablon Meta Formu (Kod, Ad, Auth Type vb.) ── */
+    _openProviderTemplateForm: function (oExisting, oTemplateModel) {
+      var that = this;
+      var bEdit = !!oExisting;
+      var oBundle = this.getView().getModel("i18n").getResourceBundle();
+
+      var oCode = new Input({ value: bEdit ? oExisting.code : "", enabled: !bEdit, placeholder: "ABC_LOG", maxLength: 30 });
+      var oName = new Input({ value: bEdit ? oExisting.name : "", placeholder: oBundle.getText("ptNamePlaceholder"), maxLength: 100 });
+      var oDesc = new TextArea({ value: bEdit ? (oExisting.description || "") : "", rows: 2, width: "100%" });
+      var oAuthType = new Select({ selectedKey: bEdit ? (oExisting.auth_type || "") : "" });
+      oAuthType.addItem(new Item({ key: "", text: "-" }));
+      oAuthType.addItem(new Item({ key: "OAUTH2", text: "OAuth 2.0" }));
+      oAuthType.addItem(new Item({ key: "API_KEY", text: "API Key" }));
+      oAuthType.addItem(new Item({ key: "BASIC", text: "Basic Auth" }));
+      oAuthType.addItem(new Item({ key: "BEARER", text: "Bearer Token" }));
+      oAuthType.addItem(new Item({ key: "PROCESS_KEY", text: "Process Key" }));
+
+      var oActive = new Select({ selectedKey: bEdit ? String(oExisting.is_active !== false) : "true" });
+      oActive.addItem(new Item({ key: "true", text: oBundle.getText("cfgActiveYes") }));
+      oActive.addItem(new Item({ key: "false", text: oBundle.getText("cfgActiveNo") }));
+
+      var oForm = new SimpleForm({
+        editable: true,
+        layout: "ResponsiveGridLayout",
+        labelSpanXL: 4, labelSpanL: 4, labelSpanM: 4,
+        columnsXL: 1, columnsL: 1, columnsM: 1,
+        content: [
+          new Label({ text: oBundle.getText("ptCode"), required: true }), oCode,
+          new Label({ text: oBundle.getText("ptName"), required: true }), oName,
+          new Label({ text: oBundle.getText("ptDescription") }), oDesc,
+          new Label({ text: oBundle.getText("spAuthType") }), oAuthType,
+          new Label({ text: oBundle.getText("cfgActive") }), oActive
+        ]
+      });
+
+      var oDialog = new Dialog({
+        title: bEdit ? oBundle.getText("ptEditTemplate") : oBundle.getText("ptAddTemplate"),
+        contentWidth: "520px",
+        content: [oForm],
+        beginButton: new Button({
+          text: oBundle.getText("cfgSave"),
+          type: "Emphasized",
+          press: function () {
+            var sCode = oCode.getValue().trim();
+            var sName = oName.getValue().trim();
+            if (!sCode || !sName) {
+              MessageBox.error(oBundle.getText("msgRequiredFields"));
+              return;
+            }
+            var oPayload = {
+              code: sCode,
+              name: sName,
+              description: oDesc.getValue().trim() || null,
+              auth_type: oAuthType.getSelectedKey() || null,
+              is_active: oActive.getSelectedKey() === "true"
+            };
+            oDialog.setBusy(true);
+            var pReq = bEdit
+              ? API.put("/api/v1/config/wizard/providers/" + oExisting.id, oPayload)
+              : API.post("/api/v1/config/wizard/providers", oPayload);
+            pReq.then(function (res) {
+              oDialog.setBusy(false);
+              if (res.error) {
+                MessageBox.error(res.error);
+                return;
+              }
+              MessageToast.show(oBundle.getText("msgSaved"));
+              oDialog.close();
+              that._loadProviderTemplates(oTemplateModel);
+            });
+          }
+        }),
+        endButton: new Button({
+          text: oBundle.getText("cfgCancel"),
+          press: function () { oDialog.close(); }
+        }),
+        afterClose: function () { oDialog.destroy(); }
+      });
+      this.getView().addDependent(oDialog);
+      oDialog.open();
+    },
+
+    _onEditTemplate: function (oEvent) {
+      var oCtx = oEvent.getSource().getBindingContext("pt");
+      var oTemplate = oCtx.getObject();
+      if (oTemplate.source !== "db") {
+        MessageToast.show("JSON \u015fablonlar\u0131 d\u00fczenlenemez");
+        return;
+      }
+      this._openProviderTemplateForm(oTemplate, this._ptModel);
+    },
+
+    _onDeleteTemplate: function (oEvent) {
+      var that = this;
+      var oCtx = oEvent.getSource().getBindingContext("pt");
+      var oTemplate = oCtx.getObject();
+      var oBundle = this.getView().getModel("i18n").getResourceBundle();
+
+      if (oTemplate.source !== "db") {
+        MessageToast.show("JSON \u015fablonlar\u0131 silinemez");
+        return;
+      }
+
+      MessageBox.confirm(oBundle.getText("msgConfirmDelete") + "\n\n" + oTemplate.name + " (" + oTemplate.code + ")", {
+        title: oBundle.getText("msgConfirmDeleteTitle"),
+        onClose: function (sAction) {
+          if (sAction === MessageBox.Action.OK) {
+            API.del("/api/v1/config/wizard/providers/" + oTemplate.id).then(function (res) {
+              if (res.error) {
+                MessageBox.error(res.error);
+                return;
+              }
+              MessageToast.show(oBundle.getText("msgDeleted"));
+              that._loadProviderTemplates(that._ptModel);
+            });
+          }
+        }
+      });
+    },
+
+    _getText: function (sKey, aArgs) {
+      var oBundle = this.getView().getModel("i18n").getResourceBundle();
+      return aArgs ? oBundle.getText(sKey, aArgs) : oBundle.getText(sKey);
     }
   });
 });

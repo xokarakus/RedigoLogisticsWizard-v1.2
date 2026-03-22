@@ -10,25 +10,23 @@ sap.ui.define([
   "sap/ui/layout/form/SimpleForm",
   "com/redigo/logistics/cockpit/util/API",
   "./config/WarehouseMixin",
-  "./config/ProcessMixin",
   "./config/FieldMappingMixin",
   "./config/FlowDesignerMixin",
   "./config/SecurityMixin"
 ], function (Controller, JSONModel, MessageToast, MessageBox, Dialog, Input, Label, MButton, SimpleForm, API,
-             WarehouseMixin, ProcessMixin, FieldMappingMixin, FlowDesignerMixin, SecurityMixin) {
+             WarehouseMixin, FieldMappingMixin, FlowDesignerMixin, SecurityMixin) {
   "use strict";
 
   // Mixin'leri prototype seviyesinde birlestir (onInit'ten ONCE)
   // SAPUI5 XMLView event handler'lari view parse sirasinda cozumler,
   // bu nedenle metotlar Controller.extend taniminda olmali.
   var oProto = jQuery.extend({},
-    WarehouseMixin, ProcessMixin, FieldMappingMixin, FlowDesignerMixin, SecurityMixin,
+    WarehouseMixin, FieldMappingMixin, FlowDesignerMixin, SecurityMixin,
     {
       onInit: function () {
         this._oModel = new JSONModel({
-          warehouses: [], mappings: [], processConfigs: [], processTypes: [],
-          warehouseCount: 0, mappingCount: 0, processConfigCount: 0, processTypeCount: 0,
-          selectedType: null, selectedTypeName: "", selectedTypeSteps: [],
+          warehouses: [],
+          warehouseCount: 0,
           fieldMappings: [], fieldMappingsFiltered: [], fieldMappingCount: 0,
           selectedFM: null, selectedFMTitle: "", selectedFMSapJson: "", selectedFM3plJson: "", selectedFMRules: [],
           selectedFMHeaders: [], selectedFMSecurityId: "", selectedFMDirection: "SAP_TO_3PL",
@@ -61,29 +59,41 @@ sap.ui.define([
       _loadData: function () {
         var that = this;
         var fnErr = function (err) { console.error("Config API error", err); };
-        API.get("/api/config/warehouses").then(function (result) {
+
+        // Warehouses ve field mappings birlikte yükle (enrichment için)
+        var pWarehouses = API.get("/api/config/warehouses").then(function (result) {
           var aData = result.data || [];
           that._oModel.setProperty("/warehouses", aData);
           that._oModel.setProperty("/warehouseCount", aData.length);
-        }).catch(fnErr);
-        API.get("/api/config/process-configs").then(function (result) {
-          var aData = result.data || [];
-          that._oModel.setProperty("/processConfigs", aData);
-          that._oModel.setProperty("/processConfigCount", aData.length);
-        }).catch(fnErr);
-        API.get("/api/config/process-types").then(function (result) {
-          var aData = result.data || [];
-          aData.forEach(function (t) { t.stepCount = (t.steps || []).length; });
-          that._oModel.setProperty("/processTypes", aData);
-          that._oModel.setProperty("/processTypeCount", aData.length);
-        }).catch(fnErr);
-        API.get("/api/config/field-mappings").then(function (result) {
+          return aData;
+        }).catch(function (err) { fnErr(err); return []; });
+
+        var pFieldMappings = API.get("/api/config/field-mappings").then(function (result) {
           var aData = result.data || [];
           aData.forEach(function (fm) { fm.ruleCount = (fm.field_rules || []).length; });
-          that._oModel.setProperty("/fieldMappings", aData);
-          that._oModel.setProperty("/fieldMappingsFiltered", aData);
-          that._oModel.setProperty("/fieldMappingCount", aData.length);
-        }).catch(fnErr);
+          return aData;
+        }).catch(function (err) { fnErr(err); return []; });
+
+        // Her iki liste yüklenince field mapping'leri depo bilgisiyle zenginleştir
+        Promise.all([pWarehouses, pFieldMappings]).then(function (results) {
+          var aWarehouses = results[0];
+          var aFM = results[1];
+          var whMap = {};
+          aWarehouses.forEach(function (w) { whMap[w.id] = w; });
+          aFM.forEach(function (fm) {
+            var wh = fm.warehouse_id ? whMap[fm.warehouse_id] : null;
+            if (!wh && fm.company_code) {
+              // Fallback: company_code ile ilk eşleşen depo
+              wh = aWarehouses.find(function (w) { return w.company_code === fm.company_code; });
+            }
+            fm._warehouse_name = wh ? wh.name : "";
+            fm._sap_plant = wh ? (wh.sap_plant || "") : "";
+          });
+          that._oModel.setProperty("/fieldMappings", aFM);
+          that._oModel.setProperty("/fieldMappingsFiltered", aFM);
+          that._oModel.setProperty("/fieldMappingCount", aFM.length);
+        });
+
         API.get("/api/config/security-profiles").then(function (result) {
           var aData = result.data || [];
           that._oModel.setProperty("/securityProfiles", aData);
@@ -108,7 +118,7 @@ sap.ui.define([
             that._oEmailModel.setData(d);
           }
         }).catch(function () {
-          MessageToast.show("E-posta ayarlar\u0131 y\u00fcklenemedi");
+          MessageToast.show(that._getText("errEmailSettingsLoad"));
         });
       },
 
@@ -138,7 +148,7 @@ sap.ui.define([
           }
           MessageToast.show(that._getText("msgSaved"));
         }).catch(function () {
-          MessageToast.show("E-posta ayarlar\u0131 kaydedilemedi");
+          MessageToast.show(that._getText("errEmailSettingsSave"));
         });
       },
 
@@ -174,8 +184,90 @@ sap.ui.define([
                 }
                 oDialog.close();
               }).catch(function () {
-                MessageToast.show("Test e-postas\u0131 g\u00f6nderilemedi");
+                MessageToast.show(that._getText("errTestEmailSend"));
                 oDialog.close();
+              });
+            }
+          }),
+          endButton: new MButton({
+            text: that._getText("cfgCancel"),
+            press: function () { oDialog.close(); }
+          }),
+          afterClose: function () { oDialog.destroy(); }
+        });
+        this.getView().addDependent(oDialog);
+        oDialog.open();
+      },
+
+      /* ── Şablona Kaydet (SUPER_ADMIN) ── */
+
+      onSaveAsTemplate: function () {
+        var that = this;
+        var oFound = this._getSelectedFMProfile ? this._getSelectedFMProfile() : null;
+        if (!oFound) {
+          MessageToast.show(that._getText("fmSelectProfile"));
+          return;
+        }
+        var oProfile = oFound.profile;
+
+        var oCode = new Input({ value: oProfile.company_code || "", placeholder: "ABC_LOG", maxLength: 30 });
+        var oName = new Input({ value: oProfile.description || "", placeholder: "ABC Lojistik A.S." });
+        var oDesc = new Input({ placeholder: "" });
+
+        var oDialog = new Dialog({
+          title: that._getText("cfgSaveAsTemplate"),
+          contentWidth: "400px",
+          content: [
+            new SimpleForm({
+              editable: true,
+              layout: "ResponsiveGridLayout",
+              labelSpanL: 4, labelSpanM: 4,
+              content: [
+                new Label({ text: that._getText("cfgCode"), required: true }), oCode,
+                new Label({ text: that._getText("cfgName"), required: true }), oName,
+                new Label({ text: that._getText("cfgDescription") }), oDesc
+              ]
+            })
+          ],
+          beginButton: new MButton({
+            text: that._getText("cfgSave"),
+            type: "Emphasized",
+            press: function () {
+              var sCode = oCode.getValue().trim();
+              var sName = oName.getValue().trim();
+              if (!sCode || !sName) {
+                MessageToast.show(that._getText("msgRequiredFields"));
+                return;
+              }
+
+              // Se\u00e7ili field mapping'i strip edip template_data olarak g\u00f6nder
+              var oFm = {};
+              ["company_code", "description", "direction", "category",
+               "http_method", "api_endpoint", "timeout_ms",
+               "sap_sample_json", "threepl_sample_json", "threepl_response_sample_json",
+               "field_rules", "response_rules", "headers"].forEach(function (k) {
+                if (oProfile[k] !== undefined) oFm[k] = oProfile[k];
+              });
+
+              oDialog.setBusy(true);
+              API.post("/api/v1/config/wizard/providers", {
+                code: sCode,
+                name: sName,
+                description: oDesc.getValue().trim() || null,
+                template_data: {
+                  field_mappings: [oFm]
+                }
+              }).then(function (res) {
+                oDialog.setBusy(false);
+                if (res.error) {
+                  MessageBox.error(res.error);
+                  return;
+                }
+                MessageToast.show(that._getText("cfgSaveAsTemplate") + " \u2714");
+                oDialog.close();
+              }).catch(function (err) {
+                oDialog.setBusy(false);
+                MessageBox.error(err.message || "Hata");
               });
             }
           }),

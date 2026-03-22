@@ -572,9 +572,9 @@ sap.ui.define([
        ═══════════════════════════════════════════ */
 
     _generateSourceApiPath: function (oProfile) {
-      var sProcess = (oProfile.process_type || "unknown").toLowerCase().replace(/_/g, "-");
+      var sCategory = (oProfile.category || "work-order").toLowerCase().replace(/_/g, "-");
       var sCompany = (oProfile.company_code || "default").toLowerCase().replace(/_/g, "-");
-      var sBase = "/api/inbound/" + sProcess + "/" + sCompany;
+      var sBase = "/api/inbound/" + sCategory + "/" + sCompany;
       var aAll = this._oModel.getProperty("/fieldMappings") || [];
       var sCandidate = sBase;
       var iSuffix = 2;
@@ -715,7 +715,7 @@ sap.ui.define([
           }
           API.post("/api/transactions", {
             direction: "OUTBOUND",
-            action: "OUTBOUND_" + oProfile.process_type,
+            action: "OUTBOUND_" + (oProfile.category || "WORK_ORDER"),
             status: bOk ? "SUCCESS" : "FAILED",
             sap_function: sEndpoint,
             sap_request: oInputObj,
@@ -734,7 +734,7 @@ sap.ui.define([
           that._oModel.setProperty("/testStatusState", "Error");
           API.post("/api/transactions", {
             direction: "OUTBOUND",
-            action: "OUTBOUND_" + oProfile.process_type,
+            action: "OUTBOUND_" + (oProfile.category || "WORK_ORDER"),
             status: "FAILED",
             sap_function: sEndpoint,
             sap_request: oInputObj,

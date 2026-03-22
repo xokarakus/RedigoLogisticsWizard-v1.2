@@ -14,20 +14,26 @@ const { deliveryBody } = require('../../shared/validators/common');
 
 const workOrderStore = new DbStore('work_orders');
 const transactionStore = new DbStore('transaction_logs');
-const pcStore = new DbStore('process_configs');
 const fmStore = new DbStore('field_mappings');
+const warehouseStore = new DbStore('warehouses');
 
 async function findWorkOrder(deliveryNo, req) {
   const orders = await workOrderStore.readAll({ filter: tenantFilter(req) });
   return orders.find(wo => wo.sap_delivery_no === deliveryNo) || null;
 }
 
-async function findProcessConfig(plantCode, warehouseCode, deliveryType) {
-  const configs = await pcStore.readAll();
-  return configs.find(c =>
-    c.plant_code === plantCode &&
-    c.warehouse_code === warehouseCode &&
-    c.delivery_type === deliveryType
+async function findFieldMappingByWarehouse(warehouseCode, tenantId) {
+  // Önce depoyu bul, sonra warehouse_id veya company_code ile field mapping eşleştir
+  const warehouses = await warehouseStore.readAll();
+  const wh = warehouses.find(w => w.code === warehouseCode && w.is_active);
+  if (!wh) return null;
+
+  const mappings = await fmStore.readAll();
+  // warehouse_id varsa ona göre, yoksa company_code fallback
+  return mappings.find(fm =>
+    fm.is_active &&
+    (!tenantId || fm.tenant_id === tenantId) &&
+    (fm.warehouse_id === wh.id || (!fm.warehouse_id && fm.company_code === wh.company_code))
   ) || null;
 }
 
@@ -40,7 +46,7 @@ router.post('/fetch-from-sap', validate(deliveryBody), async (req, res) => {
   const startedAt = new Date().toISOString();
 
   try {
-    const { delivery_no, plant_code, warehouse_code, delivery_type } = req.body;
+    const { delivery_no, warehouse_code } = req.body;
     if (!delivery_no) {
       return res.status(400).json({ error: 'delivery_no zorunludur' });
     }
@@ -50,17 +56,15 @@ router.post('/fetch-from-sap', validate(deliveryBody), async (req, res) => {
       return res.status(404).json({ error: 'İş emri bulunamadı', delivery_no });
     }
 
-    // Process config'den BAPI adını al
-    const config = await findProcessConfig(
-      plant_code || wo.plant_code,
-      warehouse_code || wo.warehouse_code,
-      delivery_type || wo.sap_delivery_type
-    );
-    const bapiName = (config && config.bapi_name) || 'BAPI_OUTB_DELIVERY_CHANGE';
+    // Depo bazlı field mapping bul
+    const effectiveWarehouse = warehouse_code || wo.warehouse_code;
+    const mapping = await findFieldMappingByWarehouse(effectiveWarehouse, req.tenantId);
+    const bapiName = 'BAPI_OUTB_DELIVERY_CHANGE';
 
-    // SAP RFC çağır
+    // SAP HTTP çağır
     const rfcParams = { VBELN: delivery_no };
-    const rfcResult = await sapClient.call(bapiName, rfcParams);
+    const sapCtx = { companyCode: (mapping && mapping.company_code) || '' };
+    const rfcResult = await sapClient.call(bapiName, rfcParams, sapCtx);
 
     // Work order güncelle — SAP'den taze veri
     const updateData = {};
@@ -143,7 +147,7 @@ router.post('/send-to-3pl', validate(deliveryBody), async (req, res) => {
   const startedAt = new Date().toISOString();
 
   try {
-    const { delivery_no, plant_code, warehouse_code, delivery_type } = req.body;
+    const { delivery_no, warehouse_code } = req.body;
     if (!delivery_no) {
       return res.status(400).json({ error: 'delivery_no zorunludur' });
     }
@@ -154,23 +158,10 @@ router.post('/send-to-3pl', validate(deliveryBody), async (req, res) => {
     }
 
     const correlationId = wo.correlation_id || uuidv4();
-    const effectivePlant = plant_code || wo.plant_code;
     const effectiveWarehouse = warehouse_code || wo.warehouse_code;
-    const effectiveDeliveryType = delivery_type || wo.sap_delivery_type;
 
-    // Process config bul
-    const config = await findProcessConfig(effectivePlant, effectiveWarehouse, effectiveDeliveryType);
-
-    // Field mapping bul — process_type + company_code eşleştir
-    const allMappings = await fmStore.readAll();
-    const processType = (config && config.process_type) || wo.process_type || '';
-    const companyCode = (config && config.company_code) || '';
-
-    const mapping = allMappings.find(fm =>
-      fm.is_active &&
-      fm.process_type === processType &&
-      (fm.company_code === companyCode || !companyCode)
-    );
+    // Depo bazlı field mapping bul
+    const mapping = await findFieldMappingByWarehouse(effectiveWarehouse, req.tenantId);
 
     // SAP payload'ı dönüştür
     const sapPayload = wo.sap_raw_payload || {};
@@ -180,9 +171,7 @@ router.post('/send-to-3pl', validate(deliveryBody), async (req, res) => {
     }
 
     // 3PL API endpoint
-    const apiEndpoint = (mapping && mapping.api_endpoint) ||
-                        (config && config.api_base_url) ||
-                        null;
+    const apiEndpoint = (mapping && mapping.api_endpoint) || null;
 
     let dispatchResult;
     if (apiEndpoint) {
@@ -213,7 +202,7 @@ router.post('/send-to-3pl', validate(deliveryBody), async (req, res) => {
       tenant_id: req.tenantId,
       correlation_id: correlationId,
       direction: 'OUTBOUND',
-      action: 'OUTBOUND_' + processType,
+      action: 'SEND_TO_3PL',
       status: dispatchResult.ok ? 'SUCCESS' : 'FAILED',
       sap_function: apiEndpoint || '(demo)',
       sap_doc_number: delivery_no,

@@ -13,8 +13,8 @@ router.use(requireSuperAdmin);
 const ALLOWED_TABLES = [
   'tenants', 'users', 'roles', 'role_permissions', 'audit_logs',
   'system_settings', 'work_orders', 'work_order_lines', 'transaction_logs',
-  'warehouses', 'process_types', 'process_configs', 'field_mappings',
-  'security_profiles', 'movement_mappings', 'sap_field_aliases',
+  'warehouses', 'field_mappings',
+  'security_profiles', 'sap_field_aliases',
   'materials', 'business_partners', 'job_queue', 'scheduled_jobs',
   'job_executions', 'job_execution_items', 'reconciliation_reports',
   'refresh_tokens', 'schema_migrations'

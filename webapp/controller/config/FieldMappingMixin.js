@@ -33,7 +33,8 @@ sap.ui.define([
         return (o.company_code || "").toLowerCase().indexOf(sQuery) >= 0
           || (o.description || "").toLowerCase().indexOf(sQuery) >= 0
           || (o.direction || "").toLowerCase().indexOf(sQuery) >= 0
-          || (o.process_type || "").toLowerCase().indexOf(sQuery) >= 0
+          || (o._warehouse_name || "").toLowerCase().indexOf(sQuery) >= 0
+          || (o._sap_plant || "").toLowerCase().indexOf(sQuery) >= 0
           || (o.category || "").toLowerCase().indexOf(sQuery) >= 0
           || (o.http_method || "").toLowerCase().indexOf(sQuery) >= 0;
       });
@@ -45,7 +46,7 @@ sap.ui.define([
       if (!oItem) return;
       var oProfile = oItem.getBindingContext("cfg").getObject();
       this._oModel.setProperty("/selectedFM", oProfile.id);
-      this._oModel.setProperty("/selectedFMTitle", oProfile.process_type + " \u2013 " + oProfile.company_code + " \u2013 " + oProfile.description);
+      this._oModel.setProperty("/selectedFMTitle", (oProfile._warehouse_name || oProfile.company_code) + " \u2013 " + oProfile.description);
       this._oModel.setProperty("/selectedFMDirection", oProfile.direction || "SAP_TO_3PL");
       this._oModel.setProperty("/selectedFMCategory", oProfile.category || "WORK_ORDER");
       this._oModel.setProperty("/selectedFMSapJson", JSON.stringify(oProfile.sap_sample_json || {}, null, 2));
@@ -100,24 +101,13 @@ sap.ui.define([
       var bEdit = !!oExisting;
       var sTitle = bEdit ? this._getText("fmEditProfile") : this._getText("fmAddProfile");
 
-      var aTypes = this._oModel.getProperty("/processTypes") || [];
-      var oProcessType = new Select({ selectedKey: bEdit ? oExisting.process_type : "" });
-      oProcessType.addItem(new Item({ key: "", text: this._getText("cfgSelectProcessType") }));
-      aTypes.forEach(function (t) {
-        oProcessType.addItem(new Item({ key: t.code, text: t.code + " \u2013 " + t.name }));
-      });
-      var oCompany = new Select({ selectedKey: bEdit ? oExisting.company_code : "" });
+      // Depo seçimi — warehouse_id üzerinden (şirket kodu + üretim yeri gösterilir)
       var aWhFM = this._oModel.getProperty("/warehouses") || [];
-      var seenFM = {};
+      var oWarehouse = new Select({ selectedKey: bEdit ? (oExisting.warehouse_id || "") : "" });
+      oWarehouse.addItem(new Item({ key: "", text: this._getText("fmSelectWarehouse") }));
       aWhFM.forEach(function (w) {
-        if (w.company_code && !seenFM[w.company_code]) {
-          oCompany.addItem(new Item({ key: w.company_code, text: w.company_code }));
-          seenFM[w.company_code] = true;
-        }
+        oWarehouse.addItem(new Item({ key: w.id, text: w.name + " \u2013 " + (w.company_code || "") + " (" + (w.sap_plant || "") + ")" }));
       });
-      if (bEdit && oExisting.company_code && !seenFM[oExisting.company_code]) {
-        oCompany.insertItem(new Item({ key: oExisting.company_code, text: oExisting.company_code }), 0);
-      }
       var oCategory = new Select({ selectedKey: bEdit ? (oExisting.category || "WORK_ORDER") : "WORK_ORDER" });
       oCategory.addItem(new Item({ key: "WORK_ORDER", text: this._getText("fmCategoryWorkOrder") }));
       oCategory.addItem(new Item({ key: "MASTER_DATA", text: this._getText("fmCategoryMasterData") }));
@@ -127,18 +117,7 @@ sap.ui.define([
       var o3plJson = new TextArea({ rows: 10, width: "100%" });
       o3plJson.setValue(bEdit ? JSON.stringify(oExisting.threepl_sample_json || {}, null, 2) : "{}");
 
-      function fnAutoFillSapJson() {
-        var sKey = oProcessType.getSelectedKey();
-        if (!sKey) return;
-        var oType = aTypes.find(function (t) { return t.code === sKey; });
-        if (oType && oType.sap_sample_json && Object.keys(oType.sap_sample_json).length > 0) {
-          var sCurrent = oSapJson.getValue().trim();
-          if (!sCurrent || sCurrent === "{}" || sCurrent === "{ }") {
-            oSapJson.setValue(JSON.stringify(oType.sap_sample_json, null, 2));
-          }
-        }
-      }
-      oProcessType.attachChange(fnAutoFillSapJson);
+      // (SAP JSON auto-fill artık process_type'a bağlı değil)
 
       var oDirection = new Select({ selectedKey: bEdit ? (oExisting.direction || "SAP_TO_3PL") : "SAP_TO_3PL" });
       oDirection.addItem(new Item({ key: "SAP_TO_3PL", text: "SAP \u2192 3PL" }));
@@ -170,8 +149,7 @@ sap.ui.define([
         emptySpanXL: 0, emptySpanL: 0, emptySpanM: 0,
         columnsXL: 1, columnsL: 1, columnsM: 1,
         content: [
-          new Label({ text: this._getText("cfgProcessType"), required: true }), oProcessType,
-          new Label({ text: this._getText("fmCompanyCode"), required: true }), oCompany,
+          new Label({ text: this._getText("fmWarehouse"), required: true }), oWarehouse,
           new Label({ text: this._getText("fmCategory"), required: true }), oCategory,
           new Label({ text: this._getText("cfgDescription") }), oDesc,
           new Label({ text: this._getText("fmDirection") }), oDirection,
@@ -201,9 +179,12 @@ sap.ui.define([
             try { o3plObj = JSON.parse(s3plRaw); } catch (e) {
               MessageBox.error(that._getText("fmInvalid3PLJson")); return;
             }
+            var sWhId = oWarehouse.getSelectedKey();
+            var whSel = aWhFM.find(function (w) { return w.id === sWhId; });
             var oPayload = {
-              process_type: oProcessType.getSelectedKey(),
-              company_code: oCompany.getSelectedKey(),
+              name: (whSel ? whSel.name : "") + " \u2013 " + oDesc.getValue().trim(),
+              warehouse_id: sWhId || null,
+              company_code: whSel ? (whSel.company_code || "") : "",
               category: oCategory.getSelectedKey(),
               description: oDesc.getValue().trim(),
               direction: oDirection.getSelectedKey(),
@@ -219,7 +200,7 @@ sap.ui.define([
             } else {
               oPayload.field_rules = [];
             }
-            if (!oPayload.process_type || !oPayload.company_code || !oPayload.category) {
+            if (!sWhId || !oPayload.category) {
               MessageBox.error(that._getText("msgRequiredFields")); return;
             }
             var pReq = bEdit
@@ -264,13 +245,13 @@ sap.ui.define([
         onClose: function (sAction) {
           if (sAction === MessageBox.Action.OK) {
             API.del("/api/config/field-mappings/" + oItem.id).then(function (result) {
-              if (result.success) {
+              if (result.error) {
+                MessageBox.error(result.error);
+              } else {
                 MessageToast.show(that._getText("msgDeleted"));
                 that._oModel.setProperty("/selectedFM", null);
                 that._oModel.setProperty("/selectedFMRules", []);
                 that._loadData();
-              } else {
-                MessageBox.error(that._getText("msgError"));
               }
             });
           }
@@ -466,6 +447,11 @@ sap.ui.define([
               try { oCurrentSapJson = JSON.parse(sSapRaw); } catch (_) { /* eski deger */ }
             }
 
+            // Yeni kural eklenirken SAP JSON'da alan yoksa otomatik ekle
+            if (!bEdit) {
+              that._ensureSapJsonField(oCurrentSapJson, oRule.sap_field, oRule.default_value || "");
+            }
+
             var new3plJson = that._rebuildThreeplJson(aRules, oCurrentSapJson);
             API.put("/api/config/field-mappings/" + oFound.profile.id, {
               field_rules: aRules,
@@ -474,6 +460,7 @@ sap.ui.define([
             }).then(function (result) {
               if (result.data && !Array.isArray(result.data)) {
                 MessageToast.show(that._getText("msgSaved"));
+                that._oModel.setProperty("/selectedFMSapJson", JSON.stringify(oCurrentSapJson, null, 2));
                 that._setFMRules(aRules);
                 that._oModel.setProperty("/selectedFM3plJson", JSON.stringify(new3plJson, null, 2));
                 that._oModel.setProperty("/fieldMappings/" + oFound.index + "/field_rules", aRules);
@@ -705,6 +692,91 @@ sap.ui.define([
           MessageBox.error(result.error || that._getText("msgError"));
         }
       });
+    },
+
+    /**
+     * SAP JSON objesinde verilen dot-notation path yoksa otomatik ekler.
+     * Ornek: "ITEMS[].LFIMG" → obj.ITEMS[0].LFIMG = defaultVal
+     *        "VBELN" → obj.VBELN = defaultVal
+     */
+    onSaveFieldMappingAll: function () {
+      var that = this;
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) { MessageToast.show(this._getText("fmSelectProfile")); return; }
+      var oP = oFound.profile;
+
+      // Model'den guncel degerleri oku
+      var aRules = this._oModel.getProperty("/selectedFMRules") || [];
+      var cleanRules = aRules.map(function (r) {
+        return { sap_field: r.sap_field, threepl_field: r.threepl_field, transform: r.transform || "DIRECT", required: !!r.required, default_value: r.default_value || null };
+      });
+
+      var oSapJson = oP.sap_sample_json || {};
+      var sSapRaw = this._oModel.getProperty("/selectedFMSapJson");
+      if (sSapRaw) { try { oSapJson = JSON.parse(sSapRaw); } catch (_) {} }
+
+      var o3plJson = {};
+      var s3plRaw = this._oModel.getProperty("/selectedFM3plJson");
+      if (s3plRaw) { try { o3plJson = JSON.parse(s3plRaw); } catch (_) {} }
+
+      var oPayload = {
+        field_rules: cleanRules,
+        sap_sample_json: oSapJson,
+        threepl_sample_json: o3plJson,
+        http_method: this._oModel.getProperty("/selectedFMMethod") || oP.http_method,
+        api_endpoint: this._oModel.getProperty("/selectedFMApiEndpoint") || oP.api_endpoint,
+        timeout_ms: parseInt(this._oModel.getProperty("/selectedFMTimeout"), 10) || oP.timeout_ms || 30000
+      };
+
+      // Header'lar
+      var aHeaders = this._oModel.getProperty("/selectedFMHeaders");
+      if (aHeaders) oPayload.headers = aHeaders;
+
+      API.put("/api/config/field-mappings/" + oP.id, oPayload).then(function (result) {
+        if (result.data && !Array.isArray(result.data)) {
+          MessageToast.show(that._getText("msgSaved"));
+          that._setFMRules(cleanRules);
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/field_rules", cleanRules);
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/ruleCount", cleanRules.length);
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/sap_sample_json", oSapJson);
+          that._oModel.setProperty("/fieldMappings/" + oFound.index + "/threepl_sample_json", o3plJson);
+        } else {
+          MessageBox.error(result.error || that._getText("msgError"));
+        }
+      });
+    },
+
+    _ensureSapJsonField: function (obj, sFieldPath, defaultVal) {
+      if (!sFieldPath || !obj || typeof obj !== "object") return;
+
+      // Array wrapper ise ilk elemana bak
+      var target = Array.isArray(obj) ? (obj[0] || (obj[0] = {})) : obj;
+
+      var parts = sFieldPath.replace(/\[\]/g, "").split(".");
+      for (var i = 0; i < parts.length; i++) {
+        var key = parts[i];
+        if (i === parts.length - 1) {
+          // Son segment — alan zaten varsa dokunma
+          if (!(key in target)) {
+            target[key] = defaultVal !== undefined ? defaultVal : "";
+          }
+        } else {
+          // Ara segment — obje/dizi yoksa olustur
+          if (target[key] === undefined || target[key] === null) {
+            target[key] = {};
+          }
+          var next = target[key];
+          if (Array.isArray(next)) {
+            if (next.length === 0) next.push({});
+            target = next[0];
+          } else if (typeof next === "object") {
+            target = next;
+          } else {
+            // Primitif — uzerine yazamayiz, dur
+            return;
+          }
+        }
+      }
     }
   };
 });

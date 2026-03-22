@@ -177,10 +177,10 @@ v1.use('/work-orders', authenticate, require('./api/routes/workOrders'));
 v1.use('/transactions', authenticate, require('./api/routes/transactions'));
 v1.use('/dashboard', authenticate, require('./api/routes/dashboard'));
 v1.use('/reconciliation', authenticate, require('./api/routes/reconciliation'));
-v1.use('/inventory', authenticate, require('./api/routes/inventory'));
+// inventory route kaldırıldı (movement_mappings + goodsMovement artık yok)
 v1.use('/config', authenticate, require('./api/routes/config'));
 v1.use('/trigger', authenticate, require('./api/routes/trigger'));
-v1.use('/goods-movement', authenticate, require('./api/routes/goodsMovement'));
+// goods-movement route kaldırıldı (mimari sadeleştirme)
 v1.use('/scheduled-jobs', authenticate, require('./api/routes/scheduledJobs'));
 v1.use('/master-data', authenticate, require('./api/routes/masterData'));
 v1.use('/db-cockpit', authenticate, require('./api/routes/dbCockpit'));
@@ -309,7 +309,7 @@ async function start() {
     process.exit(1);
   }
 
-  await sapClient.initialize();
+  await sapClient.initialize(); // HTTP mode — mock check only
 
   // PostgreSQL Queue Worker baslat
   pgQueue.startWorker(queueHandlers);
