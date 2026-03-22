@@ -128,7 +128,7 @@ sap.ui.define([
         })
         .catch(function (err) {
           that._oModel.setProperty("/busy", false);
-          that._showError("Sunucu ba\u011flant\u0131s\u0131 ba\u015far\u0131s\u0131z: " + err.message);
+          that._showError(that.getView().getModel("i18n").getResourceBundle().getText("errServerConnection", [err.message]));
         });
     },
 
@@ -218,7 +218,7 @@ sap.ui.define([
               })
               .then(function (result) {
                 if (!result.ok) {
-                  oErrorStrip.setText(result.body.error || "Hata olu\u015ftu");
+                  oErrorStrip.setText(result.body.error || oBundle.getText("errGeneric"));
                   oErrorStrip.setVisible(true);
                   return;
                 }
@@ -229,7 +229,7 @@ sap.ui.define([
                 }
               })
               .catch(function (err) {
-                oErrorStrip.setText("Sunucu hatas\u0131: " + err.message);
+                oErrorStrip.setText(oBundle.getText("errServerError", [err.message]));
                 oErrorStrip.setVisible(true);
               });
           }

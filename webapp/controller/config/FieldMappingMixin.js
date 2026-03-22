@@ -10,8 +10,9 @@ sap.ui.define([
   "sap/m/CheckBox",
   "sap/ui/core/Item",
   "sap/ui/layout/form/SimpleForm",
-  "com/redigo/logistics/cockpit/util/API"
-], function (MessageToast, MessageBox, Dialog, Button, Label, Input, Select, TextArea, CheckBox, Item, SimpleForm, API) {
+  "com/redigo/logistics/cockpit/util/API",
+  "com/redigo/logistics/cockpit/control/VisualMapper"
+], function (MessageToast, MessageBox, Dialog, Button, Label, Input, Select, TextArea, CheckBox, Item, SimpleForm, API, VisualMapper) {
   "use strict";
 
   return {
@@ -381,6 +382,11 @@ sap.ui.define([
         var oBinding = oTree.getBinding("items");
         if (oBinding) oBinding.refresh(true);
       }
+
+      // Also refresh visual mapper if active
+      if (this._visualMapper) {
+        this._updateVisualMapper();
+      }
     },
 
     _openFieldRuleDialog: function (oExisting, iIndex, sPreFillSapField) {
@@ -744,6 +750,196 @@ sap.ui.define([
           MessageBox.error(result.error || that._getText("msgError"));
         }
       });
+    },
+
+    /* ═══════════════════════════════════════════
+       Visual Mapper — toggle + lifecycle
+       ═══════════════════════════════════════════ */
+
+    onFMViewToggle: function (oEvent) {
+      var sKey = oEvent.getParameter("key") || oEvent.getSource().getSelectedKey();
+      var bVisual = (sKey === "visual");
+
+      // Toggle visibility
+      var oTree = this.byId("fmRulesTree");
+      var oContainer = this.byId("visualMapperContainer");
+      if (oTree) oTree.setVisible(!bVisual);
+      if (oContainer) oContainer.setVisible(bVisual);
+
+      if (bVisual) {
+        this._initVisualMapper();
+      } else {
+        this._destroyVisualMapper();
+      }
+    },
+
+    _initVisualMapper: function () {
+      var self = this;
+
+      // Wait for DOM
+      setTimeout(function () {
+        var host = document.getElementById("visualMapperHost");
+        if (!host) return;
+
+        // Destroy previous instance
+        if (self._visualMapper) {
+          self._visualMapper.destroy();
+        }
+
+        self._visualMapper = new VisualMapper({
+          container: host,
+          getText: function (k) { return self._getText(k); },
+          onConnect: function (sourceField, targetField) {
+            self._vmAddConnection(sourceField, targetField);
+          },
+          onDisconnect: function (sourceField, targetField) {
+            self._vmRemoveConnection(sourceField, targetField);
+          },
+          onTransformChange: function (sourceField, targetField, newTransform) {
+            self._vmChangeTransform(sourceField, targetField, newTransform);
+          }
+        });
+
+        self._updateVisualMapper();
+      }, 100);
+    },
+
+    _destroyVisualMapper: function () {
+      if (this._visualMapper) {
+        this._visualMapper.destroy();
+        this._visualMapper = null;
+      }
+    },
+
+    _updateVisualMapper: function () {
+      if (!this._visualMapper) return;
+
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+      var oProfile = oFound.profile;
+
+      // Build source fields from SAP JSON
+      var sSapRaw = this._oModel.getProperty("/selectedFMSapJson");
+      var oSapJson;
+      try { oSapJson = JSON.parse(sSapRaw || "{}"); } catch (e) { oSapJson = {}; }
+      if (Array.isArray(oSapJson) && oSapJson.length === 1) oSapJson = oSapJson[0];
+
+      var sapKeys = this._flattenJsonKeys(oSapJson);
+      var sourceFields = sapKeys.map(function (k) {
+        var val = null;
+        try { val = this._resolveJsonPath(oSapJson, k); } catch (e) { /* ignore */ }
+        var short = k;
+        var dot = k.lastIndexOf(".");
+        if (dot >= 0) short = k.substring(dot + 1);
+        return {
+          key: k,
+          label: short,
+          sample: val !== null && val !== undefined ? String(val).substring(0, 20) : ""
+        };
+      }.bind(this));
+
+      // Build target fields from 3PL JSON + existing rules
+      var s3plRaw = this._oModel.getProperty("/selectedFM3plJson");
+      var o3plJson;
+      try { o3plJson = JSON.parse(s3plRaw || "{}"); } catch (e) { o3plJson = {}; }
+      if (Array.isArray(o3plJson) && o3plJson.length === 1) o3plJson = o3plJson[0];
+
+      var threeplKeys = this._flattenJsonKeys(o3plJson);
+      var aRules = oProfile.field_rules || [];
+
+      // Add any threepl_field from rules that isn't in 3PL JSON
+      var keySet = {};
+      threeplKeys.forEach(function (k) { keySet[k] = true; });
+      aRules.forEach(function (r) {
+        if (r.threepl_field && !keySet[r.threepl_field]) {
+          threeplKeys.push(r.threepl_field);
+          keySet[r.threepl_field] = true;
+        }
+      });
+
+      var targetFields = threeplKeys.map(function (k) {
+        var short = k;
+        var dot = k.lastIndexOf(".");
+        if (dot >= 0) short = k.substring(dot + 1);
+        return { key: k, label: short };
+      });
+
+      // Build connections from field_rules
+      var connections = [];
+      aRules.forEach(function (r) {
+        if (r.sap_field && r.threepl_field) {
+          connections.push({
+            source: r.sap_field,
+            target: r.threepl_field,
+            transform: r.transform || "DIRECT"
+          });
+        }
+      });
+
+      this._visualMapper.setData(sourceFields, targetFields, connections);
+    },
+
+    _vmAddConnection: function (sourceField, targetField) {
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+
+      var aRules = (oFound.profile.field_rules || []).slice();
+
+      // Check if source already has a rule without target
+      var iExisting = -1;
+      for (var i = 0; i < aRules.length; i++) {
+        if (aRules[i].sap_field === sourceField && !aRules[i].threepl_field) {
+          iExisting = i;
+          break;
+        }
+      }
+
+      if (iExisting >= 0) {
+        aRules[iExisting].threepl_field = targetField;
+      } else {
+        aRules.push({ sap_field: sourceField, threepl_field: targetField, transform: "DIRECT" });
+      }
+
+      var self = this;
+      this._saveRulesAndRefresh(aRules);
+      setTimeout(function () { self._updateVisualMapper(); }, 300);
+    },
+
+    _vmRemoveConnection: function (sourceField, targetField) {
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+
+      var aRules = (oFound.profile.field_rules || []).slice();
+
+      // Find and remove the matching rule
+      for (var i = aRules.length - 1; i >= 0; i--) {
+        if (aRules[i].sap_field === sourceField && aRules[i].threepl_field === targetField) {
+          aRules.splice(i, 1);
+          break;
+        }
+      }
+
+      var self = this;
+      this._saveRulesAndRefresh(aRules);
+      setTimeout(function () { self._updateVisualMapper(); }, 300);
+    },
+
+    _vmChangeTransform: function (sourceField, targetField, newTransform) {
+      var oFound = this._getSelectedFMProfile();
+      if (!oFound) return;
+
+      var aRules = (oFound.profile.field_rules || []).slice();
+
+      for (var i = 0; i < aRules.length; i++) {
+        if (aRules[i].sap_field === sourceField && aRules[i].threepl_field === targetField) {
+          aRules[i].transform = newTransform;
+          break;
+        }
+      }
+
+      var self = this;
+      this._saveRulesAndRefresh(aRules);
+      setTimeout(function () { self._updateVisualMapper(); }, 300);
     },
 
     _ensureSapJsonField: function (obj, sFieldPath, defaultVal) {

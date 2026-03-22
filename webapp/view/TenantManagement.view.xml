@@ -8,6 +8,7 @@
 
     <headerContent>
       <Button text="{i18n>btnRefresh}" icon="sap-icon://refresh" press="onRefresh" type="Transparent" />
+      <Button text="{i18n>ptManageTemplates}" icon="sap-icon://shipping-status" press="onManageProviderTemplates" type="Default" />
       <Button text="{i18n>tmAddTenant}" icon="sap-icon://add" press="onAddTenant" type="Emphasized" />
     </headerContent>
 

@@ -29,7 +29,7 @@ sap.ui.define([
       var that = this;
       API.get("/api/transactions", { status: "DEAD", limit: 100 }).then(function (result) {
         var aData = (result.data || []).map(function (tx) {
-          tx.started_at_fmt = tx.started_at ? new Date(tx.started_at).toLocaleString("tr-TR") : "";
+          tx.started_at_fmt = tx.started_at ? new Date(tx.started_at).toLocaleString() : "";
           return tx;
         });
         that._oModel.setProperty("/data", aData);

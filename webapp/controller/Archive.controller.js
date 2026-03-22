@@ -9,21 +9,21 @@ sap.ui.define([
   var PAGE_SIZE = 50;
 
   var EXPORT_COLS = [
-    { label: "Teslimat No",       property: "sap_delivery_no",    type: "String" },
-    { label: "Teslimat Tipi",     property: "sap_delivery_type",  type: "String" },
-    { label: "Y\u00f6n",          property: "order_type",         type: "String" },
-    { label: "S\u00fcre\u00e7",   property: "process_type",       type: "String" },
-    { label: "Durum",             property: "status",             type: "String" },
-    { label: "Tesis",             property: "plant_code",         type: "String" },
-    { label: "Depo",              property: "warehouse_code",     type: "String" },
-    { label: "Hareket Tipi",      property: "mvt_type",           type: "String" },
-    { label: "M\u00fc\u015fteri", property: "sap_ship_to",        type: "String" },
-    { label: "\u00d6ncelik",      property: "priority",           type: "String" },
-    { label: "Kalemler",          property: "line_count",         type: "Number" },
-    { label: "Al\u0131nma",       property: "received_at_fmt",    type: "String" },
-    { label: "Tamamlanma",        property: "completed_at_fmt",   type: "String" },
-    { label: "Ar\u015fivlenme",   property: "archived_at_fmt",    type: "String" },
-    { label: "Notlar",            property: "notes",              type: "String" }
+    { i18nKey: "expDeliveryNo",    property: "sap_delivery_no",    type: "String" },
+    { i18nKey: "expDeliveryType",  property: "sap_delivery_type",  type: "String" },
+    { i18nKey: "expDirection",     property: "order_type",         type: "String" },
+    { i18nKey: "expProcess",       property: "process_type",       type: "String" },
+    { i18nKey: "expStatus",        property: "status",             type: "String" },
+    { i18nKey: "expSapPlant",      property: "plant_code",         type: "String" },
+    { i18nKey: "expWarehouse",     property: "warehouse_code",     type: "String" },
+    { i18nKey: "expMovementType",  property: "mvt_type",           type: "String" },
+    { i18nKey: "expCustomerName",  property: "sap_ship_to",        type: "String" },
+    { i18nKey: "expPriority",      property: "priority",           type: "String" },
+    { i18nKey: "expItems",         property: "line_count",         type: "Number" },
+    { i18nKey: "expReceived",      property: "received_at_fmt",    type: "String" },
+    { i18nKey: "expCompleted",     property: "completed_at_fmt",   type: "String" },
+    { i18nKey: "expArchived",      property: "archived_at_fmt",    type: "String" },
+    { i18nKey: "expNotes",         property: "notes",              type: "String" }
   ];
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.Archive", {
@@ -172,7 +172,7 @@ sap.ui.define([
         var iTotalPages = Math.ceil(iTotal / iLimit) || 1;
         that._oModel.setProperty("/pageText", iPage + " / " + iTotalPages);
       }).catch(function () {
-        MessageToast.show("Ar\u015fiv verileri y\u00fcklenemedi");
+        MessageToast.show(that._getText("errArchiveLoad"));
       });
     },
 
@@ -245,11 +245,15 @@ sap.ui.define([
       var oBinding = oTable.getBinding("rows");
       if (!oBinding) { return; }
 
+      var that = this;
       sap.ui.require(["sap/ui/export/Spreadsheet"], function (Spreadsheet) {
+        var aCols = EXPORT_COLS.map(function (c) {
+          return { label: that._getText(c.i18nKey), property: c.property, type: c.type };
+        });
         var oSettings = {
-          workbook: { columns: EXPORT_COLS },
+          workbook: { columns: aCols },
           dataSource: oBinding,
-          fileName: "Arsiv_" + new Date().toISOString().slice(0, 10) + ".xlsx"
+          fileName: that._getText("expArchiveFileName") + new Date().toISOString().slice(0, 10) + ".xlsx"
         };
         var oSheet = new Spreadsheet(oSettings);
         oSheet.build().finally(function () { oSheet.destroy(); });

@@ -212,9 +212,22 @@
               <OverflowToolbar>
                 <Title text="{i18n>fmFieldRules}" level="H5" />
                 <ToolbarSpacer />
+
+                <!-- Görünüm toggle: Tablo / Görsel -->
+                <SegmentedButton id="fmViewToggle" selectedKey="tree" selectionChange="onFMViewToggle">
+                  <items>
+                    <SegmentedButtonItem key="tree" icon="sap-icon://tree" tooltip="{i18n>fmViewTree}" />
+                    <SegmentedButtonItem key="visual" icon="sap-icon://chart-axis" tooltip="{i18n>fmViewVisual}" />
+                  </items>
+                </SegmentedButton>
+
                 <Button text="{i18n>fmAutoMap}" icon="sap-icon://synchronize" press="onAutoMap" />
                 <Button text="{i18n>fmAddRule}" icon="sap-icon://add" press="onAddFieldRule" type="Emphasized" />
               </OverflowToolbar>
+
+              <!-- Visual Mapper container (hidden by default) -->
+              <core:HTML id="visualMapperContainer" visible="false"
+                content="&lt;div id='visualMapperHost' style='min-height:300px;padding:8px 0'&gt;&lt;/div&gt;" />
 
               <Tree id="fmRulesTree"
                 items="{ path: 'cfg>/fmTreeNodes', parameters: { arrayNames: ['children'] } }">

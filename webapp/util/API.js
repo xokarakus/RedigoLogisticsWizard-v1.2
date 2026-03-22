@@ -11,6 +11,20 @@ sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
 
     _token: null,
 
+    _i18nBundle: null,
+    _getBundle: function () {
+      if (!this._i18nBundle) {
+        try {
+          this._i18nBundle = new sap.ui.model.resource.ResourceModel({
+            bundleName: "com.redigo.logistics.cockpit.i18n.i18n",
+            supportedLocales: ["", "tr", "en", "de", "fr", "es"],
+            fallbackLocale: "en"
+          }).getResourceBundle();
+        } catch (_) { return null; }
+      }
+      return this._i18nBundle;
+    },
+
     setToken: function (t) {
       this._token = t;
       localStorage.setItem("redigo_token", t);
@@ -57,10 +71,11 @@ sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
           that.stopSessionMonitor();
           // SAPUI5 MessageBox kullan — sap.ui.require ile lazy load
           sap.ui.require(["sap/m/MessageBox"], function (MessageBox) {
+            var b = that._getBundle();
             MessageBox.warning(
-              "Oturumunuz uzun s\u00fcreli i\u015flem yap\u0131lmad\u0131\u011f\u0131 i\u00e7in sonland\u0131r\u0131ld\u0131.",
+              b ? b.getText("sessExpiredMsg") : "Session expired due to inactivity.",
               {
-                title: "Oturum S\u00fcresi Doldu",
+                title: b ? b.getText("sessExpiredTitle") : "Session Expired",
                 onClose: function () { that.logout(); }
               }
             );
@@ -72,8 +87,9 @@ sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
         var timeLeft = that._sessionTimeout - inactiveTime;
         if (timeLeft < 60000 && timeLeft > 55000 && !that._warningShown) {
           that._warningShown = true;
+          var b = that._getBundle();
           MessageToast.show(
-            "Oturum 1 dakika i\u00e7inde sonlanacak. Etkile\u015fime devam edin.",
+            b ? b.getText("sessWarningMsg") : "Session will end in 1 minute.",
             { duration: 10000, width: "25em" }
           );
         }
@@ -145,7 +161,8 @@ sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
         .catch(function (err) {
           if (!err) return { data: null, error: "Unauthorized" };
           console.error("[API] " + sMethod + " " + sUrl + " failed:", err.message);
-          MessageToast.show("Sunucu hatas\u0131: " + err.message, { duration: 5000 });
+          var b = that._getBundle();
+          MessageToast.show(b ? b.getText("errServerError", [err.message]) : "Server error: " + err.message, { duration: 5000 });
           if (sMethod === "GET") {
             return { data: [], count: 0, error: err.message };
           }

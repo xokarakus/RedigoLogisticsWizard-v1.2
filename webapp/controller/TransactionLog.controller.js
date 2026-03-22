@@ -24,28 +24,28 @@ sap.ui.define([
   var MAX_JSON_DISPLAY = 50000; // 50KB limit for JSON display
 
   var ACTION_LABELS = {
-    CREATE_WORK_ORDER:  "\u0130\u015f Emri Olu\u015fturuldu",
-    DISPATCH_TO_3PL:    "3PL\u2019ye G\u00f6nderildi",
-    FETCH_FROM_SAP:     "SAP\u2019den Veri \u00c7ekildi",
-    QUERY_STATUS:       "Durum Sorguland\u0131",
-    POST_PGI:           "PGI (Mal \u00c7\u0131k\u0131\u015f) Kaydedildi",
-    POST_GR:            "GR (Mal Giri\u015f) Kaydedildi",
-    PGI_POST:           "PGI Kaydedildi",
-    GR_POST:            "Mal Giri\u015f Kaydedildi",
-    DELIVERY_UPDATE:    "Teslimat G\u00fcncellendi",
-    INV_MOVEMENT:       "Stok Hareketi",
-    STATUS_CHANGE:      "Durum De\u011fi\u015fikli\u011fi",
-    INBOUND_DELIVERY:   "Gelen Teslimat",
-    OUTBOUND_DELIVERY:  "Giden Teslimat",
-    QUANTITY_CHANGE:    "Miktar De\u011fi\u015fikli\u011fi",
-    SAP_REFRESH:        "SAP Verisi Yenilendi"
+    CREATE_WORK_ORDER:  "actCreateWorkOrder",
+    DISPATCH_TO_3PL:    "actDispatchTo3pl",
+    FETCH_FROM_SAP:     "actFetchFromSap",
+    QUERY_STATUS:       "actQueryStatus",
+    POST_PGI:           "actPostPgi",
+    POST_GR:            "actPostGr",
+    PGI_POST:           "actPgiPost",
+    GR_POST:            "actGrPost",
+    DELIVERY_UPDATE:    "actDeliveryUpdate",
+    INV_MOVEMENT:       "actInvMovement",
+    STATUS_CHANGE:      "actStatusChange",
+    INBOUND_DELIVERY:   "actInboundDelivery",
+    OUTBOUND_DELIVERY:  "actOutboundDelivery",
+    QUANTITY_CHANGE:    "actQuantityChange",
+    SAP_REFRESH:        "actSapRefresh"
   };
 
   function getActionLabel(sAction) {
     if (!sAction) return "";
     if (ACTION_LABELS[sAction]) return ACTION_LABELS[sAction];
     if (sAction.indexOf("OUTBOUND_") === 0) {
-      return "3PL\u2019ye G\u00f6nderildi (" + sAction.substring(9) + ")";
+      return "actDispatchTo3plDynamic";
     }
     return sAction;
   }
@@ -87,9 +87,16 @@ sap.ui.define([
       var that = this;
       API.get("/api/transactions", { limit: 100 }).then(function (result) {
         var aData = (result.data || []).map(function (tx) {
-          tx.started_at_fmt = tx.started_at ? new Date(tx.started_at).toLocaleString("tr-TR") : "";
+          tx.started_at_fmt = tx.started_at ? new Date(tx.started_at).toLocaleString() : "";
           tx.correlation_ref = tx.correlation_id ? tx.correlation_id.substring(0, 8).toUpperCase() : "";
-          tx._actionText = getActionLabel(tx.action);
+          var sKey = getActionLabel(tx.action);
+          if (sKey === "actDispatchTo3plDynamic") {
+            tx._actionText = that._getText(sKey, [tx.action.substring(9)]);
+          } else if (ACTION_LABELS[tx.action]) {
+            tx._actionText = that._getText(sKey);
+          } else {
+            tx._actionText = sKey;
+          }
           return tx;
         });
         var iTotal = result.count || aData.length;
@@ -103,7 +110,7 @@ sap.ui.define([
         that._buildActionOptions(aData);
         that._applyFilters();
       }).catch(function () {
-        MessageToast.show("\u0130\u015flem kay\u0131tlar\u0131 y\u00fcklenemedi");
+        MessageToast.show(that._getText("errTransactionLogsLoad"));
       });
     },
 
@@ -192,8 +199,8 @@ sap.ui.define([
       var _step = "init";
       try {
         _step = "stringify";
-        var sRequestJson = this._safeStringify(oTx.sap_request) || "\u2014 Bo\u015f \u2014";
-        var sResponseJson = this._safeStringify(oTx.sap_response) || "\u2014 Bo\u015f \u2014";
+        var sRequestJson = this._safeStringify(oTx.sap_request) || that._getText("lblEmpty");
+        var sResponseJson = this._safeStringify(oTx.sap_response) || that._getText("lblEmpty");
 
         var sDirection = String(oTx.direction || "");
         var sStatus = String(oTx.status || "");
@@ -210,8 +217,8 @@ sap.ui.define([
           new HBox({ items: [new Label({ text: that._getText("txSAPFunction") + ":", width: "140px" }), new Text({ text: String(oTx.sap_function || "\u2014") })] }),
           new HBox({ items: [new Label({ text: that._getText("txSAPDoc") + ":", width: "140px" }), new Text({ text: String(oTx.sap_doc_number || "\u2014") })] }),
           new HBox({ items: [new Label({ text: that._getText("txDuration") + ":", width: "140px" }), new Text({ text: (oTx.duration_ms || 0) + " ms" })] }),
-          new HBox({ items: [new Label({ text: that._getText("txStarted") + ":", width: "140px" }), new Text({ text: oTx.started_at ? new Date(oTx.started_at).toLocaleString("tr-TR") : "\u2014" })] }),
-          new HBox({ items: [new Label({ text: that._getText("txCompletedAt") + ":", width: "140px" }), new Text({ text: oTx.completed_at ? new Date(oTx.completed_at).toLocaleString("tr-TR") : "\u2014" })] }),
+          new HBox({ items: [new Label({ text: that._getText("txStarted") + ":", width: "140px" }), new Text({ text: oTx.started_at ? new Date(oTx.started_at).toLocaleString() : "\u2014" })] }),
+          new HBox({ items: [new Label({ text: that._getText("txCompletedAt") + ":", width: "140px" }), new Text({ text: oTx.completed_at ? new Date(oTx.completed_at).toLocaleString() : "\u2014" })] }),
           new HBox({ items: [new Label({ text: that._getText("txError") + ":", width: "140px" }), new Text({ text: String(oTx.error_message || "\u2014") })] })
         ];
 
@@ -268,14 +275,14 @@ sap.ui.define([
           resizable: true,
           draggable: true,
           content: [oTabBar],
-          endButton: new Button({ text: "Kapat", press: function () { oDialog.close(); } }),
+          endButton: new Button({ text: that._getText("btnClose"), press: function () { oDialog.close(); } }),
           afterClose: function () { oDialog.destroy(); }
         });
 
         _step = "dialog-open";
         oDialog.open();
       } catch (e) {
-        MessageBox.error("Dialog hatas\u0131 [" + _step + "]: " + e.message);
+        MessageBox.error(that._getText("errDialogLoad", [e.message]));
       }
     },
 
@@ -359,7 +366,7 @@ sap.ui.define([
           ]}));
           oDetails.addItem(new HBox({ items: [
             new Label({ text: that._getText("txChainTimestamp") + ":", width: "120px" }),
-            new Text({ text: step.started_at ? new Date(step.started_at).toLocaleString("tr-TR") : "\u2014" })
+            new Text({ text: step.started_at ? new Date(step.started_at).toLocaleString() : "\u2014" })
           ]}));
           if (step.error_message) {
             oDetails.addItem(new HBox({ items: [
@@ -382,7 +389,7 @@ sap.ui.define([
         oContainer.removeItem(oBusy);
         oBusy.destroy();
         oContainer.addItem(new MessageStrip({
-          text: "\u0130\u015flem zinciri y\u00fcklenemedi",
+          text: that._getText("errTransactionChainLoad"),
           type: "Error",
           showIcon: true
         }));

@@ -67,8 +67,26 @@
               </FlexBox>
             </Panel>
 
-            <!-- Surec Bazli Basari Oranlari -->
-            <Panel headerText="{i18n>rptSuccessRates}" class="sapUiSmallMarginBottom">
+            <!-- Chart: Gunluk Siparis Trendi -->
+            <Panel headerText="{i18n>rptChartOrderTrend}" class="sapUiSmallMarginBottom">
+              <VBox id="chartOrderTrendContainer" height="300px" />
+            </Panel>
+
+            <!-- Chart: Gunluk Dongu Suresi Trendi -->
+            <Panel headerText="{i18n>rptChartCycleTrend}" class="sapUiSmallMarginBottom">
+              <VBox id="chartCycleTrendContainer" height="300px" />
+            </Panel>
+
+            <!-- Surec Bazli Basari Oranlari + Chart -->
+            <Panel class="sapUiSmallMarginBottom">
+              <headerToolbar>
+                <OverflowToolbar>
+                  <Title text="{i18n>rptSuccessRates}" />
+                  <ToolbarSpacer />
+                  <Button icon="sap-icon://download" text="{i18n>rptExport}" press="onExportSuccessRates" type="Transparent" />
+                </OverflowToolbar>
+              </headerToolbar>
+              <VBox id="chartSuccessRatesContainer" height="300px" class="sapUiSmallMarginBottom" />
               <Table items="{report>/successRates}" growing="true" growingThreshold="20">
                 <columns>
                   <Column><Text text="{i18n>rptProcessType}" /></Column>
@@ -79,7 +97,7 @@
                   <Column width="200px"><Text text="{i18n>rptSuccessRate}" /></Column>
                 </columns>
                 <items>
-                  <ColumnListItem>
+                  <ColumnListItem type="Navigation" press="onSuccessRateRowPress">
                     <Text text="{report>process_type}" />
                     <Text text="{report>total}" />
                     <ObjectStatus text="{report>success}" state="Success" />
@@ -92,7 +110,14 @@
             </Panel>
 
             <!-- Darbogaz Analizi -->
-            <Panel headerText="{i18n>rptBottlenecks}" class="sapUiSmallMarginBottom">
+            <Panel class="sapUiSmallMarginBottom">
+              <headerToolbar>
+                <OverflowToolbar>
+                  <Title text="{i18n>rptBottlenecks}" />
+                  <ToolbarSpacer />
+                  <Button icon="sap-icon://download" text="{i18n>rptExport}" press="onExportBottlenecks" type="Transparent" />
+                </OverflowToolbar>
+              </headerToolbar>
               <Table items="{report>/bottlenecks}">
                 <columns>
                   <Column><Text text="{i18n>rptStage}" /></Column>
@@ -111,8 +136,16 @@
               </Table>
             </Panel>
 
-            <!-- En Sik Hata Nedenleri -->
-            <Panel headerText="{i18n>rptFailureReasons}">
+            <!-- En Sik Hata Nedenleri + Chart -->
+            <Panel>
+              <headerToolbar>
+                <OverflowToolbar>
+                  <Title text="{i18n>rptFailureReasons}" />
+                  <ToolbarSpacer />
+                  <Button icon="sap-icon://download" text="{i18n>rptExport}" press="onExportFailureReasons" type="Transparent" />
+                </OverflowToolbar>
+              </headerToolbar>
+              <VBox id="chartErrorDistContainer" height="280px" class="sapUiSmallMarginBottom" />
               <Table items="{report>/failureReasons}" growing="true" growingThreshold="10">
                 <columns>
                   <Column width="150px"><Text text="{i18n>rptErrorCode}" /></Column>
@@ -121,7 +154,7 @@
                   <Column width="160px"><Text text="{i18n>rptLastSeen}" /></Column>
                 </columns>
                 <items>
-                  <ColumnListItem>
+                  <ColumnListItem type="Navigation" press="onFailureRowPress">
                     <ObjectStatus text="{report>error_code}" state="Error" />
                     <Text text="{report>error_message}" wrapping="true" />
                     <ObjectNumber number="{report>occurrence_count}" emphasized="true" />
@@ -138,8 +171,20 @@
           <!-- ════════════════════════════════════════════ -->
           <IconTabFilter text="{i18n>rptTabWarehouse}" icon="sap-icon://factory" key="warehousePerf">
 
+            <!-- Chart: Depo Karsilastirmasi -->
+            <Panel headerText="{i18n>rptChartWarehouseComp}" class="sapUiSmallMarginBottom">
+              <VBox id="chartWarehouseCompContainer" height="300px" />
+            </Panel>
+
             <!-- Depo Performans Ozeti -->
-            <Panel headerText="{i18n>rptWarehouseSummary}" class="sapUiSmallMarginBottom">
+            <Panel class="sapUiSmallMarginBottom">
+              <headerToolbar>
+                <OverflowToolbar>
+                  <Title text="{i18n>rptWarehouseSummary}" />
+                  <ToolbarSpacer />
+                  <Button icon="sap-icon://download" text="{i18n>rptExport}" press="onExportWarehouseSummary" type="Transparent" />
+                </OverflowToolbar>
+              </headerToolbar>
               <Table items="{report>/warehouseSummary}" growing="true" growingThreshold="20">
                 <columns>
                   <Column><Text text="{i18n>rptWarehouseCode}" /></Column>
@@ -152,7 +197,7 @@
                   <Column hAlign="End"><Text text="{i18n>rptAvgCycleMin}" /></Column>
                 </columns>
                 <items>
-                  <ColumnListItem>
+                  <ColumnListItem type="Navigation" press="onWarehouseRowPress">
                     <Text text="{report>warehouse_code}" />
                     <Text text="{report>warehouse_name}" />
                     <Text text="{report>wms_provider}" />
@@ -167,7 +212,14 @@
             </Panel>
 
             <!-- SLA Uyum Raporu -->
-            <Panel headerText="{i18n>rptSLACompliance}" class="sapUiSmallMarginBottom">
+            <Panel class="sapUiSmallMarginBottom">
+              <headerToolbar>
+                <OverflowToolbar>
+                  <Title text="{i18n>rptSLACompliance}" />
+                  <ToolbarSpacer />
+                  <Button icon="sap-icon://download" text="{i18n>rptExport}" press="onExportWarehouseSla" type="Transparent" />
+                </OverflowToolbar>
+              </headerToolbar>
               <Table items="{report>/warehouseSLA}">
                 <columns>
                   <Column><Text text="{i18n>rptWarehouseCode}" /></Column>
@@ -191,7 +243,14 @@
             </Panel>
 
             <!-- Islem Bazli Hata Karsilastirmasi -->
-            <Panel headerText="{i18n>rptWarehouseTransactions}">
+            <Panel>
+              <headerToolbar>
+                <OverflowToolbar>
+                  <Title text="{i18n>rptWarehouseTransactions}" />
+                  <ToolbarSpacer />
+                  <Button icon="sap-icon://download" text="{i18n>rptExport}" press="onExportWarehouseTransactions" type="Transparent" />
+                </OverflowToolbar>
+              </headerToolbar>
               <Table items="{report>/warehouseTransactions}">
                 <columns>
                   <Column><Text text="{i18n>rptWarehouseCode}" /></Column>

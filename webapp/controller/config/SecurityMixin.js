@@ -6,10 +6,11 @@ sap.ui.define([
   "sap/m/Label",
   "sap/m/Input",
   "sap/m/Select",
+  "sap/m/ComboBox",
   "sap/ui/core/Item",
   "sap/ui/layout/form/SimpleForm",
   "com/redigo/logistics/cockpit/util/API"
-], function (MessageToast, MessageBox, Dialog, Button, Label, Input, Select, Item, SimpleForm, API) {
+], function (MessageToast, MessageBox, Dialog, Button, Label, Input, Select, ComboBox, Item, SimpleForm, API) {
   "use strict";
 
   return {
@@ -18,7 +19,11 @@ sap.ui.define([
       var bEdit = !!oExisting;
       var sTitle = bEdit ? this._getText("spEditProfile") : this._getText("spAddProfile");
 
-      var oCompany = new Select({ selectedKey: bEdit ? oExisting.company_code : "" });
+      // Profil adı (zorunlu)
+      var oName = new Input({ value: bEdit ? (oExisting.name || "") : "", placeholder: "SAP PROD - ABC_LOG" });
+
+      // Lojistik sağlayıcı — ComboBox: hem seçim hem serbest yazım
+      var oCompany = new ComboBox({ value: bEdit ? (oExisting.company_code || "") : "" });
       var aWhSP = this._oModel.getProperty("/warehouses") || [];
       var seenSP = {};
       aWhSP.forEach(function (w) {
@@ -27,9 +32,15 @@ sap.ui.define([
           seenSP[w.company_code] = true;
         }
       });
-      if (bEdit && oExisting.company_code && !seenSP[oExisting.company_code]) {
-        oCompany.insertItem(new Item({ key: oExisting.company_code, text: oExisting.company_code }), 0);
-      }
+      // Mevcut güvenlik profillerinden de company_code'ları ekle
+      var aProfiles = this._oModel.getProperty("/securityProfiles") || [];
+      aProfiles.forEach(function (p) {
+        if (p.company_code && !seenSP[p.company_code]) {
+          oCompany.addItem(new Item({ key: p.company_code, text: p.company_code }));
+          seenSP[p.company_code] = true;
+        }
+      });
+
       var oAuthType = new Select({ selectedKey: bEdit ? oExisting.auth_type : "OAUTH2" });
       oAuthType.addItem(new Item({ key: "OAUTH2", text: "OAuth 2.0" }));
       oAuthType.addItem(new Item({ key: "API_KEY", text: "API Key" }));
@@ -91,6 +102,7 @@ sap.ui.define([
         emptySpanXL: 0, emptySpanL: 0, emptySpanM: 0,
         columnsXL: 1, columnsL: 1, columnsM: 1,
         content: [
+          new Label({ text: this._getText("spProfileName"), required: true }), oName,
           new Label({ text: this._getText("spCompanyCode"), required: true }), oCompany,
           new Label({ text: this._getText("spAuthType"), required: true }), oAuthType,
           new Label({ text: this._getText("spEnvironment"), required: true }), oEnvironment,
@@ -117,6 +129,12 @@ sap.ui.define([
           text: this._getText("cfgSave"),
           type: "Emphasized",
           press: function () {
+            var sName = oName.getValue().trim();
+            var sCompanyCode = oCompany.getValue().trim();
+            if (!sName || !sCompanyCode) {
+              MessageBox.error(that._getText("msgRequiredFields"));
+              return;
+            }
             var sType = oAuthType.getSelectedKey();
             var oConfigPayload = {};
             if (sType === "OAUTH2") {
@@ -142,16 +160,13 @@ sap.ui.define([
               };
             }
             var oPayload = {
-              company_code: oCompany.getSelectedKey(),
+              name: sName,
+              company_code: sCompanyCode,
               auth_type: sType,
               environment: oEnvironment.getSelectedKey(),
               config: oConfigPayload,
               is_active: oActive.getSelectedKey() === "true"
             };
-            if (!oPayload.company_code) {
-              MessageBox.error(that._getText("msgRequiredFields"));
-              return;
-            }
             var pReq = bEdit
               ? API.put("/api/config/security-profiles/" + oExisting.id, oPayload)
               : API.post("/api/config/security-profiles", oPayload);

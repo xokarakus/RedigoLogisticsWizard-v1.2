@@ -799,9 +799,9 @@ router.post('/tenants', authenticate, requireSuperAdmin, validate(CreateTenantSc
 
       adminResult = await userStore.create({
         tenant_id: tenant.id,
-        username: adminEmail,
+        username: admin_user.username || adminEmail,
         password_hash: hash,
-        display_name: admin_user.display_name || adminEmail.split('@')[0],
+        display_name: admin_user.display_name || admin_user.username || adminEmail.split('@')[0],
         email: adminEmail,
         role: 'TENANT_ADMIN',
         is_active: true,
@@ -975,8 +975,8 @@ router.post('/users', authenticate, requireRole('TENANT_ADMIN'), validate(Create
       ? (tenant_id || req.tenantId)
       : req.tenantId;
 
-    if (req.userRole === 'TENANT_ADMIN' && effectiveRole !== 'TENANT_USER') {
-      return res.status(403).json({ error: 'Sadece Şirket Kullanıcısı oluşturabilirsiniz' });
+    if (req.userRole === 'TENANT_ADMIN' && (effectiveRole === 'SUPER_ADMIN' || effectiveRole === 'TENANT_ADMIN')) {
+      return res.status(403).json({ error: 'TENANT_ADMIN veya SUPER_ADMIN rolü atanamaz' });
     }
 
     let superFlag = false;
@@ -1042,8 +1042,8 @@ router.put('/users/:id', authenticate, requireRole('TENANT_ADMIN'), validate(Upd
     if (req.body.is_active !== undefined) updates.is_active = req.body.is_active;
 
     if (req.body.role !== undefined) {
-      if (req.userRole === 'TENANT_ADMIN' && req.body.role !== 'TENANT_USER') {
-        return res.status(403).json({ error: 'Sadece TENANT_USER rolü atanabilir' });
+      if (req.userRole === 'TENANT_ADMIN' && (req.body.role === 'SUPER_ADMIN' || req.body.role === 'TENANT_ADMIN')) {
+        return res.status(403).json({ error: 'TENANT_ADMIN veya SUPER_ADMIN rolü atanamaz' });
       }
       if (req.body.role === 'SUPER_ADMIN' && req.user.is_super_admin !== true) {
         return res.status(403).json({ error: 'SUPER_ADMIN rolü atanamaz' });

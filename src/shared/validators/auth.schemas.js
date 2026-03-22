@@ -57,63 +57,71 @@ const UnlockAccountSchema = z.object({
 });
 
 const CreateTenantSchema = z.object({
-  code: z.string().min(1).max(20).optional(),
+  code: z.string().min(1).max(20).nullish(),
   name: z.string().min(1, 'Sirket adi zorunlu').max(100),
   domain: z.string().min(1, 'Domain zorunlu').max(100),
-  title: z.string().max(200).optional(),
-  tax_id: z.string().max(20).optional(),
-  tax_office: z.string().max(100).optional(),
-  address: z.string().max(500).optional(),
-  iban: z.string().max(34).optional(),
-  contact_person: z.string().max(100).optional(),
-  phone: z.string().max(20).optional(),
-  plan: z.enum(['FREE', 'STARTER', 'PROFESSIONAL', 'ENTERPRISE']).optional(),
+  title: z.string().max(200).nullish(),
+  tax_id: z.string().max(20).nullish(),
+  tax_office: z.string().max(100).nullish(),
+  address: z.string().max(500).nullish(),
+  iban: z.string().max(34).nullish(),
+  contact_person: z.string().max(100).nullish(),
+  phone: z.string().max(20).nullish(),
+  plan: z.string().max(20).nullish(),
+  is_active: z.boolean().optional(),
   admin_user: z.object({
+    username: z.string().min(1).max(100).optional(),
     email: z.string().email('Gecerli bir e-posta adresi girin'),
-    password: passwordRule,
-    display_name: z.string().min(1).max(100)
+    password: passwordRule.optional(),
+    display_name: z.string().min(1).max(100).optional()
   }).optional()
 });
 
 const UpdateTenantSchema = z.object({
+  code: z.string().min(1).max(20).nullish(),
   name: z.string().min(1).max(100).optional(),
-  title: z.string().max(200).optional(),
+  title: z.string().max(200).nullish(),
   domain: z.string().min(1).max(100).optional(),
-  tax_id: z.string().max(20).optional(),
-  tax_office: z.string().max(100).optional(),
-  address: z.string().max(500).optional(),
-  iban: z.string().max(34).optional(),
-  contact_person: z.string().max(100).optional(),
-  phone: z.string().max(20).optional(),
-  plan: z.enum(['FREE', 'STARTER', 'PROFESSIONAL', 'ENTERPRISE']).optional(),
+  tax_id: z.string().max(20).nullish(),
+  tax_office: z.string().max(100).nullish(),
+  address: z.string().max(500).nullish(),
+  iban: z.string().max(34).nullish(),
+  contact_person: z.string().max(100).nullish(),
+  phone: z.string().max(20).nullish(),
+  plan: z.string().max(20).nullish(),
   is_active: z.boolean().optional()
 });
 
 const CreateUserSchema = z.object({
+  username: z.string().min(1).max(100).optional(),
   email: z.string().email('Gecerli bir e-posta adresi girin'),
-  password: passwordRule,
+  password: passwordRule.optional(),
   display_name: z.string().min(1).max(100).optional(),
-  role: z.enum(['TENANT_ADMIN', 'TENANT_USER']).optional(),
+  role: z.string().min(1).max(50).optional(),
   tenant_id: z.string().uuid().optional(),
+  is_active: z.boolean().optional(),
   is_super_admin: z.boolean().optional()
 });
 
 const UpdateUserSchema = z.object({
   display_name: z.string().min(1).max(100).optional(),
   email: z.string().email().optional(),
+  password: passwordRule.optional(),
   is_active: z.boolean().optional(),
-  role: z.enum(['TENANT_ADMIN', 'TENANT_USER']).optional()
+  role: z.string().min(1).max(50).optional()
 });
 
 const CreateRoleSchema = z.object({
   code: z.string().min(1).max(30),
   name: z.string().min(1).max(100),
+  description: z.string().max(500).nullish(),
   permissions: z.record(z.boolean()).optional()
 });
 
 const UpdateRoleSchema = z.object({
   code: z.string().min(1).max(30).optional(),
   name: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).nullish(),
   permissions: z.record(z.boolean()).optional()
 });
 

@@ -36,7 +36,20 @@
       }
       document.documentElement.lang = window._redigoLang;
     })();
+
+    // i18n messages for pre-SAPUI5 loading screens
+    (function() {
+      var _msgs = {
+        tr: { checking: "Sistem kontrol ediliyor...", verifying: "Oturum do\u011frulan\u0131yor...", loading: "Uygulama y\u00fckleniyor...", backendErr: "Backend ba\u011flant\u0131s\u0131 kurulamad\u0131", loadingInit: "Y\u00fckleniyor..." },
+        en: { checking: "Checking system...", verifying: "Verifying session...", loading: "Loading application...", backendErr: "Backend connection failed", loadingInit: "Loading..." },
+        de: { checking: "System wird gepr\u00fcft...", verifying: "Sitzung wird \u00fcberpr\u00fcft...", loading: "Anwendung wird geladen...", backendErr: "Backend-Verbindung fehlgeschlagen", loadingInit: "Wird geladen..." },
+        fr: { checking: "V\u00e9rification du syst\u00e8me...", verifying: "V\u00e9rification de la session...", loading: "Chargement de l'application...", backendErr: "Connexion au backend \u00e9chou\u00e9e", loadingInit: "Chargement..." },
+        es: { checking: "Verificando sistema...", verifying: "Verificando sesi\u00f3n...", loading: "Cargando aplicaci\u00f3n...", backendErr: "Conexi\u00f3n con backend fallida", loadingInit: "Cargando..." }
+      };
+      window._redigoMsg = _msgs[window._redigoLang] || _msgs.en;
+    })();
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script
     id="sap-ui-bootstrap"
     src="https://ui5.sap.com/resources/sap-ui-core.js"
@@ -94,7 +107,7 @@
 
       // ── Auth Gate ──
       function checkSetup() {
-        document.getElementById("loadMsg").textContent = "Sistem kontrol ediliyor...";
+        document.getElementById("loadMsg").textContent = window._redigoMsg.checking;
         fetch(BASE_URL + "/api/auth/setup-status")
           .then(function(r) { return r.json(); })
           .then(function(d) {
@@ -105,7 +118,7 @@
             }
           })
           .catch(function(err) {
-            showErr("Backend baglantisi kurulamadi:\n" + err.message + "\n\nBackend calistigina emin olun (port 3000).");
+            showErr(window._redigoMsg.backendErr + ":\n" + err.message + "\n\nPort 3000");
           });
       }
 
@@ -173,7 +186,7 @@
           showLogin();
           return;
         }
-        document.getElementById("loadMsg").textContent = "Oturum dogrulaniyor...";
+        document.getElementById("loadMsg").textContent = window._redigoMsg.verifying;
         fetch(BASE_URL + "/api/auth/me", {
           headers: { "Authorization": "Bearer " + token }
         })
@@ -201,7 +214,7 @@
       }
 
       function loadApp() {
-        document.getElementById("loadMsg").textContent = "Uygulama yukleniyor...";
+        document.getElementById("loadMsg").textContent = window._redigoMsg.loading;
         var uiArea = document.getElementById("uiArea");
         if (uiArea) uiArea.innerHTML = "";
 
@@ -228,7 +241,8 @@
   </script>
 </head>
 <body class="sapUiBody sapUiSizeCompact">
-  <div id="loadMsg" role="status" aria-live="polite">Y\u00fckleniyor...</div>
+  <div id="loadMsg" role="status" aria-live="polite">Loading...</div>
+  <script>document.getElementById("loadMsg").textContent = window._redigoMsg.loadingInit;</script>
   <div id="uiArea" role="main" aria-label="Redigo Logistics Cockpit" style="height:100%"></div>
 </body>
 </html>

@@ -193,14 +193,16 @@ class DeliveryExecutionService {
       })),
     };
 
+    const ctx = { companyCode: workOrder.company_code };
+
     await this._logSapRequest(txLogId, 'BAPI_OUTB_DELIVERY_CHANGE', sapParams);
-    const result = await sapClient.call('BAPI_OUTB_DELIVERY_CHANGE', sapParams);
+    const result = await sapClient.call('BAPI_OUTB_DELIVERY_CHANGE', sapParams, ctx);
     await this._logSapResponse(txLogId, result);
 
     this._checkBapiReturn(result.RETURN, 'BAPI_OUTB_DELIVERY_CHANGE');
 
-    // Commit the BAPI
-    await sapClient.call('BAPI_TRANSACTION_COMMIT', { WAIT: 'X' });
+    // Commit the BAPI (HTTP auto-commit — no-op)
+    await sapClient.call('BAPI_TRANSACTION_COMMIT', { WAIT: 'X' }, ctx);
 
     logger.info('SAP delivery qty updated', {
       delivery: workOrder.sap_delivery_no,
@@ -237,8 +239,10 @@ class DeliveryExecutionService {
       })),
     };
 
+    const ctx = { companyCode: workOrder.company_code };
+
     await this._logSapRequest(txLogId, 'WS_DELIVERY_UPDATE', sapParams);
-    const result = await sapClient.call('WS_DELIVERY_UPDATE', sapParams);
+    const result = await sapClient.call('WS_DELIVERY_UPDATE', sapParams, ctx);
     await this._logSapResponse(txLogId, result);
 
     this._checkBapiReturn(result.RETURN, 'WS_DELIVERY_UPDATE');
@@ -279,12 +283,14 @@ class DeliveryExecutionService {
       GOODSMVT_ITEM: gmItems,
     };
 
+    const ctx = { companyCode: workOrder.company_code };
+
     await this._logSapRequest(txLogId, 'BAPI_GOODSMVT_CREATE', sapParams);
-    const result = await sapClient.call('BAPI_GOODSMVT_CREATE', sapParams);
+    const result = await sapClient.call('BAPI_GOODSMVT_CREATE', sapParams, ctx);
     await this._logSapResponse(txLogId, result);
 
     this._checkBapiReturn(result.RETURN, 'BAPI_GOODSMVT_CREATE');
-    await sapClient.call('BAPI_TRANSACTION_COMMIT', { WAIT: 'X' });
+    await sapClient.call('BAPI_TRANSACTION_COMMIT', { WAIT: 'X' }, ctx);
 
     const matDoc = result.GOODSMVT_HEADRET?.MAT_DOC;
     logger.info('GR posted in SAP', {
@@ -390,7 +396,7 @@ class DeliveryExecutionService {
 
   async _getWorkOrder(dbClient, workOrderId) {
     const result = await dbClient.query(
-      `SELECT wo.*, w.sap_plant, w.sap_stor_loc, w.config as warehouse_config
+      `SELECT wo.*, w.sap_plant, w.sap_stor_loc, w.company_code, w.config as warehouse_config
        FROM work_orders wo
        JOIN warehouses w ON wo.warehouse_id = w.id
        WHERE wo.id = $1`,

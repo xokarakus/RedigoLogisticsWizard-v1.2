@@ -17,28 +17,29 @@ sap.ui.define([
              Fragment, API) {
   "use strict";
 
-  var JOB_TYPES = {
-    FETCH_FROM_SAP: "SAP'den Veri \u00c7ek",
-    SEND_TO_3PL: "3PL'ye G\u00f6nder",
-    POST_GOODS_ISSUE: "Mal \u00c7\u0131k\u0131\u015f\u0131 (PGI)",
-    POST_GOODS_RECEIPT: "Mal Giri\u015fi (PGR)",
-    QUERY_STATUS: "Durum Sorgula",
-    RECONCILIATION: "Mutabakat",
-    CLEANUP_LOGS: "Log Temizleme"
+  // i18n keys — resolved at runtime via controller's i18n model
+  var JOB_TYPE_KEYS = {
+    FETCH_FROM_SAP: "jobTypeFetchSap",
+    SEND_TO_3PL: "jobTypeDispatch3pl",
+    POST_GOODS_ISSUE: "jobTypePgi",
+    POST_GOODS_RECEIPT: "jobTypePgr",
+    QUERY_STATUS: "jobTypeQueryStatus",
+    RECONCILIATION: "jobTypeReconciliation",
+    CLEANUP_LOGS: "jobTypeLogCleanup"
   };
 
-  var SCHEDULE_TYPES = {
-    MANUAL: "Manuel",
-    IMMEDIATE: "Hemen",
-    ONCE: "Bir Kere",
-    PERIODIC: "Periyodik"
+  var SCHEDULE_TYPE_KEYS = {
+    MANUAL: "schedManual",
+    IMMEDIATE: "schedImmediate",
+    ONCE: "schedOnce",
+    PERIODIC: "schedPeriodic"
   };
 
-  var CLASS_LABELS = { A: "A - Y\u00fcksek", B: "B - Orta", C: "C - D\u00fc\u015f\u00fck" };
+  var CLASS_LABEL_KEYS = { A: "classHigh", B: "classMedium", C: "classLow" };
 
   function fmtDate(d) {
     if (!d) return "";
-    return new Date(d).toLocaleString("tr-TR");
+    return new Date(d).toLocaleString();
   }
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.JobManagement", {
@@ -56,13 +57,17 @@ sap.ui.define([
     _loadData: function () {
       var that = this;
       API.get("/api/scheduled-jobs").then(function (res) {
+        var oBundle = that.getView().getModel("i18n").getResourceBundle();
         var aData = (res.data || []).map(function (j) {
-          j._typeText = JOB_TYPES[j.job_type] || j.job_type;
-          j._scheduleTypeText = SCHEDULE_TYPES[j.schedule_type] || j.schedule_type;
+          var sTypeKey = JOB_TYPE_KEYS[j.job_type];
+          j._typeText = sTypeKey ? oBundle.getText(sTypeKey) : j.job_type;
+          var sSchedKey = SCHEDULE_TYPE_KEYS[j.schedule_type];
+          j._scheduleTypeText = sSchedKey ? oBundle.getText(sSchedKey) : j.schedule_type;
           j._cronText = j.cron_expression || "";
           j._lastRunFmt = fmtDate(j.last_run_at);
           j._nextRunFmt = fmtDate(j.next_run_at);
-          j._classText = CLASS_LABELS[j.job_class] || j.job_class;
+          var sClassKey = CLASS_LABEL_KEYS[j.job_class];
+          j._classText = sClassKey ? oBundle.getText(sClassKey) : j.job_class;
           return j;
         });
         that._oModel.setProperty("/data", aData);
@@ -106,7 +111,7 @@ sap.ui.define([
       if (oI18n) {
         this._oModel.setProperty("/summary", oI18n.getResourceBundle().getText("jobCount", [aFiltered.length]));
       } else {
-        this._oModel.setProperty("/summary", aFiltered.length + " i\u015f");
+        this._oModel.setProperty("/summary", aFiltered.length + "");
       }
     },
 
@@ -266,7 +271,7 @@ sap.ui.define([
         var aItems = res.data || [];
 
         if (aItems.length === 0) {
-          MessageToast.show(oBundle.getText("jobNoItems") || "Bu \u00e7al\u0131\u015fmada bireysel kay\u0131t yok");
+          MessageToast.show(oBundle.getText("jobNoItems"));
           return;
         }
 
@@ -301,13 +306,13 @@ sap.ui.define([
         var aButtons = [];
         if (bHasFailed) {
           aButtons.push(new Button({
-            text: oBundle.getText("jobRetryFailed") || "Hatal\u0131lar\u0131 Yeniden Dene",
+            text: oBundle.getText("jobRetryFailed"),
             type: "Emphasized",
             icon: "sap-icon://refresh",
             press: function () {
               API.post("/api/scheduled-jobs/" + sJobId + "/executions/" + oExec.id + "/retry-failed").then(function (r) {
                 if (r.error) { MessageBox.error(r.error); return; }
-                MessageToast.show(oBundle.getText("jobRetryStarted") || "Yeniden deneme ba\u015flat\u0131ld\u0131");
+                MessageToast.show(oBundle.getText("jobRetryStarted"));
                 oItemDialog.close();
                 that._loadData();
               });
@@ -316,17 +321,17 @@ sap.ui.define([
         }
 
         var oItemDialog = new Dialog({
-          title: oBundle.getText("jobExecutionItems") || "\u0130\u015f Emri Sonu\u00e7lar\u0131",
+          title: oBundle.getText("jobExecutionItems"),
           subHeader: new sap.m.Toolbar({
             content: [
-              new ObjectStatus({ text: aItems.length + " kay\u0131t", state: "Information" }),
+              new ObjectStatus({ text: oBundle.getText("jobRecordCount", [aItems.length]), state: "Information" }),
               new sap.m.ToolbarSpacer(),
               new ObjectStatus({
-                text: aItems.filter(function (i) { return i.status === "SUCCESS"; }).length + " ba\u015far\u0131l\u0131",
+                text: oBundle.getText("jobSuccessful", [aItems.filter(function (i) { return i.status === "SUCCESS"; }).length]),
                 state: "Success"
               }),
               new ObjectStatus({
-                text: aItems.filter(function (i) { return i.status === "FAILED"; }).length + " hatal\u0131",
+                text: oBundle.getText("jobFailed", [aItems.filter(function (i) { return i.status === "FAILED"; }).length]),
                 state: "Error",
                 visible: bHasFailed
               })
@@ -516,7 +521,8 @@ sap.ui.define([
         oDialog.open();
       }).catch(function (err) {
         console.error("Fragment load error:", err);
-        MessageBox.error("Dialog y\u00fcklenemedi: " + err.message);
+        var oBundle = that.getView().getModel("i18n").getResourceBundle();
+        MessageBox.error(oBundle.getText("errDialogLoad", [err.message]));
       });
     },
 

@@ -56,7 +56,7 @@ sap.ui.define([
         that._oModel.setProperty("/tables", data);
         that._oModel.setProperty("/filteredTables", data);
         var oCount = that.byId("tableCount");
-        if (oCount) oCount.setText(data.length + " tablo");
+        if (oCount) oCount.setText(that._i18n("dbCockpitTableCount", [data.length]));
       }).catch(function (err) {
         MessageBox.error(err.message || String(err));
       });
@@ -256,7 +256,7 @@ sap.ui.define([
 
         that._oModel.setProperty("/queryResult", data);
         that._oModel.setProperty("/queryFields", fields);
-        that._oModel.setProperty("/queryRowCount", data.length + " sat\u0131r");
+        that._oModel.setProperty("/queryRowCount", that._i18n("dbCockpitRowCount", [data.length]));
 
         if (oStatus) {
           oStatus.setText(that._i18n("dbCockpitExecTime", [res.executionTime || 0]));
@@ -332,14 +332,14 @@ sap.ui.define([
       // Stats
       var oStats = this.byId("relStats");
       if (oStats) {
-        oStats.setText(aTableNames.length + " tablo, " + aData.length + " FK");
+        oStats.setText(that._i18n("dbCockpitFkStats", [aTableNames.length, aData.length]));
         oStats.setState("Information");
       }
 
       if (aTableNames.length === 0) {
         oContainer.addItem(new sap.m.IllustratedMessage({
           illustrationType: "sapIllus-EmptyList",
-          title: "İlişki bulunamadı"
+          title: that._i18n("dbCockpitNoRelationships")
         }));
         return;
       }
@@ -386,7 +386,7 @@ sap.ui.define([
             new sap.m.Toolbar({
               content: [
                 new sap.ui.core.Icon({ src: "sap-icon://arrow-top", color: "#E78C07" }).addStyleClass("sapUiTinyMarginEnd"),
-                new MText({ text: "Referans Veriyor (" + info.outgoing.length + ")" }).addStyleClass("sapUiTinyMarginEnd sapThemeHighlightColor")
+                new MText({ text: that._i18n("dbCockpitReferences") + " (" + info.outgoing.length + ")" }).addStyleClass("sapUiTinyMarginEnd sapThemeHighlightColor")
               ]
             }).addStyleClass("sapUiTinyMarginBottom")
           );
@@ -416,7 +416,7 @@ sap.ui.define([
             new sap.m.Toolbar({
               content: [
                 new sap.ui.core.Icon({ src: "sap-icon://arrow-bottom", color: "#2B7C2B" }).addStyleClass("sapUiTinyMarginEnd"),
-                new MText({ text: "Referans Alan (" + info.incoming.length + ")" }).addStyleClass("sapUiTinyMarginEnd sapThemeHighlightColor")
+                new MText({ text: that._i18n("dbCockpitReferencedBy") + " (" + info.incoming.length + ")" }).addStyleClass("sapUiTinyMarginEnd sapThemeHighlightColor")
               ]
             }).addStyleClass("sapUiTinyMarginBottom")
           );
@@ -495,7 +495,7 @@ sap.ui.define([
     _loadSavedQueriesRaw: function () {
       // onInit'te i18n hazir olmayabilir, sadece veriyi yukle
       var aQueries = this._getSavedQueriesFromStorage();
-      var aItems = [{ key: "__empty__", name: "— Kayıtlı sorgu seçin —", sql: "" }];
+      var aItems = [{ key: "__empty__", name: "—", sql: "" }];
       aQueries.forEach(function (q, i) {
         aItems.push({ key: "q_" + i, name: q.name, sql: q.sql });
       });

@@ -13,21 +13,21 @@ sap.ui.define([
              ViewSettingsDialog, ViewSettingsItem, API) {
   "use strict";
 
-  /* Excel export column definitions */
-  var EXPORT_COLS = [
-    { label: "Teslimat No",     property: "sap_delivery_no",    type: "String" },
-    { label: "Teslimat Tipi",   property: "sap_delivery_type",  type: "String" },
-    { label: "Y\u00f6n",        property: "order_type",         type: "String" },
-    { label: "S\u00fcre\u00e7", property: "process_type",       type: "String" },
-    { label: "Durum",           property: "status",             type: "String" },
-    { label: "SAP Tesis",       property: "plant_code",         type: "String" },
-    { label: "Depo",            property: "warehouse_code",     type: "String" },
-    { label: "Hareket Tipi",    property: "mvt_type",           type: "String" },
-    { label: "M\u00fc\u015fteri Ad\u0131", property: "sap_ship_to",        type: "String" },
-    { label: "Kalemler",        property: "line_count",         type: "Number" },
-    { label: "\u00d6ncelik",    property: "priority",           type: "String" },
-    { label: "Al\u0131nma",     property: "received_at_fmt",    type: "String" },
-    { label: "Tamamlanma",      property: "completed_at_fmt",   type: "String" }
+  /* Excel export column definitions (i18n keys resolved at export time) */
+  var EXPORT_COL_KEYS = [
+    { i18nKey: "expDeliveryNo",    property: "sap_delivery_no",    type: "String" },
+    { i18nKey: "expDeliveryType",  property: "sap_delivery_type",  type: "String" },
+    { i18nKey: "expDirection",     property: "order_type",         type: "String" },
+    { i18nKey: "expProcess",       property: "process_type",       type: "String" },
+    { i18nKey: "expStatus",        property: "status",             type: "String" },
+    { i18nKey: "expSapPlant",      property: "plant_code",         type: "String" },
+    { i18nKey: "expWarehouse",     property: "warehouse_code",     type: "String" },
+    { i18nKey: "expMovementType",  property: "mvt_type",           type: "String" },
+    { i18nKey: "expCustomerName",  property: "sap_ship_to",        type: "String" },
+    { i18nKey: "expItems",         property: "line_count",         type: "Number" },
+    { i18nKey: "expPriority",      property: "priority",           type: "String" },
+    { i18nKey: "expReceived",      property: "received_at_fmt",    type: "String" },
+    { i18nKey: "expCompleted",     property: "completed_at_fmt",   type: "String" }
   ];
 
   return Controller.extend("com.redigo.logistics.cockpit.controller.WorkOrders", {
@@ -72,8 +72,8 @@ sap.ui.define([
 
       API.get("/api/work-orders", oParams).then(function (result) {
         var aData = (result.data || []).map(function (o) {
-          o.received_at_fmt = o.received_at ? new Date(o.received_at).toLocaleString("tr-TR") : "";
-          o.completed_at_fmt = o.completed_at ? new Date(o.completed_at).toLocaleString("tr-TR") : "";
+          o.received_at_fmt = o.received_at ? new Date(o.received_at).toLocaleString() : "";
+          o.completed_at_fmt = o.completed_at ? new Date(o.completed_at).toLocaleString() : "";
           o.line_count = o.line_count || 0;
           return o;
         });
@@ -89,7 +89,7 @@ sap.ui.define([
         that._buildProcessTypeOptions(aData);
         that._applyFilters();
       }).catch(function () {
-        MessageToast.show("\u0130\u015f emirleri y\u00fcklenemedi");
+        MessageToast.show(that._getText("errOrdersLoad"));
       });
 
       // Load warehouses for filter dropdown
@@ -101,7 +101,7 @@ sap.ui.define([
         });
         that._oModel.setProperty("/warehouseOptions", aOptions);
       }).catch(function () {
-        MessageToast.show("Depo listesi y\u00fcklenemedi");
+        MessageToast.show(that._getText("errWarehouseListLoad"));
       });
     },
 
@@ -316,12 +316,16 @@ sap.ui.define([
       var oTable = this.byId("workOrdersTable");
       var oBinding = oTable.getBinding("rows");
       if (!oBinding) { return; }
+      var that = this;
 
       sap.ui.require(["sap/ui/export/Spreadsheet"], function (Spreadsheet) {
+        var aCols = EXPORT_COL_KEYS.map(function (c) {
+          return { label: that._getText(c.i18nKey), property: c.property, type: c.type };
+        });
         var oSettings = {
-          workbook: { columns: EXPORT_COLS },
+          workbook: { columns: aCols },
           dataSource: oBinding,
-          fileName: "IsEmirleri_" + new Date().toISOString().slice(0, 10) + ".xlsx"
+          fileName: that._getText("expFileName") + new Date().toISOString().slice(0, 10) + ".xlsx"
         };
         var oSheet = new Spreadsheet(oSettings);
         oSheet.build().finally(function () { oSheet.destroy(); });

@@ -32,7 +32,7 @@ sap.ui.define([
 
       API.get("/api/transactions", { action_like: "INV_", limit: 100 }).then(function (result) {
         var aData = (result.data || []).map(function (tx) {
-          tx.created_at_fmt = tx.created_at ? new Date(tx.created_at).toLocaleString("tr-TR") : "";
+          tx.created_at_fmt = tx.created_at ? new Date(tx.created_at).toLocaleString() : "";
           return tx;
         });
         that._oModel.setProperty("/transactions", aData);

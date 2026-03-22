@@ -23,6 +23,7 @@ sap.ui.define([
     },
 
     _loadDashboardData: function () {
+      var that = this;
       var oModel = this.getView().getModel("dashboard");
       API.get("/api/dashboard/kpis").then(function (data) {
         oModel.setProperty("/totalOrders", data.totalOrders || 0);
@@ -34,17 +35,17 @@ sap.ui.define([
         oModel.setProperty("/dlqCount", data.dlqCount || 0);
         oModel.setProperty("/avgLatency", data.avgLatency || 0);
       }).catch(function () {
-        MessageToast.show("Dashboard verileri y\u00fcklenemedi");
+        MessageToast.show(that._getText("errDashboardLoad"));
       });
       API.get("/api/work-orders", { limit: 20 }).then(function (data) {
         var aRaw = data.data || [];
         var aOrders = aRaw.map(function (o) {
-          o.received_at_formatted = o.received_at ? new Date(o.received_at).toLocaleString("tr-TR") : "-";
+          o.received_at_formatted = o.received_at ? new Date(o.received_at).toLocaleString() : "-";
           return o;
         });
         oModel.setProperty("/recentOrders", aOrders);
       }).catch(function () {
-        MessageToast.show("Son i\u015f emirleri y\u00fcklenemedi");
+        MessageToast.show(that._getText("errRecentOrdersLoad"));
       });
     },
 

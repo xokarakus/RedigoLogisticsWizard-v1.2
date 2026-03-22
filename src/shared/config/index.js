@@ -43,16 +43,9 @@ if (process.env.VCAP_SERVICES) {
   // XSUAA
   xsuaaConfig = services.uaa;
 
-  // SAP RFC — BTP'de de .env'den okunabilir (Cloud Connector + destination)
+  // SAP HTTP — fallback base URL (DB'de process_configs yoksa kullanilir)
   sapConfig = {
-    ashost: process.env.SAP_ASHOST,
-    sysnr: process.env.SAP_SYSNR || '00',
-    client: process.env.SAP_CLIENT || '100',
-    user: process.env.SAP_USER,
-    passwd: process.env.SAP_PASSWORD,
-    lang: process.env.SAP_LANG || 'EN',
-    poolSize: parseInt(process.env.SAP_POOL_SIZE || '5', 10),
-    maxConcurrency: parseInt(process.env.SAP_MAX_CONCURRENCY || '5', 10),
+    apiBaseUrl: process.env.SAP_API_BASE_URL || '',
   };
 } else {
   // ── Local Development (.env) ──
@@ -74,15 +67,9 @@ if (process.env.VCAP_SERVICES) {
 
   xsuaaConfig = null; // local dev'de auth yok
 
+  // SAP HTTP — fallback base URL (DB'de process_configs yoksa kullanilir)
   sapConfig = {
-    ashost: process.env.SAP_ASHOST,
-    sysnr: process.env.SAP_SYSNR || '00',
-    client: process.env.SAP_CLIENT || '100',
-    user: process.env.SAP_USER,
-    passwd: process.env.SAP_PASSWORD,
-    lang: process.env.SAP_LANG || 'EN',
-    poolSize: parseInt(process.env.SAP_POOL_SIZE || '5', 10),
-    maxConcurrency: parseInt(process.env.SAP_MAX_CONCURRENCY || '5', 10),
+    apiBaseUrl: process.env.SAP_API_BASE_URL || '',
   };
 }
 

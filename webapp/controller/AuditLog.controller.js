@@ -106,7 +106,7 @@ sap.ui.define([
           hasPrev: iOffset > 0,
           hasNext: (iOffset + PAGE_SIZE) < iTotal,
           pageInfo: iCurrentPage + " / " + iTotalPages,
-          countText: iTotal + " kay\u0131t"
+          countText: that.getView().getModel("i18n").getResourceBundle().getText("auditRecordCount", [iTotal])
         });
       });
     },
@@ -114,7 +114,7 @@ sap.ui.define([
     onRefresh: function () {
       this._iOffset = 0;
       this._loadData();
-      MessageToast.show("Yenilendi");
+      MessageToast.show(this.getView().getModel("i18n").getResourceBundle().getText("auditRefreshed"));
     },
 
     onSearch: function (oEvent) {
@@ -141,11 +141,12 @@ sap.ui.define([
     onExport: function () {
       var aData = this._oModel.getProperty("/data") || [];
       if (!aData.length) {
-        MessageToast.show("Disa aktarilacak veri yok");
+        MessageToast.show(this.getView().getModel("i18n").getResourceBundle().getText("auditNoExportData"));
         return;
       }
 
-      var aHeaders = ["Zaman", "Kullanici", "Onem", "Islem", "Varlik", "Varlik ID", "Detay", "IP Adresi"];
+      var oBundle = this.getView().getModel("i18n").getResourceBundle();
+      var aHeaders = [oBundle.getText("auditCsvTime"), oBundle.getText("auditCsvUser"), oBundle.getText("auditCsvSeverity"), oBundle.getText("auditCsvAction"), oBundle.getText("auditCsvEntity"), oBundle.getText("auditCsvEntityId"), oBundle.getText("auditCsvDetail"), oBundle.getText("auditCsvIpAddress")];
       var aRows = aData.map(function (r) {
         return [
           r.created_at_fmt || "",
@@ -164,7 +165,7 @@ sap.ui.define([
       var sUrl = URL.createObjectURL(oBlob);
       var oLink = document.createElement("a");
       oLink.href = sUrl;
-      oLink.download = "denetim_gunlugu_" + new Date().toISOString().slice(0, 10) + ".csv";
+      oLink.download = oBundle.getText("auditFileName") + new Date().toISOString().slice(0, 10) + ".csv";
       oLink.click();
       URL.revokeObjectURL(sUrl);
     }

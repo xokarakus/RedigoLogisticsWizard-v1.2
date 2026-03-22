@@ -52,7 +52,7 @@ sap.ui.define([
           u._roleState = SYSTEM_ROLE_STATES[u.role] || "Success";
           u._roleName = u.role;
           u._lastLoginFormatted = u.last_login_at
-            ? new Date(u.last_login_at).toLocaleString("tr-TR") : "-";
+            ? new Date(u.last_login_at).toLocaleString() : "-";
           return u;
         });
         that._oModel.setProperty("/allUsers", users);
@@ -64,7 +64,7 @@ sap.ui.define([
         that._enrichUserRoleNames();
         that._applyUserFilters();
       }).catch(function () {
-        MessageToast.show("Kullan\u0131c\u0131 listesi y\u00fcklenemedi");
+        MessageToast.show(that._getText("errUserListLoad"));
       });
 
       // Tenant listesi (SUPER_ADMIN)
@@ -75,7 +75,7 @@ sap.ui.define([
           that._oModel.setProperty("/tenants", tenants);
           that._populateTenantFilter(tenants);
         }).catch(function () {
-          MessageToast.show("Firma listesi y\u00fcklenemedi");
+          MessageToast.show(that._getText("errCompanyListLoadAdmin"));
         });
       }
       if (user && user.tenant_domain) {
@@ -108,7 +108,7 @@ sap.ui.define([
         that._oModel.setProperty("/_permDefs", defs);
         that._enrichUserRoleNames();
       }).catch(function () {
-        MessageToast.show("Rol ve yetki tan\u0131mlar\u0131 y\u00fcklenemedi");
+        MessageToast.show(that._getText("errRolesLoad"));
       });
     },
 
@@ -280,7 +280,7 @@ sap.ui.define([
                 that._loadData();
                 oDialog.close();
               }).catch(function () {
-                MessageToast.show("Kullan\u0131c\u0131 g\u00fcncellenemedi");
+                MessageToast.show(that._getText("errUserUpdate"));
               });
             } else {
               oPayload.username = sUsername;
@@ -291,7 +291,7 @@ sap.ui.define([
                 that._loadData();
                 oDialog.close();
               }).catch(function () {
-                MessageToast.show("Kullan\u0131c\u0131 olu\u015fturulamad\u0131");
+                MessageToast.show(that._getText("errUserCreate"));
               });
             }
           }
@@ -304,6 +304,7 @@ sap.ui.define([
     },
 
     onResetPassword: function (oEvent) {
+      var that = this;
       var oUser = oEvent.getSource().getBindingContext("admin").getObject();
       if (!oUser.email) {
         MessageBox.warning(this._getText("adminNoEmailForReset"));
@@ -317,7 +318,7 @@ sap.ui.define([
             if (res.error) { MessageBox.error(res.error); return; }
             MessageToast.show(res.message || "OK");
           }).catch(function () {
-            MessageToast.show("\u015eifre s\u0131f\u0131rlama e-postas\u0131 g\u00f6nderilemedi");
+            MessageToast.show(that._getText("errPasswordResetSend"));
           });
         }
       });
@@ -432,7 +433,7 @@ sap.ui.define([
                 that._loadData();
                 oDialog.close();
               }).catch(function () {
-                MessageToast.show("Rol g\u00fcncellenemedi");
+                MessageToast.show(that._getText("errRoleUpdate"));
               });
             } else {
               API.post("/api/auth/roles", oPayload).then(function (res) {
@@ -441,7 +442,7 @@ sap.ui.define([
                 that._loadData();
                 oDialog.close();
               }).catch(function () {
-                MessageToast.show("Rol olu\u015fturulamad\u0131");
+                MessageToast.show(that._getText("errRoleCreate"));
               });
             }
           }
@@ -470,7 +471,7 @@ sap.ui.define([
               that._oModel.setProperty("/selectedRole", null);
               that._loadData();
             }).catch(function () {
-              MessageToast.show("Rol silme i\u015flemi ba\u015far\u0131s\u0131z");
+              MessageToast.show(that._getText("errRoleDelete"));
             });
           }
         }
@@ -498,7 +499,7 @@ sap.ui.define([
         oRole.permissions = oPerms;
         that._oModel.setProperty("/selectedRole", oRole);
       }).catch(function () {
-        MessageToast.show("Yetkiler kaydedilemedi");
+        MessageToast.show(that._getText("errPermissionsSave"));
       });
     }
   });

@@ -12,7 +12,7 @@
       <IconTabBar id="jobTabBar" expandable="false" stretchContentHeight="false"
         class="sapUiNoContentPadding">
 
-        <!-- ═══ Tab 1: Genel Bilgiler ═══ -->
+        <!-- ═══ Tab 1: General ═══ -->
         <items>
           <IconTabFilter text="{i18n>jobGeneral}" icon="sap-icon://detail-view" key="general">
             <l:VerticalLayout class="sapUiSmallMargin" width="calc(100% - 2rem)">
@@ -35,9 +35,9 @@
 
               <Label text="{i18n>jobClass}" class="sapUiSmallMarginTop" />
               <Select selectedKey="{dialog>/job_class}" width="100%">
-                <core:Item key="A" text="A - Y&#xFC;ksek &#xD6;ncelik" />
-                <core:Item key="B" text="B - Orta &#xD6;ncelik" />
-                <core:Item key="C" text="C - D&#xFC;&#x15F;&#xFC;k &#xD6;ncelik" />
+                <core:Item key="A" text="{i18n>classHigh}" />
+                <core:Item key="B" text="{i18n>classMedium}" />
+                <core:Item key="C" text="{i18n>classLow}" />
               </Select>
 
               <Label text="{i18n>jobConfigJson}" class="sapUiSmallMarginTop" />
@@ -46,110 +46,110 @@
             </l:VerticalLayout>
           </IconTabFilter>
 
-          <!-- ═══ Tab 2: Başlangıç Koşulu (SAP SM36 benzeri) ═══ -->
+          <!-- ═══ Tab 2: Schedule ═══ -->
           <IconTabFilter text="{i18n>jobSchedule}" icon="sap-icon://date-time" key="schedule">
             <l:VerticalLayout class="sapUiSmallMargin" width="calc(100% - 2rem)">
 
               <Label text="{i18n>jobStartCondition}" class="sapUiSmallMarginTop" />
               <Select selectedKey="{dialog>/schedule_type}" width="100%"
                 change="onScheduleTypeChange">
-                <core:Item key="MANUAL" text="Manuel Ba&#x15F;latma" />
-                <core:Item key="IMMEDIATE" text="Hemen Ba&#x15F;lat" />
-                <core:Item key="ONCE" text="Tarih/Saat Belirle" />
-                <core:Item key="PERIODIC" text="Periyodik &#xC7;al&#x131;&#x15F;t&#x131;r" />
+                <core:Item key="MANUAL" text="{i18n>jdScheduleManual}" />
+                <core:Item key="IMMEDIATE" text="{i18n>jdScheduleImmediate}" />
+                <core:Item key="ONCE" text="{i18n>jdScheduleDateTime}" />
+                <core:Item key="PERIODIC" text="{i18n>jdSchedulePeriodic}" />
               </Select>
 
-              <!-- Tarih/Saat (ONCE) -->
-              <Panel headerText="Planlanan Zaman"
+              <!-- Date/Time (ONCE) -->
+              <Panel headerText="{i18n>jdPlannedTime}"
                 visible="{= ${dialog>/schedule_type} === 'ONCE'}"
                 class="sapUiSmallMarginTop">
                 <l:VerticalLayout class="sapUiSmallMargin" width="calc(100% - 2rem)">
-                  <Label text="Tarih" />
+                  <Label text="{i18n>jdDate}" />
                   <DatePicker value="{dialog>/once_date}" displayFormat="dd.MM.yyyy"
                     valueFormat="yyyy-MM-dd" width="100%" />
-                  <Label text="Saat" class="sapUiSmallMarginTop" />
+                  <Label text="{i18n>jdTime}" class="sapUiSmallMarginTop" />
                   <TimePicker value="{dialog>/once_time}" valueFormat="HH:mm"
                     displayFormat="HH:mm" width="100%" />
                 </l:VerticalLayout>
               </Panel>
 
-              <!-- Periyodik (SAP Periyot Değerleri) -->
-              <Panel headerText="Periyot De&#x11F;erleri"
+              <!-- Periodic -->
+              <Panel headerText="{i18n>jdPeriodValues}"
                 visible="{= ${dialog>/schedule_type} === 'PERIODIC'}"
                 class="sapUiSmallMarginTop">
                 <l:VerticalLayout class="sapUiSmallMargin" width="calc(100% - 2rem)">
 
-                  <Label text="Periyot Tipi" />
+                  <Label text="{i18n>jdPeriodType}" />
                   <Select selectedKey="{dialog>/period_type}" width="100%"
                     change="onPeriodTypeChange">
-                    <core:Item key="MINUTELY" text="Dakika Bazl&#x131;" />
-                    <core:Item key="HOURLY" text="Saatlik" />
-                    <core:Item key="DAILY" text="G&#xFC;nl&#xFC;k" />
-                    <core:Item key="WEEKLY" text="Haftal&#x131;k" />
-                    <core:Item key="MONTHLY" text="Ayl&#x131;k" />
+                    <core:Item key="MINUTELY" text="{i18n>jdPeriodMinute}" />
+                    <core:Item key="HOURLY" text="{i18n>jdPeriodHourly}" />
+                    <core:Item key="DAILY" text="{i18n>jdPeriodDaily}" />
+                    <core:Item key="WEEKLY" text="{i18n>jdPeriodWeekly}" />
+                    <core:Item key="MONTHLY" text="{i18n>jdPeriodMonthly}" />
                   </Select>
 
-                  <!-- Dakika bazlı -->
+                  <!-- Minute based -->
                   <HBox alignItems="Center" class="sapUiSmallMarginTop"
                     visible="{= ${dialog>/period_type} === 'MINUTELY'}">
-                    <Label text="Her" class="sapUiTinyMarginEnd" />
+                    <Label text="{i18n>jdEvery}" class="sapUiTinyMarginEnd" />
                     <Input value="{dialog>/period_minutes}" width="80px" type="Number" />
-                    <Label text="dakikada bir" class="sapUiTinyMarginBegin" />
+                    <Label text="{i18n>jdMinuteSuffix}" class="sapUiTinyMarginBegin" />
                   </HBox>
 
-                  <!-- Saatlik -->
+                  <!-- Hourly -->
                   <HBox alignItems="Center" class="sapUiSmallMarginTop"
                     visible="{= ${dialog>/period_type} === 'HOURLY'}">
-                    <Label text="Her" class="sapUiTinyMarginEnd" />
+                    <Label text="{i18n>jdEvery}" class="sapUiTinyMarginEnd" />
                     <Input value="{dialog>/period_hours}" width="80px" type="Number" />
-                    <Label text="saatte bir" class="sapUiTinyMarginBegin" />
+                    <Label text="{i18n>jdHourSuffix}" class="sapUiTinyMarginBegin" />
                   </HBox>
 
-                  <!-- Günlük -->
+                  <!-- Daily -->
                   <HBox alignItems="Center" class="sapUiSmallMarginTop"
                     visible="{= ${dialog>/period_type} === 'DAILY'}">
-                    <Label text="Her g&#xFC;n saat" class="sapUiTinyMarginEnd" />
+                    <Label text="{i18n>jdDailyAt}" class="sapUiTinyMarginEnd" />
                     <TimePicker value="{dialog>/daily_time}" valueFormat="HH:mm"
                       displayFormat="HH:mm" width="120px" />
                   </HBox>
 
-                  <!-- Haftalık -->
+                  <!-- Weekly -->
                   <l:VerticalLayout class="sapUiSmallMarginTop"
                     visible="{= ${dialog>/period_type} === 'WEEKLY'}">
-                    <Label text="G&#xFC;nler" />
+                    <Label text="{i18n>jdDays}" />
                     <HBox class="sapUiSmallMarginTop" wrap="Wrap">
-                      <CheckBox text="Pzt" selected="{dialog>/week_mon}" />
-                      <CheckBox text="Sal" selected="{dialog>/week_tue}" />
-                      <CheckBox text="&#xC7;ar" selected="{dialog>/week_wed}" />
-                      <CheckBox text="Per" selected="{dialog>/week_thu}" />
-                      <CheckBox text="Cum" selected="{dialog>/week_fri}" />
-                      <CheckBox text="Cmt" selected="{dialog>/week_sat}" />
-                      <CheckBox text="Paz" selected="{dialog>/week_sun}" />
+                      <CheckBox text="{i18n>jdDayMon}" selected="{dialog>/week_mon}" />
+                      <CheckBox text="{i18n>jdDayTue}" selected="{dialog>/week_tue}" />
+                      <CheckBox text="{i18n>jdDayWed}" selected="{dialog>/week_wed}" />
+                      <CheckBox text="{i18n>jdDayThu}" selected="{dialog>/week_thu}" />
+                      <CheckBox text="{i18n>jdDayFri}" selected="{dialog>/week_fri}" />
+                      <CheckBox text="{i18n>jdDaySat}" selected="{dialog>/week_sat}" />
+                      <CheckBox text="{i18n>jdDaySun}" selected="{dialog>/week_sun}" />
                     </HBox>
                     <HBox alignItems="Center" class="sapUiSmallMarginTop">
-                      <Label text="Saat" class="sapUiTinyMarginEnd" />
+                      <Label text="{i18n>jdHour}" class="sapUiTinyMarginEnd" />
                       <TimePicker value="{dialog>/weekly_time}" valueFormat="HH:mm"
                         displayFormat="HH:mm" width="120px" />
                     </HBox>
                   </l:VerticalLayout>
 
-                  <!-- Aylık -->
+                  <!-- Monthly -->
                   <l:VerticalLayout class="sapUiSmallMarginTop"
                     visible="{= ${dialog>/period_type} === 'MONTHLY'}">
                     <HBox alignItems="Center">
-                      <Label text="Ay&#x131;n" class="sapUiTinyMarginEnd" />
+                      <Label text="{i18n>jdMonthDay}" class="sapUiTinyMarginEnd" />
                       <Input value="{dialog>/monthly_day}" width="60px" type="Number" />
-                      <Label text=". g&#xFC;n&#xFC;" class="sapUiTinyMarginBegin" />
+                      <Label text="{i18n>jdMonthDaySuffix}" class="sapUiTinyMarginBegin" />
                     </HBox>
                     <HBox alignItems="Center" class="sapUiSmallMarginTop">
-                      <Label text="Saat" class="sapUiTinyMarginEnd" />
+                      <Label text="{i18n>jdHour}" class="sapUiTinyMarginEnd" />
                       <TimePicker value="{dialog>/monthly_time}" valueFormat="HH:mm"
                         displayFormat="HH:mm" width="120px" />
                     </HBox>
                   </l:VerticalLayout>
 
-                  <!-- Oluşan Cron İfadesi (readonly) -->
-                  <Label text="Cron &#x130;fadesi" class="sapUiMediumMarginTop" />
+                  <!-- Cron Expression (readonly) -->
+                  <Label text="{i18n>jdCronExpression}" class="sapUiMediumMarginTop" />
                   <Input value="{dialog>/cron_expression}" width="100%" editable="false"
                     valueState="{= ${dialog>/cron_expression} ? 'None' : 'Warning'}" />
 
