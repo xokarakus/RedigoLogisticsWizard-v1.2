@@ -52,8 +52,8 @@ function createToken(payload, options = {}) {
 
 describe('Auth Middleware', () => {
   describe('JWT_SECRET & SUPER_ADMIN_DOMAIN exports', () => {
-    it('should export the default JWT_SECRET', () => {
-      expect(JWT_SECRET).toBe('redigo-logistics-secret-key-change-in-production');
+    it('should export the default JWT_SECRET (dev fallback)', () => {
+      expect(JWT_SECRET).toBe('redigo-logistics-dev-secret-key');
     });
 
     it('should export the default SUPER_ADMIN_DOMAIN', () => {

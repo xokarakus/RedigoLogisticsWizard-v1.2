@@ -46,6 +46,7 @@ sap.ui.define([
     /* ═══ Data Loading ═══ */
 
     _loadMaterials: function () {
+      var that = this;
       var oModel = this.getView().getModel("masterData");
       API.get("/api/master-data/materials", { limit: 500 }).then(function (res) {
         var data = (res.data || []).map(function (m) {
@@ -56,11 +57,12 @@ sap.ui.define([
         oModel.setProperty("/allMaterials", data);
         oModel.setProperty("/materialCount", data.length);
       }).catch(function () {
-        MessageToast.show("Malzeme verileri y\u00fcklenemedi");
+        MessageToast.show(that._i18n("errMaterialLoad"));
       });
     },
 
     _loadPartners: function () {
+      var that = this;
       var oModel = this.getView().getModel("masterData");
       API.get("/api/master-data/partners", { limit: 500 }).then(function (res) {
         var data = (res.data || []).map(function (p) {
@@ -71,7 +73,7 @@ sap.ui.define([
         oModel.setProperty("/allPartners", data);
         oModel.setProperty("/partnerCount", data.length);
       }).catch(function () {
-        MessageToast.show("\u0130\u015f orta\u011f\u0131 verileri y\u00fcklenemedi");
+        MessageToast.show(that._i18n("errPartnerLoad"));
       });
     },
 
@@ -204,7 +206,7 @@ sap.ui.define([
               that._loadMaterials();
               oDialog.close();
             }).catch(function () {
-              MessageToast.show("Malzeme kaydedilemedi");
+              MessageToast.show(that._i18n("errMaterialSave"));
             });
           }
         }),
@@ -232,7 +234,7 @@ sap.ui.define([
               MessageToast.show(oBundle.getText("msgDeleted"));
               that._loadMaterials();
             }).catch(function () {
-              MessageToast.show("Malzeme silme i\u015flemi ba\u015far\u0131s\u0131z");
+              MessageToast.show(that._i18n("errMaterialDelete"));
             });
           }
         }
@@ -302,7 +304,7 @@ sap.ui.define([
               that._loadPartners();
               oDialog.close();
             }).catch(function () {
-              MessageToast.show("\u0130\u015f orta\u011f\u0131 kaydedilemedi");
+              MessageToast.show(that._i18n("errPartnerSave"));
             });
           }
         }),
@@ -330,7 +332,7 @@ sap.ui.define([
               MessageToast.show(oBundle.getText("msgDeleted"));
               that._loadPartners();
             }).catch(function () {
-              MessageToast.show("\u0130\u015f orta\u011f\u0131 silme i\u015flemi ba\u015far\u0131s\u0131z");
+              MessageToast.show(that._i18n("errPartnerDelete"));
             });
           }
         }
@@ -406,7 +408,7 @@ sap.ui.define([
 
         oDialog.open();
       }).catch(function () {
-        MessageToast.show("E\u015fle\u015ftirme profilleri y\u00fcklenemedi");
+        MessageToast.show(that._i18n("errFmProfilesLoad"));
       });
     },
 

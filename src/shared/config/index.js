@@ -73,6 +73,20 @@ if (process.env.VCAP_SERVICES) {
   };
 }
 
+// ── Production env validation ──
+if (process.env.NODE_ENV === 'production') {
+  const required = ['JWT_SECRET', 'DB_HOST', 'DB_PASSWORD'];
+  const missing = required.filter(k => !process.env[k] && !process.env.VCAP_SERVICES);
+  if (missing.length > 0) {
+    console.error(`FATAL: Missing required environment variables in production: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+}
+
+// ── Connection pool timeout ──
+dbConfig.connectionTimeoutMillis = parseInt(process.env.DB_CONNECTION_TIMEOUT || '30000', 10);
+dbConfig.idle_in_transaction_session_timeout = 60000;
+
 const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   env: process.env.NODE_ENV || 'development',

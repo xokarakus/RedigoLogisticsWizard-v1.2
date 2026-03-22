@@ -41,6 +41,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       - name: Run unit tests
         run: npm run test:unit
 
@@ -88,5 +91,4 @@ jobs:
         run: npm ci
 
       - name: Security audit
-        run: npm audit --audit-level=high
-        continue-on-error: true
+        run: npm audit --audit-level=critical

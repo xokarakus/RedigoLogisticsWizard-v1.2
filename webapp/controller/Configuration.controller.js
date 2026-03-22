@@ -92,7 +92,7 @@ sap.ui.define([
           that._oModel.setProperty("/fieldMappings", aFM);
           that._oModel.setProperty("/fieldMappingsFiltered", aFM);
           that._oModel.setProperty("/fieldMappingCount", aFM.length);
-        });
+        }).catch(fnErr);
 
         API.get("/api/config/security-profiles").then(function (result) {
           var aData = result.data || [];

@@ -131,6 +131,16 @@ sap.ui.define([
         localStorage.setItem("redigo_current_page", sKey);
       }
 
+      // Cache size guard — destroy oldest if exceeds max
+      var MAX_CACHED_VIEWS = 10;
+      var aCacheKeys = Object.keys(this._viewCache);
+      if (aCacheKeys.length >= MAX_CACHED_VIEWS && !this._viewCache[sKey]) {
+        var sOldest = aCacheKeys[0];
+        var oOld = this._viewCache[sOldest];
+        if (oOld && oOld.destroy) { oOld.destroy(); }
+        delete this._viewCache[sOldest];
+      }
+
       if (this._viewCache[sKey]) {
         var oCached = this._viewCache[sKey];
         oNavContainer.to(oCached.getId());

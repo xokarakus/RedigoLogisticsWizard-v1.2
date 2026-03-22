@@ -9,7 +9,11 @@ const jwt = require('jsonwebtoken');
 const config = require('../config');
 const logger = require('../utils/logger');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'redigo-logistics-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || (
+  process.env.NODE_ENV === 'production'
+    ? (() => { throw new Error('JWT_SECRET environment variable is required in production'); })()
+    : 'redigo-logistics-dev-secret-key'
+);
 const SUPER_ADMIN_DOMAIN = process.env.SUPER_ADMIN_DOMAIN || '@redigo.com';
 
 let authEnabled = false;

@@ -66,6 +66,23 @@ const { v4: uuidv4 } = require('uuid');
 app.use((req, res, next) => {
   req.correlationId = req.headers['x-correlation-id'] || uuidv4();
   res.set('X-Correlation-Id', req.correlationId);
+
+  // Request duration logging
+  const startTime = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - startTime;
+    const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+    logger[level]('Request completed', {
+      method: req.method,
+      url: req.originalUrl,
+      status: res.statusCode,
+      duration_ms: duration,
+      correlationId: req.correlationId,
+      tenantId: req.tenantId || undefined,
+      userId: req.user ? req.user.user_id : undefined,
+    });
+  });
+
   next();
 });
 
@@ -280,7 +297,8 @@ app.use((err, req, res, _next) => {
     return res.status(413).json({ error: 'Istek boyutu cok buyuk (max 5MB)', correlationId });
   }
 
-  // Genel hata
+  // Genel hata — sanitize DB/internal messages
+  const status = err.status || err.statusCode || 500;
   logger.error('Unhandled error', {
     error: err.message,
     stack: err.stack,
@@ -293,7 +311,10 @@ app.use((err, req, res, _next) => {
     tenantId: req.tenantId,
     user: req.user ? { id: req.user.user_id, username: req.user.username } : undefined
   });
-  res.status(500).json({ error: 'Internal server error', correlationId });
+
+  // Never leak internal DB errors to client
+  const safeMessage = status >= 500 ? 'Internal server error' : (err.message || 'An error occurred');
+  res.status(status).json({ error: safeMessage, message: safeMessage, correlationId });
 });
 
 // Startup

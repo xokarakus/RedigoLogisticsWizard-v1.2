@@ -70,7 +70,8 @@ async function pollAndProcess() {
       `UPDATE job_queue
        SET status = 'PENDING', locked_at = NULL, locked_by = NULL
        WHERE status = 'PROCESSING'
-         AND locked_at < now() - interval '${STALE_LOCK_MINUTES} minutes'`
+         AND locked_at < now() - make_interval(mins => $1)`,
+      [STALE_LOCK_MINUTES]
     );
 
     // SKIP LOCKED ile bir iş al

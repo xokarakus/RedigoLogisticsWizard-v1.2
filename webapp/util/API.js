@@ -1,6 +1,11 @@
 sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
   "use strict";
 
+  // Constants — centralized magic numbers
+  var SESSION_TIMEOUT_MS = 15 * 60 * 1000;  // 15 minutes
+  var SESSION_CHECK_INTERVAL_MS = 30000;     // 30 seconds
+  var SESSION_WARNING_BEFORE_MS = 60000;     // 1 minute before expiry
+
   var API = {
     _baseUrl: (function () {
       if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
@@ -48,7 +53,7 @@ sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
     },
 
     // ── Session Monitoring (Faz D) ──
-    _sessionTimeout: 15 * 60 * 1000, // 15 dakika inactivity
+    _sessionTimeout: SESSION_TIMEOUT_MS,
     _lastActivity: Date.now(),
     _sessionMonitor: null,
     _activityListeners: null,
@@ -63,7 +68,6 @@ sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
       this._lastActivity = Date.now();
       this._warningShown = false;
 
-      // Her 30 saniyede kontrol
       this._sessionMonitor = setInterval(function () {
         var inactiveTime = Date.now() - that._lastActivity;
 
@@ -85,7 +89,7 @@ sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
 
         // 1 dakika kala uyari (bir kez goster)
         var timeLeft = that._sessionTimeout - inactiveTime;
-        if (timeLeft < 60000 && timeLeft > 55000 && !that._warningShown) {
+        if (timeLeft < SESSION_WARNING_BEFORE_MS && timeLeft > (SESSION_WARNING_BEFORE_MS - 5000) && !that._warningShown) {
           that._warningShown = true;
           var b = that._getBundle();
           MessageToast.show(
@@ -95,10 +99,10 @@ sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
         }
 
         // Uyari gosterildikten sonra etkilesim olduysa reset
-        if (timeLeft > 60000) {
+        if (timeLeft > SESSION_WARNING_BEFORE_MS) {
           that._warningShown = false;
         }
-      }, 30000);
+      }, SESSION_CHECK_INTERVAL_MS);
 
       // Kullanici etkilesimi takibi
       var updateFn = function () { that._lastActivity = Date.now(); };

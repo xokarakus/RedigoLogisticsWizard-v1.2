@@ -13,7 +13,7 @@ const {
   JWT_SECRET, SUPER_ADMIN_DOMAIN
 } = require('../../shared/middleware/auth');
 
-const { query } = require('../../shared/database/pool');
+const { query, getClient } = require('../../shared/database/pool');
 const { validate } = require('../../shared/validators/middleware');
 const {
   SetupSchema, LoginSchema, RefreshTokenSchema,
@@ -60,33 +60,41 @@ router.post('/setup', validate(SetupSchema), async (req, res) => {
     const { email, password, display_name, company_name, company_code } = req.body;
     const emailLower = email.toLowerCase();
 
-    const tenant = await tenantStore.create({
-      code: (company_code || company_name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10)).toUpperCase(),
-      name: company_name,
-      title: company_name,
-      is_active: true,
-      is_system_tenant: true
-    });
+    // Transaction: tenant + user atomik olmalı
+    const client = await getClient();
+    try {
+      await client.query('BEGIN');
 
-    const hash = await bcrypt.hash(password, 10);
-    await userStore.create({
-      tenant_id: tenant.id,
-      username: emailLower,
-      password_hash: hash,
-      display_name: display_name || emailLower.split('@')[0],
-      email: emailLower,
-      role: 'SUPER_ADMIN',
-      is_super_admin: true,
-      is_active: true
-    });
+      const tenantCode = (company_code || company_name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10)).toUpperCase();
+      const { rows: [tenant] } = await client.query(
+        `INSERT INTO tenants (code, name, title, is_active, is_system_tenant)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [tenantCode, company_name, company_name, true, true]
+      );
 
-    logger.info('System setup completed', { email: emailLower, tenant: tenant.code });
-    res.status(201).json({ message: 'Sistem kurulumu tamamland\u0131' });
+      const hash = await bcrypt.hash(password, 10);
+      await client.query(
+        `INSERT INTO users (tenant_id, username, password_hash, display_name, email, role, is_super_admin, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [tenant.id, emailLower, hash, display_name || emailLower.split('@')[0], emailLower, 'SUPER_ADMIN', true, true]
+      );
+
+      await client.query('COMMIT');
+
+      logger.info('System setup completed', { email: emailLower, tenant: tenant.code });
+      res.status(201).json({ message: 'Sistem kurulumu tamamland\u0131' });
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      throw txErr;
+    } finally {
+      client.release();
+    }
   } catch (err) {
     if (err.message && err.message.includes('duplicate key')) {
       return res.status(409).json({ error: 'Bu e-posta veya \u015firket kodu zaten mevcut' });
     }
-    res.status(500).json({ error: err.message });
+    logger.error('Setup error', { error: err.message });
+    res.status(500).json({ error: 'Sistem kurulumu başarısız' });
   }
 });
 
