@@ -34,7 +34,19 @@ process.on('unhandledRejection', (reason) => {
 
 // Middleware
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://ui5.sap.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://ui5.sap.com"],
+      fontSrc: ["'self'", "https://ui5.sap.com", "data:"],
+      imgSrc: ["'self'", "https://ui5.sap.com", "data:", "blob:"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"]
+    }
+  },
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   hsts: {
     maxAge: 31536000,         // 1 yil
@@ -161,6 +173,21 @@ app.get('/health', async (req, res) => {
   }
 
   res.status(health.status === 'ok' ? 200 : 503).json(health);
+});
+
+// Liveness probe — uygulama ayakta mı? (K8s)
+app.get('/health/live', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Readiness probe — trafik alabilir mi? (K8s)
+app.get('/health/ready', async (req, res) => {
+  try {
+    await require('./shared/database/pool').query('SELECT 1');
+    res.status(200).json({ status: 'ready', timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(503).json({ status: 'not_ready', error: 'Database unavailable' });
+  }
 });
 
 // Prometheus metrics endpoint (auth gerekmez)
@@ -338,11 +365,35 @@ async function start() {
   // Scheduled Jobs yukle
   jobScheduler.loadActiveJobs();
 
-  app.listen(config.port, () => {
+  const server = app.listen(config.port, '0.0.0.0', () => {
     logger.info(`Redigo Logistics Cockpit v${APP_VERSION} running on port ${config.port}`);
     logger.info(`API: /api/v1 (backward compat: /api)`);
     logger.info(`Environment: ${config.env}`);
   });
+
+  // Graceful shutdown
+  const SHUTDOWN_TIMEOUT_MS = 30000;
+  const gracefulShutdown = (signal) => {
+    logger.info(`${signal} received, starting graceful shutdown...`);
+
+    // Yeni bağlantıları reddet, mevcut isteklerin tamamlanmasını bekle
+    server.close(() => {
+      logger.info('HTTP server closed, stopping workers...');
+      pgQueue.stopWorker();
+      jobScheduler.stopAll();
+      logger.info('All workers stopped, exiting.');
+      process.exit(0);
+    });
+
+    // Belirli süre içinde kapanmazsa zorla çık
+    setTimeout(() => {
+      logger.error(`Graceful shutdown timed out after ${SHUTDOWN_TIMEOUT_MS}ms, forcing exit.`);
+      process.exit(1);
+    }, SHUTDOWN_TIMEOUT_MS).unref();
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
 // Test ortaminda sunucuyu otomatik baslatma (supertest kendi handle eder)
@@ -352,13 +403,5 @@ if (process.env.NODE_ENV !== 'test') {
     process.exit(1);
   });
 }
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, stopping workers...');
-  pgQueue.stopWorker();
-  jobScheduler.stopAll();
-  process.exit(0);
-});
 
 module.exports = app;

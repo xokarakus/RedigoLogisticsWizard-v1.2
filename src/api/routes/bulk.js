@@ -77,7 +77,7 @@ router.post('/update', adminOnly, idempotency(), validate(BulkUpdateSchema), asy
       });
     } catch (err) {
       results.failed++;
-      results.errors.push({ id: op.id, error: err.message });
+      results.errors.push({ id: op.id, error: 'Operation failed' });
     }
   }
 

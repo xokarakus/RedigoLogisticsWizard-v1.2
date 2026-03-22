@@ -148,7 +148,7 @@ router.all('/*', async (req, res) => {
       sap_function: incomingPath,
       sap_request: sanitizePayload(inputPayload),
       sap_response: null,
-      error_message: 'Transform error: ' + err.message,
+      error_message: 'Transform error',
       retry_count: 0,
       started_at: receivedAt,
       completed_at: new Date().toISOString(),

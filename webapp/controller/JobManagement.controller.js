@@ -72,6 +72,8 @@ sap.ui.define([
         });
         that._oModel.setProperty("/data", aData);
         that._applyFilters();
+      }).catch(function (err) {
+        console.error("Scheduled jobs load error", err);
       });
     },
 
@@ -180,6 +182,9 @@ sap.ui.define([
       API.post("/api/scheduled-jobs/" + oJob.id + "/toggle").then(function (res) {
         if (res.error) { MessageToast.show(res.error); return; }
         that._loadData();
+      }).catch(function (err) {
+        console.error("Toggle job error", err);
+        MessageToast.show("Toggle failed");
       });
     },
 
@@ -603,6 +608,9 @@ sap.ui.define([
         MessageToast.show(oBundle.getText("msgSaved"));
         oDialog.close();
         that._loadData();
+      }).catch(function (err) {
+        console.error("Job save error", err);
+        MessageToast.show(oBundle.getText("msgError"));
       });
     },
 

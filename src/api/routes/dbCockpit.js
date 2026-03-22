@@ -205,7 +205,7 @@ router.post('/query', validate(DbCockpitQuerySchema), async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     logAudit(req, 'db_cockpit', null, 'QUERY_ERROR', null, { sql: trimmed, error: err.message });
-    res.status(400).json({ error: 'Sorgu hatasi: ' + err.message });
+    res.status(400).json({ error: 'Query execution failed' });
   } finally {
     client.release();
   }

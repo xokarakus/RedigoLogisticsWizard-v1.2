@@ -400,15 +400,11 @@ router.get('/wizard/preview', requireRole('TENANT_ADMIN'), async (req, res) => {
 // POST /config/wizard/apply — bulk-create config for a tenant
 router.post('/wizard/apply', requireRole('TENANT_ADMIN'), validate(ApplyTemplateSchema), async (req, res) => {
   const { provider_code, sub_services } = req.body;
-  // TENANT_ADMIN kendi tenant'ına uygular, SUPER_ADMIN body'den gönderebilir
-  const tenant_id = req.body.tenant_id || req.tenantId;
+  // SUPER_ADMIN body'den tenant_id gönderebilir, diğerleri kendi tenant'ına uygular
+  const isSuperAdmin = req.user && req.user.is_super_admin === true;
+  const tenant_id = isSuperAdmin ? (req.body.tenant_id || req.tenantId) : req.tenantId;
   if (!tenant_id) {
     return res.status(400).json({ error: 'tenant_id zorunlu' });
-  }
-  // TENANT_ADMIN başka tenant'a uygulayamaz
-  const isSuperAdmin = req.user && req.user.role === 'SUPER_ADMIN';
-  if (!isSuperAdmin && tenant_id !== req.tenantId) {
-    return res.status(403).json({ error: 'Sadece kendi tenant\'ınıza şablon uygulayabilirsiniz' });
   }
 
   const client = await getClient();
@@ -602,7 +598,7 @@ router.put('/feature-flags/:key', adminOnly, async (req, res) => {
 // DELETE /config/feature-flags/:key — Flag sil
 router.delete('/feature-flags/:key', adminOnly, async (req, res) => {
   try {
-    const tenantId = req.body.tenant_id || req.tenantId || (req.user && req.user.tenant_id) || null;
+    const tenantId = req.tenantId || (req.user && req.user.tenant_id) || null;
     await featureFlags.removeFlag(req.params.key, tenantId);
     logAudit(req, 'feature_flag', req.params.key, 'DELETE', null, null);
     res.json({ ok: true });

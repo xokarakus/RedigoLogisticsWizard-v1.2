@@ -64,7 +64,9 @@ sap.ui.define([
           aOptions.push({ key: w.code, text: w.code + " \u2013 " + w.name });
         });
         that._oModel.setProperty("/warehouseOptions", aOptions);
-      }).catch(function () {});
+      }).catch(function (err) {
+        console.error("Archive: warehouses load error", err);
+      });
 
       // Teslimat tipleri ve surec tipleri veriden cekilecek
       API.get("/api/archive", { limit: 1 }).then(function () {
@@ -81,7 +83,9 @@ sap.ui.define([
           aProcessTypes.push({ key: t, text: t });
         });
         that._oModel.setProperty("/processTypeOptions", aProcessTypes);
-      }).catch(function () {});
+      }).catch(function (err) {
+        console.error("Archive: filter options load error", err);
+      });
     },
 
     /* ═══ Data Loading ═══ */

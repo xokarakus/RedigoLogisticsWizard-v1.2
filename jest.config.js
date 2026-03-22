@@ -14,10 +14,10 @@ module.exports = {
   coverageReporters: ['text', 'text-summary', 'lcov'],
   coverageThreshold: {
     global: {
-      branches: 60,
-      functions: 60,
-      lines: 65,
-      statements: 65
+      branches: 70,
+      functions: 70,
+      lines: 75,
+      statements: 75
     }
   },
   modulePathIgnorePatterns: ['<rootDir>/webapp/', '<rootDir>/approuter/'],

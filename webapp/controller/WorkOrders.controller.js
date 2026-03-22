@@ -372,8 +372,12 @@ sap.ui.define([
       var iTotal = aOrders.length;
       var iDone = 0;
 
+      // Çift tıklama önleme: işlem sırasında view'ı busy yap
+      this.getView().setBusy(true);
+
       function processNext() {
         if (iDone >= iTotal) {
+          that.getView().setBusy(false);
           MessageToast.show(that._getText("msgProcessComplete"));
           that._loadData();
           return;

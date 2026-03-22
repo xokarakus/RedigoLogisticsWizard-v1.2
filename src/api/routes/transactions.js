@@ -55,8 +55,11 @@ router.get('/', validate(TransactionListQuery, 'query'), async (req, res) => {
     // Sort by started_at desc
     data.sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
     const total = data.length;
+    const MAX_DATE_FILTER_LIMIT = 5000;
     const bHasDateFilter = !!(date_from || date_to);
-    if (!bHasDateFilter) {
+    if (bHasDateFilter) {
+      data = data.slice(0, MAX_DATE_FILTER_LIMIT);
+    } else {
       data = data.slice(0, Number(limit));
     }
 
@@ -70,7 +73,7 @@ router.get('/', validate(TransactionListQuery, 'query'), async (req, res) => {
 // GET /api/transactions/:id/chain - Get linked transactions by correlation_id
 router.get('/:id/chain', async (req, res) => {
   try {
-    const all = await store.readAll();
+    const all = await store.readAll({ filter: tf(req) });
     const tx = all.find(t => t.id === req.params.id);
     if (!tx) {
       return res.status(404).json({ error: 'Transaction not found' });

@@ -108,9 +108,12 @@ router.get('/', validate(WorkOrderListQuery, 'query'), async (req, res) => {
     data.sort((a, b) => new Date(b.received_at) - new Date(a.received_at));
 
     const total = data.length;
-    // Tarih filtresi varsa limit uygulama (kullanici gecmis veriyi istiyor)
+    // Tarih filtresi varsa daha yüksek limit uygula (OOM önleme)
+    const MAX_DATE_FILTER_LIMIT = 5000;
     const bHasDateFilter = !!(date_from || date_to);
-    if (!bHasDateFilter) {
+    if (bHasDateFilter) {
+      data = data.slice(0, MAX_DATE_FILTER_LIMIT);
+    } else {
       data = data.slice(Number(offset), Number(offset) + Number(limit));
     }
 

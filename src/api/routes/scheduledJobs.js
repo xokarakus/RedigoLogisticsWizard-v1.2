@@ -106,7 +106,7 @@ router.post('/', validate(CreateJobSchema), async (req, res) => {
       is_active, config
     } = req.body;
 
-    const tenantId = tf(req).tenant_id || req.body.tenant_id || req.tenantId;
+    const tenantId = tf(req).tenant_id || req.tenantId;
 
     // next_run_at hesapla
     let nextRunAt = null;
