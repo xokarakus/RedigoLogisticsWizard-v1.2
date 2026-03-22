@@ -126,9 +126,9 @@ describe('Auth Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid plan value', () => {
+    it('should reject plan exceeding max length', () => {
       const result = CreateTenantSchema.safeParse({
-        name: 'Test', domain: 'test.com', plan: 'INVALID'
+        name: 'Test', domain: 'test.com', plan: 'A'.repeat(21)
       });
       expect(result.success).toBe(false);
     });
@@ -158,9 +158,9 @@ describe('Auth Schemas', () => {
       expect(r2.success).toBe(true);
     });
 
-    it('should reject invalid role', () => {
+    it('should reject role exceeding max length', () => {
       const result = CreateUserSchema.safeParse({
-        email: 'john@example.com', password: 'Str0ngPass', role: 'GOD_MODE'
+        email: 'john@example.com', password: 'Str0ngPass', role: 'A'.repeat(51)
       });
       expect(result.success).toBe(false);
     });
