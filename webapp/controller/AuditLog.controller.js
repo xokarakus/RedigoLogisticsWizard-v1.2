@@ -108,6 +108,8 @@ sap.ui.define([
           pageInfo: iCurrentPage + " / " + iTotalPages,
           countText: that.getView().getModel("i18n").getResourceBundle().getText("auditRecordCount", [iTotal])
         });
+      }).catch(function (err) {
+        console.error("Audit log load error", err);
       });
     },
 

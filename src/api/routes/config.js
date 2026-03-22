@@ -45,7 +45,7 @@ router.get('/warehouses', async (req, res) => {
     res.json({ data: await warehouseStore.readAll(opts) });
   } catch (err) {
     logger.error('GET /config/warehouses error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -56,7 +56,7 @@ router.post('/warehouses', adminOnly, validate(CreateWarehouseSchema), async (re
     res.status(201).json({ data: item });
   } catch (err) {
     logger.error('POST /config/warehouses error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -69,7 +69,7 @@ router.put('/warehouses/:id', adminOnly, validate(UpdateWarehouseSchema), async 
     res.json({ data: updated });
   } catch (err) {
     logger.error('PUT /config/warehouses error', { error: err.message, id: req.params.id });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -100,7 +100,7 @@ router.get('/field-mappings', async (req, res) => {
     res.json({ data });
   } catch (err) {
     logger.error('GET /config/field-mappings error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -112,7 +112,7 @@ router.post('/field-mappings', adminOnly, validate(CreateFieldMappingSchema), as
     res.status(201).json({ data: item });
   } catch (err) {
     logger.error('POST /config/field-mappings error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -126,7 +126,7 @@ router.put('/field-mappings/:id', adminOnly, validate(UpdateFieldMappingSchema),
     res.json({ data: updated });
   } catch (err) {
     logger.error('PUT /config/field-mappings error', { error: err.message, id: req.params.id });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -158,7 +158,7 @@ router.get('/security-profiles', async (req, res) => {
     res.json({ data: data.map(maskCredentials) });
   } catch (err) {
     logger.error('GET /config/security-profiles error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -169,7 +169,7 @@ router.post('/security-profiles', adminOnly, validate(CreateSecurityProfileSchem
     res.status(201).json({ data: maskCredentials(item) });
   } catch (err) {
     logger.error('POST /config/security-profiles error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -201,7 +201,7 @@ router.put('/security-profiles/:id', adminOnly, validate(UpdateSecurityProfileSc
     res.json({ data: maskCredentials(updated) });
   } catch (err) {
     logger.error('PUT /config/security-profiles error', { error: err.message, id: req.params.id });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -226,7 +226,7 @@ router.get('/sap-field-aliases', async (req, res) => {
     res.json({ data: await aliasStore.readAll() });
   } catch (err) {
     logger.error('GET /config/sap-field-aliases error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -257,7 +257,7 @@ router.post('/test-dispatch', adminOnly, validate(TestDispatchSchema), async (re
 
     res.json({ data: { ...result, transformedResponse } });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -275,7 +275,7 @@ router.get('/settings/:key', adminOnly, async (req, res) => {
     );
     res.json({ data: rows.length > 0 ? rows[0].value : null });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -298,7 +298,7 @@ router.put('/settings/:key', adminOnly, async (req, res) => {
     logAudit(req, 'system_settings', key, 'UPDATE', null, { key, value: key === 'email' ? '***' : value });
     res.json({ message: 'Ayar kaydedildi' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -322,7 +322,7 @@ router.post('/settings/email/test', adminOnly, validate(EmailTestSchema), async 
       res.status(500).json({ error: 'E-posta gönderilemedi. SMTP ayarlarını kontrol edin.' });
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -377,7 +377,7 @@ router.get('/wizard/providers', requireRole('TENANT_ADMIN'), async (req, res) =>
     res.json({ data, applied_providers: appliedProviders });
   } catch (err) {
     logger.error('GET /config/wizard/providers error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -393,7 +393,7 @@ router.get('/wizard/preview', requireRole('TENANT_ADMIN'), async (req, res) => {
     res.json({ provider, ...result });
   } catch (err) {
     logger.error('GET /config/wizard/preview error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -471,7 +471,7 @@ router.post('/wizard/apply', requireRole('TENANT_ADMIN'), validate(ApplyTemplate
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     logger.error('POST /config/wizard/apply error', { error: err.message, tenant_id, provider_code });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   } finally {
     client.release();
   }
@@ -493,7 +493,7 @@ router.post('/wizard/providers', requireRole('SUPER_ADMIN'), validate(CreateProv
       return res.status(409).json({ error: 'Bu code ile template zaten mevcut' });
     }
     logger.error('POST /config/wizard/providers error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -510,7 +510,7 @@ router.put('/wizard/providers/:id', requireRole('SUPER_ADMIN'), validate(UpdateP
       return res.status(409).json({ error: 'Bu code ile template zaten mevcut' });
     }
     logger.error('PUT /config/wizard/providers error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -524,7 +524,7 @@ router.delete('/wizard/providers/:id', requireRole('SUPER_ADMIN'), async (req, r
     res.json({ success: true });
   } catch (err) {
     logger.error('DELETE /config/wizard/providers error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -563,7 +563,7 @@ router.post('/wizard/providers/from-tenant', requireRole('SUPER_ADMIN'), validat
       return res.status(409).json({ error: 'Bu code ile template zaten mevcut' });
     }
     logger.error('POST /config/wizard/providers/from-tenant error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -580,7 +580,7 @@ router.get('/feature-flags', async (req, res) => {
     res.json({ data: flags });
   } catch (err) {
     logger.error('GET /config/feature-flags error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -595,7 +595,7 @@ router.put('/feature-flags/:key', adminOnly, async (req, res) => {
     res.json({ ok: true, flag_key: req.params.key, enabled: !!enabled });
   } catch (err) {
     logger.error('PUT /config/feature-flags error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -608,7 +608,7 @@ router.delete('/feature-flags/:key', adminOnly, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     logger.error('DELETE /config/feature-flags error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

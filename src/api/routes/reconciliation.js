@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
     res.json({ data, count: data.length });
   } catch (err) {
     logger.error('GET /api/reconciliation error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -36,7 +36,7 @@ router.post('/trigger', requireRole('TENANT_ADMIN'), async (req, res) => {
     res.json({ data: result });
   } catch (err) {
     logger.error('POST /reconciliation/trigger error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

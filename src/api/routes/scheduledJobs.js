@@ -54,7 +54,7 @@ router.get('/', validate(JobListQuery, 'query'), async (req, res) => {
     res.json({ data: result.rows, count: result.rows.length });
   } catch (err) {
     logger.error('GET /api/scheduled-jobs error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -70,7 +70,7 @@ router.get('/:id', async (req, res) => {
     }
     res.json({ data: result.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -93,7 +93,7 @@ router.get('/:id/executions', async (req, res) => {
       total: Number(countResult.rows[0].total)
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -141,7 +141,7 @@ router.post('/', validate(CreateJobSchema), async (req, res) => {
     res.status(201).json({ data: result.rows[0] });
   } catch (err) {
     logger.error('POST /api/scheduled-jobs error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -207,7 +207,7 @@ router.put('/:id', validate(UpdateJobSchema), async (req, res) => {
     res.json({ data: result.rows[0] });
   } catch (err) {
     logger.error('PUT /api/scheduled-jobs error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -225,7 +225,7 @@ router.delete('/:id', async (req, res) => {
     logAudit(req, 'scheduled_job', req.params.id, 'DELETE', oldResult.rows[0], null);
     res.json({ message: 'Deleted' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -241,7 +241,7 @@ router.post('/:id/run', async (req, res) => {
     res.json({ data: execution });
   } catch (err) {
     logger.error('POST /api/scheduled-jobs/:id/run error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -266,7 +266,7 @@ router.post('/:id/toggle', async (req, res) => {
     logAudit(req, 'scheduled_job', job.id, job.is_active ? 'ACTIVATE' : 'DEACTIVATE', null, { is_active: job.is_active });
     res.json({ data: job });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -283,7 +283,7 @@ router.get('/:id/executions/:execId/items', async (req, res) => {
     );
     res.json({ data: result.rows, count: result.rows.length });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -319,7 +319,7 @@ router.post('/:id/executions/:execId/retry-failed', async (req, res) => {
     res.json({ data: execution });
   } catch (err) {
     logger.error('POST retry-failed error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

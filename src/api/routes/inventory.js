@@ -12,7 +12,7 @@ router.get('/mappings', async (req, res) => {
     res.json({ data });
   } catch (err) {
     logger.error('GET /api/inventory/mappings error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

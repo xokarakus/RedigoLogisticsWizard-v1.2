@@ -217,7 +217,7 @@ router.get('/', validate(ArchiveSearchSchema, 'query'), async (req, res) => {
     res.json({ data, total, limit, offset });
   } catch (err) {
     logger.error('GET /api/archive error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -236,7 +236,7 @@ router.get('/:id', async (req, res) => {
     res.json({ data: result.rows[0] });
   } catch (err) {
     logger.error('GET /api/archive/:id error', { error: err.message, id: req.params.id });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -266,7 +266,7 @@ router.get('/stats', async (req, res) => {
     res.json({ data: result.rows[0] });
   } catch (err) {
     logger.error('GET /api/archive/stats error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

@@ -32,6 +32,8 @@ sap.ui.define([
         that._oModel.setProperty("/count", aData.length);
         that._oModel.setProperty("/countText", that._getText("recReportCount", [aData.length]));
         that._applyFilters();
+      }).catch(function (err) {
+        console.error("Reconciliation load error", err);
       });
 
       // Load warehouses for filter dropdown
@@ -42,6 +44,8 @@ sap.ui.define([
           aOptions.push({ key: w.code, text: w.code + " \u2013 " + w.name });
         });
         that._oModel.setProperty("/warehouseOptions", aOptions);
+      }).catch(function (err) {
+        console.error("Warehouses load error", err);
       });
     },
 

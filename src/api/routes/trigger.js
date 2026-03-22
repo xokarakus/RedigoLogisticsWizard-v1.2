@@ -134,7 +134,7 @@ router.post('/fetch-from-sap', validate(deliveryBody), async (req, res) => {
       duration_ms: Date.now() - startTime
     });
 
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -267,7 +267,7 @@ router.post('/send-to-3pl', validate(deliveryBody), async (req, res) => {
     }
   } catch (err) {
     logger.error('send-to-3pl error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -352,7 +352,7 @@ router.post('/query-status', validate(deliveryBody), async (req, res) => {
     });
   } catch (err) {
     logger.error('query-status error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

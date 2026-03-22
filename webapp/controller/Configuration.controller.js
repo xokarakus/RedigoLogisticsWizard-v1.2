@@ -267,7 +267,7 @@ sap.ui.define([
                 oDialog.close();
               }).catch(function (err) {
                 oDialog.setBusy(false);
-                MessageBox.error(err.message || "Hata");
+                MessageBox.error(err.message || that._getText("msgError"));
               });
             }
           }),

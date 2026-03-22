@@ -63,7 +63,7 @@ router.get('/', validate(TransactionListQuery, 'query'), async (req, res) => {
     res.json({ data, count: total });
   } catch (err) {
     logger.error('GET /api/transactions error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -84,7 +84,7 @@ router.get('/:id/chain', async (req, res) => {
     res.json({ data: chain, correlation_id: tx.correlation_id, count: chain.length });
   } catch (err) {
     logger.error('GET /api/transactions/:id/chain error', { error: err.message, id: req.params.id });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -95,7 +95,7 @@ router.post('/', async (req, res) => {
     res.status(201).json({ data: item });
   } catch (err) {
     logger.error('POST /api/transactions error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

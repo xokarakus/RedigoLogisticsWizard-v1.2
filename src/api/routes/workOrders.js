@@ -117,7 +117,7 @@ router.get('/', validate(WorkOrderListQuery, 'query'), async (req, res) => {
     res.json({ data, count: total });
   } catch (err) {
     logger.error('GET /api/work-orders error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -143,7 +143,7 @@ router.get('/:id', async (req, res) => {
     res.json({ data: item });
   } catch (err) {
     logger.error('GET /api/work-orders/:id error', { error: err.message, id: req.params.id });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -190,7 +190,7 @@ router.put('/:id', validate(UpdateWorkOrderSchema), async (req, res) => {
     res.json({ data: updated });
   } catch (err) {
     logger.error('PUT /api/work-orders error', { error: err.message, id: req.params.id });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -222,7 +222,7 @@ router.post('/ingest', validate(IngestWorkOrderSchema), async (req, res) => {
     res.status(201).json({ id: item.id, delivery: item.sap_delivery_no, status: 'RECEIVED' });
   } catch (err) {
     logger.error('POST /api/work-orders/ingest error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

@@ -49,7 +49,7 @@ router.get('/kpis', async (req, res) => {
     });
   } catch (err) {
     logger.error('GET /api/dashboard/kpis error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

@@ -37,6 +37,8 @@ sap.ui.define([
         that._oModel.setProperty("/countText", that._getText("dlqItemCount", [aData.length]));
         that._buildActionOptions(aData);
         that._applyFilters();
+      }).catch(function (err) {
+        console.error("DLQ load error", err);
       });
     },
 

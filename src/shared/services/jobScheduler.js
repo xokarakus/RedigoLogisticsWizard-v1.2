@@ -239,7 +239,8 @@ async function runJobByType(job) {
       if (cfg.warehouse_code) { params.push(cfg.warehouse_code); conditions.push('warehouse_code = $' + params.length); }
       if (cfg.delivery_type) { params.push(cfg.delivery_type); conditions.push('delivery_type = $' + params.length); }
       const lim = Math.min(Number(cfg.limit) || 100, 10000);
-      const sql = 'SELECT id, sap_delivery_no FROM work_orders WHERE ' + conditions.join(' AND ') + ' ORDER BY created_at DESC LIMIT ' + lim;
+      params.push(lim);
+      const sql = 'SELECT id, sap_delivery_no FROM work_orders WHERE ' + conditions.join(' AND ') + ' ORDER BY created_at DESC LIMIT $' + params.length;
       const woResult = await query(sql, params);
       result.processed = woResult.rows.length;
       result.success = woResult.rows.length;
@@ -253,7 +254,8 @@ async function runJobByType(job) {
       const params = [...tenantParams];
       if (cfg.warehouse_code) { params.push(cfg.warehouse_code); conditions.push('warehouse_code = $' + params.length); }
       const lim = Math.min(Number(cfg.batch_size) || 50, 10000);
-      const sql = 'SELECT id, sap_delivery_no FROM work_orders WHERE ' + conditions.join(' AND ') + ' ORDER BY created_at ASC LIMIT ' + lim;
+      params.push(lim);
+      const sql = 'SELECT id, sap_delivery_no FROM work_orders WHERE ' + conditions.join(' AND ') + ' ORDER BY created_at ASC LIMIT $' + params.length;
       const woResult = await query(sql, params);
       result.processed = woResult.rows.length;
       result.success = woResult.rows.length;
@@ -270,7 +272,8 @@ async function runJobByType(job) {
       params.push(mvtStatus); conditions.push('status = $' + params.length);
       if (cfg.warehouse_code) { params.push(cfg.warehouse_code); conditions.push('warehouse_code = $' + params.length); }
       const lim = Math.min(Number(cfg.batch_size) || 50, 10000);
-      const sql = 'SELECT id, sap_delivery_no FROM work_orders WHERE ' + conditions.join(' AND ') + ' ORDER BY created_at ASC LIMIT ' + lim;
+      params.push(lim);
+      const sql = 'SELECT id, sap_delivery_no FROM work_orders WHERE ' + conditions.join(' AND ') + ' ORDER BY created_at ASC LIMIT $' + params.length;
       const woResult = await query(sql, params);
       result.processed = woResult.rows.length;
       result.success = woResult.rows.length;
@@ -283,7 +286,8 @@ async function runJobByType(job) {
       const conditions = [tenantWhere, "status IN ('SENT_TO_WMS', 'IN_PROGRESS')"];
       const params = [...tenantParams];
       const lim = Math.min(Number(cfg.batch_size) || 100, 10000);
-      const sql = 'SELECT id, sap_delivery_no FROM work_orders WHERE ' + conditions.join(' AND ') + ' ORDER BY created_at ASC LIMIT ' + lim;
+      params.push(lim);
+      const sql = 'SELECT id, sap_delivery_no FROM work_orders WHERE ' + conditions.join(' AND ') + ' ORDER BY created_at ASC LIMIT $' + params.length;
       const woResult = await query(sql, params);
       result.processed = woResult.rows.length;
       result.success = woResult.rows.length;

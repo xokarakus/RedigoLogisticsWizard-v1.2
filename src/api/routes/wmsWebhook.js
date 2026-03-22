@@ -47,7 +47,7 @@ router.post('/confirmation', async (req, res) => {
     res.json(result);
   } catch (err) {
     logger.error('WMS confirmation processing failed', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

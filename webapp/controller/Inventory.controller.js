@@ -28,6 +28,8 @@ sap.ui.define([
       var that = this;
       API.get("/api/inventory/mappings").then(function (result) {
         that._oModel.setProperty("/mappings", result.data || []);
+      }).catch(function (err) {
+        console.error("Inventory mappings load error", err);
       });
 
       API.get("/api/transactions", { action_like: "INV_", limit: 100 }).then(function (result) {
@@ -39,6 +41,8 @@ sap.ui.define([
         that._oModel.setProperty("/count", aData.length);
         that._oModel.setProperty("/countText", that._getText("invMovementCount", [aData.length]));
         that._applyFilters();
+      }).catch(function (err) {
+        console.error("Inventory transactions load error", err);
       });
 
       // Load warehouses for filter dropdown
@@ -49,6 +53,8 @@ sap.ui.define([
           aOptions.push({ key: w.code, text: w.code + " \u2013 " + w.name });
         });
         that._oModel.setProperty("/warehouseOptions", aOptions);
+      }).catch(function (err) {
+        console.error("Warehouses load error", err);
       });
     },
 

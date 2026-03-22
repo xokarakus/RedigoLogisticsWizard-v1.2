@@ -48,7 +48,7 @@ router.get('/tables', async (req, res) => {
     res.json({ data: countResult.rows });
   } catch (err) {
     logger.error('GET /db-cockpit/tables error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -96,7 +96,7 @@ router.get('/tables/:name/schema', async (req, res) => {
     });
   } catch (err) {
     logger.error('GET /db-cockpit/tables/:name/schema error', { error: err.message, table: tableName });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -143,7 +143,7 @@ router.get('/tables/:name/data', async (req, res) => {
     });
   } catch (err) {
     logger.error('GET /db-cockpit/tables/:name/data error', { error: err.message, table: tableName });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -235,7 +235,7 @@ router.get('/relationships', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /db-cockpit/relationships error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

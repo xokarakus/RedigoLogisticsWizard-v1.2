@@ -53,7 +53,7 @@ router.get('/cycle-times', async (req, res) => {
     res.json(result.rows[0] || {});
   } catch (err) {
     logger.error('GET /reports/cycle-times error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -84,7 +84,7 @@ router.get('/success-rates', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /reports/success-rates error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -127,7 +127,7 @@ router.get('/bottlenecks', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /reports/bottlenecks error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -157,7 +157,7 @@ router.get('/failure-reasons', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /reports/failure-reasons error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -195,7 +195,7 @@ router.get('/warehouse-summary', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /reports/warehouse-summary error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -226,7 +226,7 @@ router.get('/warehouse-sla', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /reports/warehouse-sla error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -257,7 +257,7 @@ router.get('/warehouse-transactions', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /reports/warehouse-transactions error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -290,7 +290,7 @@ router.get('/trend/orders', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /reports/trend/orders error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -318,7 +318,7 @@ router.get('/trend/cycle-time', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /reports/trend/cycle-time error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -347,7 +347,7 @@ router.get('/trend/transactions', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /reports/trend/transactions error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -387,7 +387,7 @@ router.get('/drill/process-orders', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /reports/drill/process-orders error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -423,7 +423,7 @@ router.get('/drill/warehouse-orders', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /reports/drill/warehouse-orders error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -455,7 +455,7 @@ router.get('/drill/error-orders', async (req, res) => {
     res.json({ data: result.rows });
   } catch (err) {
     logger.error('GET /reports/drill/error-orders error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -590,7 +590,7 @@ router.get('/export/:reportName', async (req, res) => {
     res.send(csv);
   } catch (err) {
     logger.error('GET /reports/export error', { error: err.message, report: req.params.reportName });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

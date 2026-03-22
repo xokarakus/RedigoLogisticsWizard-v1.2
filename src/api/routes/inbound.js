@@ -250,7 +250,7 @@ router.all('/*', async (req, res) => {
   });
   } catch (err) {
     logger.error('Inbound: unhandled error', { error: err.message, path: req.path });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

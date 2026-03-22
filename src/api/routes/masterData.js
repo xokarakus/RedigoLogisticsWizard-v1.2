@@ -46,7 +46,7 @@ router.get('/materials', validate(MaterialListQuery, 'query'), async (req, res) 
     res.json({ data, count: data.length });
   } catch (err) {
     logger.error('GET /master-data/materials error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -56,7 +56,7 @@ router.get('/materials/:id', async (req, res) => {
     if (!item) return res.status(404).json({ error: 'Kayit bulunamadi' });
     res.json({ data: item });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -67,7 +67,7 @@ router.post('/materials', adminOnly, validate(CreateMaterialSchema), async (req,
     res.status(201).json({ data: item });
   } catch (err) {
     logger.error('POST /master-data/materials error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -80,7 +80,7 @@ router.put('/materials/:id', adminOnly, validate(UpdateMaterialSchema), async (r
     res.json({ data: updated });
   } catch (err) {
     logger.error('PUT /master-data/materials error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -123,7 +123,7 @@ router.get('/partners', validate(PartnerListQuery, 'query'), async (req, res) =>
     res.json({ data, count: data.length });
   } catch (err) {
     logger.error('GET /master-data/partners error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -133,7 +133,7 @@ router.get('/partners/:id', async (req, res) => {
     if (!item) return res.status(404).json({ error: 'Kayit bulunamadi' });
     res.json({ data: item });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -144,7 +144,7 @@ router.post('/partners', adminOnly, validate(CreatePartnerSchema), async (req, r
     res.status(201).json({ data: item });
   } catch (err) {
     logger.error('POST /master-data/partners error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -157,7 +157,7 @@ router.put('/partners/:id', adminOnly, validate(UpdatePartnerSchema), async (req
     res.json({ data: updated });
   } catch (err) {
     logger.error('PUT /master-data/partners error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -184,7 +184,7 @@ router.get('/mappings', async (req, res) => {
     res.json({ data });
   } catch (err) {
     logger.error('GET /master-data/mappings error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -331,7 +331,7 @@ router.post('/dispatch', adminOnly, validate(DispatchSchema), async (req, res) =
     });
   } catch (err) {
     logger.error('POST /master-data/dispatch error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

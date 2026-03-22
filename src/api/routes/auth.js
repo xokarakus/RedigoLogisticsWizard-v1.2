@@ -42,7 +42,7 @@ router.get('/setup-status', async (req, res) => {
     const users = await userStore.readAll({ limit: 1 });
     res.json({ needs_setup: users.length === 0 });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -250,7 +250,7 @@ router.post('/login', validate(LoginSchema), async (req, res) => {
     });
   } catch (err) {
     logger.error('Login error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -322,7 +322,7 @@ router.post('/refresh', validate(RefreshTokenSchema), async (req, res) => {
     });
   } catch (err) {
     logger.error('Refresh token error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -339,7 +339,7 @@ router.post('/logout', authenticate, async (req, res) => {
     res.json({ success: true, revoked: result.rowCount });
   } catch (err) {
     logger.error('Logout error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -380,7 +380,7 @@ router.get('/me', async (req, res) => {
     if (err.name === 'JsonWebTokenError') {
       return res.status(401).json({ error: 'Geçersiz token' });
     }
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -415,7 +415,7 @@ router.put('/password', authenticate, validate(ChangePasswordSchema), async (req
     logger.info('Password changed', { username: user.username });
     res.json({ message: '\u015eifre de\u011fi\u015ftirildi' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -449,7 +449,7 @@ router.post('/forgot-password', validate(ForgotPasswordSchema), async (req, res)
 
     res.json({ message: 'E-posta adresinize sıfırlama linki gönderildi' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -494,7 +494,7 @@ router.post('/reset-password', validate(ResetPasswordSchema), async (req, res) =
     logger.info('Password reset completed', { username: user.username });
     res.json({ message: '\u015eifre ba\u015far\u0131yla s\u0131f\u0131rland\u0131' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -539,7 +539,7 @@ router.post('/send-reset', authenticate, requireRole('TENANT_ADMIN'), validate(S
 
     res.json({ message: 'Şifre sıfırlama maili gönderildi: ' + targetUser.email });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -585,7 +585,7 @@ router.post('/impersonate', authenticate, requireSuperAdmin, validate(Impersonat
       message: tenant.name + ' şirketi olarak işlem yapıyorsunuz'
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -620,7 +620,7 @@ router.post('/stop-impersonation', authenticate, async (req, res) => {
 
     res.json({ token, message: 'Yerine geçme sonlandırıldı' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -632,7 +632,7 @@ router.get('/tenants', authenticate, requireSuperAdmin, async (req, res) => {
     const tenants = await tenantStore.readAll();
     res.json({ data: tenants });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -734,7 +734,7 @@ router.get('/tenants/stats', authenticate, requireSuperAdmin, async (req, res) =
     res.json({ data: stats });
   } catch (err) {
     logger.error('GET /tenants/stats error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -868,7 +868,7 @@ router.post('/tenants', authenticate, requireSuperAdmin, validate(CreateTenantSc
       }
       return res.status(409).json({ error: 'Çakışan kayıt: ' + detail });
     }
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -887,7 +887,7 @@ router.put('/tenants/:id', authenticate, requireSuperAdmin, validate(UpdateTenan
     logAudit(req, 'tenant', req.params.id, 'UPDATE', tenant, updated);
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -923,7 +923,7 @@ router.delete('/tenants/:id', authenticate, requireSuperAdmin, async (req, res) 
     logAudit(req, 'tenant', req.params.id, 'DELETE', tenant, null);
     res.json({ success: true, message: 'Şirket silindi: ' + tenant.code });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -966,7 +966,7 @@ router.get('/users', authenticate, requireRole('TENANT_ADMIN'), async (req, res)
 
     res.json({ data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1026,7 +1026,7 @@ router.post('/users', authenticate, requireRole('TENANT_ADMIN'), validate(Create
     if (err.message && err.message.includes('duplicate key')) {
       return res.status(409).json({ error: 'Bu e-posta zaten mevcut' });
     }
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1093,7 +1093,7 @@ router.put('/users/:id', authenticate, requireRole('TENANT_ADMIN'), validate(Upd
     if (err.message && err.message.includes('duplicate key')) {
       return res.status(409).json({ error: 'Bu e-posta zaten mevcut' });
     }
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1116,7 +1116,7 @@ router.post('/logout', authenticate, async (req, res) => {
     logger.info('User logout', { username: req.user.username });
     res.json({ message: 'ok' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1159,7 +1159,7 @@ router.post('/unlock-account', authenticate, requireRole('TENANT_ADMIN'), valida
     logger.info('Account unlocked', { target: targetUser.username, by: req.user.username });
     res.json({ message: 'Hesap kilidi a\u00e7\u0131ld\u0131' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1231,7 +1231,7 @@ router.get('/audit-logs', authenticate, requireRole('TENANT_ADMIN'), async (req,
       offset
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1252,7 +1252,7 @@ router.get('/roles', authenticate, requireRole('TENANT_ADMIN'), async (req, res)
     const roles = await roleStore.readAll({ filter: { tenant_id: req.tenantId } });
     res.json({ data: roles });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1285,7 +1285,7 @@ router.post('/roles', authenticate, requireRole('TENANT_ADMIN'), validate(Create
     if (err.message && err.message.includes('unique')) {
       return res.status(409).json({ error: 'Bu rol kodu zaten mevcut' });
     }
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1318,7 +1318,7 @@ router.put('/roles/:id', authenticate, requireRole('TENANT_ADMIN'), validate(Upd
     logAudit(req, 'role', req.params.id, 'UPDATE', role.permissions, safePerms);
     res.json({ data: updated });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1341,7 +1341,7 @@ router.delete('/roles/:id', authenticate, requireRole('TENANT_ADMIN'), async (re
     logAudit(req, 'role', req.params.id, 'DELETE', role, null);
     res.json({ message: 'Rol silindi' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1364,7 +1364,7 @@ router.get('/my-permissions', authenticate, async (req, res) => {
 
     res.json({ data: perms });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

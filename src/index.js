@@ -214,7 +214,7 @@ v1.get('/queue/stats', authenticate, async (req, res) => {
     res.json(stats);
   } catch (err) {
     logger.error('Queue stats error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -229,7 +229,7 @@ v1.get('/queue/jobs', authenticate, async (req, res) => {
     res.json({ data: jobs, count: jobs.length });
   } catch (err) {
     logger.error('Queue jobs error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -242,7 +242,7 @@ v1.post('/queue/jobs/:id/retry', authenticate, async (req, res) => {
     res.json({ message: 'Job re-queued', job });
   } catch (err) {
     logger.error('Queue retry error', { error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
