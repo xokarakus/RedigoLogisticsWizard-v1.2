@@ -23,10 +23,13 @@
             <OverflowToolbar>
               <Title text="{i18n>cfgWarehouses}" level="H5" />
               <ToolbarSpacer />
+              <Button text="{i18n>mdImportExcel}" icon="sap-icon://excel-attachment" press="onImportWarehouses" type="Default" />
+              <Button icon="sap-icon://download" tooltip="{i18n>mdDownloadTemplate}" press="onDownloadWarehouseTemplate" type="Transparent" />
+              <ToolbarSeparator />
               <Button text="{i18n>cfgAddWarehouse}" icon="sap-icon://add" press="onAddWarehouse" type="Emphasized" />
             </OverflowToolbar>
 
-            <Table id="warehouseTable" items="{cfg>/warehouses}" mode="None" autoPopinMode="true">
+            <Table id="warehouseTable" items="{cfg>/warehouses}" mode="None" autoPopinMode="true" noDataText="{i18n>noData}">
               <columns>
                 <Column importance="Medium" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }"><Text text="{i18n>cfgTenant}" /></Column>
                 <Column importance="High"><Text text="{i18n>cfgCode}" /></Column>
@@ -54,7 +57,7 @@
                       src="{= ${cfg>is_active} ? 'sap-icon://accept' : 'sap-icon://decline'}"
                       color="{= ${cfg>is_active} ? '#2b7c2b' : '#cc0000'}" />
                     <HBox justifyContent="Center">
-                      <Button icon="sap-icon://edit" press="onEditWarehouse" type="Transparent" />
+                      <Button icon="sap-icon://edit" press="onEditWarehouse" type="Transparent" tooltip="{i18n>btnEditTooltip}" />
                     </HBox>
                   </cells>
                 </ColumnListItem>
@@ -76,7 +79,7 @@
             </OverflowToolbar>
 
             <Table id="fieldMappingTable" items="{cfg>/fieldMappingsFiltered}" mode="SingleSelectMaster"
-              autoPopinMode="true" selectionChange="onSelectFieldMapping">
+              autoPopinMode="true" noDataText="{i18n>noData}" selectionChange="onSelectFieldMapping">
               <columns>
                 <Column importance="Medium" visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }"><Text text="{i18n>cfgTenant}" /></Column>
                 <Column importance="High"><Text text="{i18n>fmCompanyCode}" /></Column>
@@ -106,8 +109,8 @@
                       src="{= ${cfg>is_active} ? 'sap-icon://accept' : 'sap-icon://decline'}"
                       color="{= ${cfg>is_active} ? '#2b7c2b' : '#cc0000'}" />
                     <HBox justifyContent="Center">
-                      <Button icon="sap-icon://edit" press="onEditFieldMapping" type="Transparent" />
-                      <Button icon="sap-icon://delete" press="onDeleteFieldMapping" type="Transparent" />
+                      <Button icon="sap-icon://edit" press="onEditFieldMapping" type="Transparent" tooltip="{i18n>btnEditTooltip}" />
+                      <Button icon="sap-icon://delete" press="onDeleteFieldMapping" type="Transparent" tooltip="{i18n>btnDeleteTooltip}" />
                     </HBox>
                   </cells>
                 </ColumnListItem>
@@ -264,7 +267,7 @@
                     <Button icon="sap-icon://edit" press="onEditFieldRule" type="Transparent"
                       tooltip="{i18n>fmEditRule}" />
                     <Button icon="sap-icon://delete" press="onDeleteFieldRule" type="Transparent"
-                      visible="{cfg>_mapped}" />
+                      visible="{cfg>_mapped}" tooltip="{i18n>btnDeleteTooltip}" />
                   </HBox>
                 </CustomTreeItem>
               </Tree>
@@ -276,7 +279,7 @@
                 <Button text="{i18n>fmAddHeader}" icon="sap-icon://add" press="onAddHeader" type="Emphasized" />
               </OverflowToolbar>
 
-              <Table items="{cfg>/selectedFMHeaders}" autoPopinMode="true">
+              <Table items="{cfg>/selectedFMHeaders}" autoPopinMode="true" noDataText="{i18n>noData}">
                 <columns>
                   <Column importance="High"><Text text="{i18n>fmHeaderKey}" /></Column>
                   <Column importance="High"><Text text="{i18n>fmHeaderValue}" /></Column>
@@ -288,8 +291,8 @@
                       <ObjectStatus text="{cfg>key}" state="Information" />
                       <Text text="{cfg>value}" />
                       <HBox justifyContent="Center">
-                        <Button icon="sap-icon://edit" press="onEditHeader" type="Transparent" />
-                        <Button icon="sap-icon://delete" press="onDeleteHeader" type="Transparent" />
+                        <Button icon="sap-icon://edit" press="onEditHeader" type="Transparent" tooltip="{i18n>btnEditTooltip}" />
+                        <Button icon="sap-icon://delete" press="onDeleteHeader" type="Transparent" tooltip="{i18n>btnDeleteTooltip}" />
                       </HBox>
                     </cells>
                   </ColumnListItem>
@@ -347,7 +350,7 @@
                 </l:content>
               </l:Grid>
 
-              <Table id="responseRulesTable" items="{cfg>/selectedFMResponseRules}" autoPopinMode="true">
+              <Table id="responseRulesTable" items="{cfg>/selectedFMResponseRules}" autoPopinMode="true" noDataText="{i18n>noData}">
                 <columns>
                   <Column importance="High"><Text text="{i18n>fmSourceField}" /></Column>
                   <Column importance="High"><Text text="{i18n>fmTargetField}" /></Column>
@@ -366,7 +369,7 @@
                         <core:Item key="SAP_DATE" text="SAP_DATE" />
                       </Select>
                       <HBox justifyContent="Center">
-                        <Button icon="sap-icon://delete" press="onDeleteResponseRule" type="Transparent" />
+                        <Button icon="sap-icon://delete" press="onDeleteResponseRule" type="Transparent" tooltip="{i18n>btnDeleteTooltip}" />
                       </HBox>
                     </cells>
                   </ColumnListItem>
@@ -411,7 +414,7 @@
               <Button text="{i18n>spAddProfile}" icon="sap-icon://add" press="onAddSecurity" type="Emphasized" />
             </OverflowToolbar>
 
-            <Table id="securityTable" items="{cfg>/securityProfiles}" mode="None" autoPopinMode="true">
+            <Table id="securityTable" items="{cfg>/securityProfiles}" mode="None" autoPopinMode="true" noDataText="{i18n>noData}">
               <columns>
                 <Column importance="High"><Text text="{i18n>spCompanyCode}" /></Column>
                 <Column importance="High"><Text text="{i18n>spAuthType}" /></Column>
@@ -431,8 +434,8 @@
                       src="{= ${cfg>is_active} ? 'sap-icon://accept' : 'sap-icon://decline'}"
                       color="{= ${cfg>is_active} ? '#2b7c2b' : '#cc0000'}" />
                     <HBox justifyContent="Center">
-                      <Button icon="sap-icon://edit" press="onEditSecurity" type="Transparent" />
-                      <Button icon="sap-icon://delete" press="onDeleteSecurity" type="Transparent" />
+                      <Button icon="sap-icon://edit" press="onEditSecurity" type="Transparent" tooltip="{i18n>btnEditTooltip}" />
+                      <Button icon="sap-icon://delete" press="onDeleteSecurity" type="Transparent" tooltip="{i18n>btnDeleteTooltip}" />
                     </HBox>
                   </cells>
                 </ColumnListItem>
@@ -488,6 +491,62 @@
             <MessageStrip text="{i18n>emailHelpText}" type="Information" showIcon="true"
               class="sapUiSmallMargin" />
 
+          </IconTabFilter>
+
+          <!-- TAB 8: Service Users (Servis Kullanıcıları) -->
+          <IconTabFilter text="{i18n>suTitle}" icon="sap-icon://technical-object" key="serviceUsers"
+            count="{cfg>/serviceUserCount}">
+
+            <OverflowToolbar>
+              <Title text="{i18n>suTitle}" level="H5" />
+              <ToolbarSpacer />
+              <Button text="{i18n>suAddUser}" icon="sap-icon://add" press="onAddServiceUser" type="Emphasized" />
+            </OverflowToolbar>
+
+            <Table id="serviceUserTable" items="{cfg>/serviceUsers}" mode="None" autoPopinMode="true" noDataText="{i18n>noData}">
+              <columns>
+                <Column importance="Medium"
+                  visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }">
+                  <Text text="{i18n>cfgTenant}" />
+                </Column>
+                <Column importance="High"><Text text="{i18n>suName}" /></Column>
+                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>suApiKey}" /></Column>
+                <Column importance="Medium" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>suScopes}" /></Column>
+                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true" hAlign="End"><Text text="{i18n>suUsageCount}" /></Column>
+                <Column importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>suLastUsed}" /></Column>
+                <Column importance="Medium" hAlign="Center" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>cfgActive}" /></Column>
+                <Column importance="Low" hAlign="Center" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>suDefault}" /></Column>
+                <Column importance="High" hAlign="Center"><Text text="{i18n>cfgActions}" /></Column>
+              </columns>
+              <items>
+                <ColumnListItem>
+                  <cells>
+                    <ObjectStatus text="{cfg>tenant_code}" state="None"
+                      visible="{= ${appState>/isSuperAdmin} &amp;&amp; !${appState>/isImpersonating} }" />
+                    <ObjectStatus text="{cfg>name}" state="Information" />
+                    <Text text="{cfg>api_key}" wrapping="false" />
+                    <Text text="{cfg>_scopesText}" />
+                    <ObjectNumber number="{cfg>usage_count}" />
+                    <Text text="{cfg>_lastUsedFormatted}" />
+                    <core:Icon
+                      src="{= ${cfg>is_active} ? 'sap-icon://accept' : 'sap-icon://decline'}"
+                      color="{= ${cfg>is_active} ? '#2b7c2b' : '#cc0000'}" />
+                    <core:Icon
+                      src="sap-icon://accept"
+                      color="#0854a0"
+                      visible="{cfg>is_default}" />
+                    <HBox justifyContent="Center">
+                      <Button icon="sap-icon://edit" press="onEditServiceUser" type="Transparent" tooltip="{i18n>btnEditTooltip}" />
+                      <Button icon="sap-icon://refresh" press="onRegenerateServiceUser" type="Transparent" tooltip="{i18n>suRegenerateTooltip}" />
+                      <Button icon="sap-icon://delete" press="onDeleteServiceUser" type="Transparent" tooltip="{i18n>btnDeleteTooltip}"
+                        visible="{= ${cfg>usage_count} === 0 }" />
+                    </HBox>
+                  </cells>
+                </ColumnListItem>
+              </items>
+            </Table>
+
+            <MessageStrip text="{i18n>suMaxInfo}" type="Information" showIcon="true" class="sapUiSmallMargin" />
           </IconTabFilter>
 
         </items>

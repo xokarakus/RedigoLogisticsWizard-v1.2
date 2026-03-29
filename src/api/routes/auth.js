@@ -54,7 +54,7 @@ router.post('/setup', validate(SetupSchema), async (req, res) => {
   try {
     const existingUsers = await userStore.readAll({ limit: 1 });
     if (existingUsers.length > 0) {
-      return res.status(403).json({ error: 'Sistem zaten kurulu' });
+      return res.status(403).json({ error: 'System already initialized' });
     }
 
     const { email, password, display_name, company_name, company_code } = req.body;
@@ -82,7 +82,7 @@ router.post('/setup', validate(SetupSchema), async (req, res) => {
       await client.query('COMMIT');
 
       logger.info('System setup completed', { email: emailLower, tenant: tenant.code });
-      res.status(201).json({ message: 'Sistem kurulumu tamamland\u0131' });
+      res.status(201).json({ message: 'System setup completed' });
     } catch (txErr) {
       await client.query('ROLLBACK');
       throw txErr;
@@ -91,10 +91,10 @@ router.post('/setup', validate(SetupSchema), async (req, res) => {
     }
   } catch (err) {
     if (err.message && err.message.includes('duplicate key')) {
-      return res.status(409).json({ error: 'Bu e-posta veya \u015firket kodu zaten mevcut' });
+      return res.status(409).json({ error: 'This email or company code already exists' });
     }
     logger.error('Setup error', { error: err.message });
-    res.status(500).json({ error: 'Sistem kurulumu başarısız' });
+    res.status(500).json({ error: 'System setup failed' });
   }
 });
 
@@ -108,14 +108,15 @@ router.post('/login', validate(LoginSchema), async (req, res) => {
     const users = await userStore.readAll({ filter: { email: email.toLowerCase() } });
     const user = users[0];
     if (!user || !user.is_active) {
-      return res.status(401).json({ error: 'Ge\u00e7ersiz e-posta veya \u015fifre' });
+      return res.status(401).json({ error: 'Invalid email or password', code: 'INVALID_CREDENTIALS' });
     }
 
     // Hesap kilitleme kontrolu
     if (user.locked_until && new Date(user.locked_until) > new Date()) {
       const remaining = Math.ceil((new Date(user.locked_until) - new Date()) / 60000);
       return res.status(423).json({
-        error: 'Hesab\u0131n\u0131z kilitlendi. ' + remaining + ' dakika sonra tekrar deneyin.',
+        error: 'Your account is locked. Try again in ' + remaining + ' minutes.',
+        code: 'ACCOUNT_LOCKED',
         locked: true,
         remaining_minutes: remaining
       });
@@ -169,17 +170,18 @@ router.post('/login', validate(LoginSchema), async (req, res) => {
 
       if (newCount >= MAX_LOGIN_ATTEMPTS) {
         return res.status(423).json({
-          error: 'Hesab\u0131n\u0131z kilitlendi. ' + LOCKOUT_MINUTES + ' dakika sonra tekrar deneyin.',
+          error: 'Your account is locked. Try again in ' + LOCKOUT_MINUTES + ' minutes.',
+          code: 'ACCOUNT_LOCKED',
           locked: true,
           remaining_minutes: LOCKOUT_MINUTES
         });
       }
-      return res.status(401).json({ error: 'Ge\u00e7ersiz e-posta veya \u015fifre' });
+      return res.status(401).json({ error: 'Invalid email or password', code: 'INVALID_CREDENTIALS' });
     }
 
     const tenant = await tenantStore.findById(user.tenant_id);
     if (!tenant || !tenant.is_active) {
-      return res.status(403).json({ error: '\u015eirket hesab\u0131 devre d\u0131\u015f\u0131' });
+      return res.status(403).json({ error: 'Company account is disabled', code: 'COMPANY_DISABLED' });
     }
 
     // Basarili giris — sayaclari sifirla
@@ -270,7 +272,7 @@ router.post('/refresh', validate(RefreshTokenSchema), async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(401).json({ error: 'Gecersiz veya suresi dolmus refresh token' });
+      return res.status(401).json({ error: 'Invalid or expired refresh token' });
     }
 
     const rt = rows[0];
@@ -281,12 +283,12 @@ router.post('/refresh', validate(RefreshTokenSchema), async (req, res) => {
     // Kullaniciyi dogrula
     const user = await userStore.findById(rt.user_id);
     if (!user || !user.is_active) {
-      return res.status(401).json({ error: 'Kullanici aktif degil' });
+      return res.status(401).json({ error: 'User is not active' });
     }
 
     const tenant = await tenantStore.findById(user.tenant_id);
     if (!tenant || !tenant.is_active) {
-      return res.status(401).json({ error: 'Tenant aktif degil' });
+      return res.status(401).json({ error: 'Tenant is not active' });
     }
 
     // Yeni access token
@@ -350,14 +352,14 @@ router.get('/me', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Token gerekli' });
+      return res.status(401).json({ error: 'Authentication required' });
     }
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, JWT_SECRET);
 
     const user = await userStore.findById(decoded.user_id);
     if (!user || !user.is_active) {
-      return res.status(401).json({ error: 'Kullanıcı devre dışı' });
+      return res.status(401).json({ error: 'User is disabled' });
     }
 
     res.json({
@@ -375,10 +377,10 @@ router.get('/me', async (req, res) => {
     });
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token süresi dolmuş' });
+      return res.status(401).json({ error: 'Token expired' });
     }
     if (err.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: 'Geçersiz token' });
+      return res.status(401).json({ error: 'Invalid token' });
     }
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -392,16 +394,16 @@ router.put('/password', authenticate, validate(ChangePasswordSchema), async (req
     const { current_password, new_password, force_change } = req.body;
 
     const user = await userStore.findById(req.user.user_id);
-    if (!user) return res.status(404).json({ error: 'Kullan\u0131c\u0131 bulunamad\u0131' });
+    if (!user) return res.status(404).json({ error: 'User not found', code: 'USER_NOT_FOUND' });
 
     // must_change_password durumunda current_password gerekmez
     if (!force_change && !user.must_change_password) {
       if (!current_password) {
-        return res.status(400).json({ error: 'Mevcut \u015fifre gerekli' });
+        return res.status(400).json({ error: 'Current password required', code: 'CURRENT_PASSWORD_REQUIRED' });
       }
       const valid = await bcrypt.compare(current_password, user.password_hash);
       if (!valid) {
-        return res.status(401).json({ error: 'Mevcut \u015fifre yanl\u0131\u015f' });
+        return res.status(401).json({ error: 'Current password is incorrect', code: 'CURRENT_PASSWORD_INCORRECT' });
       }
     }
 
@@ -413,7 +415,7 @@ router.put('/password', authenticate, validate(ChangePasswordSchema), async (req
 
     logAudit(req, 'user', user.id, 'PASSWORD_CHANGE', null, { username: user.username });
     logger.info('Password changed', { username: user.username });
-    res.json({ message: '\u015eifre de\u011fi\u015ftirildi' });
+    res.json({ message: 'Password changed' });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -429,7 +431,7 @@ router.post('/forgot-password', validate(ForgotPasswordSchema), async (req, res)
     const users = await userStore.readAll({ filter: { email: email.toLowerCase() } });
     const user = users[0];
     if (!user || !user.is_active) {
-      return res.json({ message: 'E-posta adresinize sıfırlama linki gönderildi' });
+      return res.json({ message: 'Password reset link sent to your email' });
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -447,7 +449,7 @@ router.post('/forgot-password', validate(ForgotPasswordSchema), async (req, res)
       email: user.email
     });
 
-    res.json({ message: 'E-posta adresinize sıfırlama linki gönderildi' });
+    res.json({ message: 'Password reset link sent to your email' });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -463,11 +465,11 @@ router.post('/reset-password', validate(ResetPasswordSchema), async (req, res) =
     const users = await userStore.readAll({ filter: { password_reset_token: token } });
     const user = users[0];
     if (!user) {
-      return res.status(400).json({ error: 'Geçersiz veya süresi dolmuş token' });
+      return res.status(400).json({ error: 'Invalid or expired token', code: 'INVALID_RESET_TOKEN' });
     }
 
     if (new Date(user.password_reset_expires) < new Date()) {
-      return res.status(400).json({ error: 'Token süresi dolmuş. Yeniden talep edin.' });
+      return res.status(400).json({ error: 'Token expired. Please request again.', code: 'RESET_TOKEN_EXPIRED' });
     }
 
     const hash = await bcrypt.hash(new_password, 10);
@@ -492,7 +494,7 @@ router.post('/reset-password', validate(ResetPasswordSchema), async (req, res) =
     });
 
     logger.info('Password reset completed', { username: user.username });
-    res.json({ message: '\u015eifre ba\u015far\u0131yla s\u0131f\u0131rland\u0131' });
+    res.json({ message: 'Password reset successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -506,14 +508,14 @@ router.post('/send-reset', authenticate, requireRole('TENANT_ADMIN'), validate(S
     const { user_id } = req.body;
 
     const targetUser = await userStore.findById(user_id);
-    if (!targetUser) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    if (!targetUser) return res.status(404).json({ error: 'User not found' });
 
     if (req.userRole !== 'SUPER_ADMIN' && targetUser.tenant_id !== req.tenantId) {
-      return res.status(403).json({ error: 'Farklı şirketin kullanıcısı' });
+      return res.status(403).json({ error: 'User belongs to a different company' });
     }
 
     if (!targetUser.email) {
-      return res.status(400).json({ error: 'Kullanıcının e-posta adresi tanımlı değil' });
+      return res.status(400).json({ error: 'User email address is not defined' });
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -537,7 +539,7 @@ router.post('/send-reset', authenticate, requireRole('TENANT_ADMIN'), validate(S
       target_email: targetUser.email
     });
 
-    res.json({ message: 'Şifre sıfırlama maili gönderildi: ' + targetUser.email });
+    res.json({ message: 'Password reset email sent: ' + targetUser.email });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -552,7 +554,7 @@ router.post('/impersonate', authenticate, requireSuperAdmin, validate(Impersonat
 
     const tenant = await tenantStore.findById(tenant_id);
     if (!tenant || !tenant.is_active) {
-      return res.status(404).json({ error: 'Şirket bulunamadı veya devre dışı' });
+      return res.status(404).json({ error: 'Company not found or disabled' });
     }
 
     const payload = {
@@ -582,7 +584,7 @@ router.post('/impersonate', authenticate, requireSuperAdmin, validate(Impersonat
     res.json({
       token,
       tenant: { id: tenant.id, code: tenant.code, name: tenant.name },
-      message: tenant.name + ' şirketi olarak işlem yapıyorsunuz'
+      message: 'Operating as ' + tenant.name
     });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
@@ -595,7 +597,7 @@ router.post('/impersonate', authenticate, requireSuperAdmin, validate(Impersonat
 router.post('/stop-impersonation', authenticate, async (req, res) => {
   try {
     if (!req.user.impersonating) {
-      return res.status(400).json({ error: 'Aktif impersonation yok' });
+      return res.status(400).json({ error: 'No active impersonation' });
     }
 
     const originalTenant = await tenantStore.findById(req.user.original_tenant_id);
@@ -618,7 +620,7 @@ router.post('/stop-impersonation', authenticate, async (req, res) => {
       admin: req.user.username
     });
 
-    res.json({ token, message: 'Yerine geçme sonlandırıldı' });
+    res.json({ token, message: 'Impersonation ended' });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -744,7 +746,7 @@ router.post('/tenants', authenticate, requireSuperAdmin, validate(CreateTenantSc
 
     if (!name || !domain) {
       return res.status(400).json({
-        error: 'Zorunlu alanlar: name, domain'
+        error: 'Required fields: name, domain'
       });
     }
 
@@ -774,7 +776,7 @@ router.post('/tenants', authenticate, requireSuperAdmin, validate(CreateTenantSc
         'SELECT id FROM users WHERE email = $1', [admin_user.email.toLowerCase()]
       );
       if (existingUser.rows.length > 0) {
-        return res.status(409).json({ error: 'Bu e-posta zaten mevcut: ' + admin_user.email });
+        return res.status(409).json({ error: 'This email already exists: ' + admin_user.email });
       }
     }
 
@@ -847,6 +849,31 @@ router.post('/tenants', authenticate, requireSuperAdmin, validate(CreateTenantSc
       logger.warn('Default role creation failed', { tenant: tenant.code, error: roleErr.message });
     }
 
+    // Default servis kullanıcı oluştur (API credentials)
+    let defaultServiceUser = null;
+    try {
+      const suApiKey = `rsk_${finalCode}_${crypto.randomBytes(16).toString('hex')}`;
+      const suApiSecret = crypto.randomBytes(32).toString('hex');
+      const suApiKeyHash = crypto.createHash('sha256').update(suApiKey).digest('hex');
+      const suApiSecretHash = await bcrypt.hash(suApiSecret, 10);
+
+      const suResult = await query(
+        `INSERT INTO service_users (tenant_id, name, description, api_key, api_key_hash, api_secret_hash, is_default, is_active, scopes)
+         VALUES ($1, $2, $3, $4, $5, $6, true, true, $7) RETURNING id, name, api_key`,
+        [tenant.id, 'Default Service User', 'Auto-created on tenant setup', suApiKey, suApiKeyHash, suApiSecretHash, JSON.stringify(['read', 'write'])]
+      );
+      defaultServiceUser = {
+        id: suResult.rows[0].id,
+        name: suResult.rows[0].name,
+        api_key: suApiKey,
+        api_secret: suApiSecret
+      };
+      logAudit(req, 'service_user', suResult.rows[0].id, 'CREATE', null, { name: 'Default Service User', tenant: finalCode });
+      logger.info('Default service user created', { tenant: finalCode });
+    } catch (suErr) {
+      logger.warn('Default service user creation failed', { tenant: finalCode, error: suErr.message });
+    }
+
     logger.info('Tenant created', { code: tenant.code, by: req.user.username });
 
     res.status(201).json({
@@ -855,18 +882,19 @@ router.post('/tenants', authenticate, requireSuperAdmin, validate(CreateTenantSc
         id: adminResult.id,
         email: adminResult.email,
         role: adminResult.role
-      } : null
+      } : null,
+      service_user: defaultServiceUser
     });
   } catch (err) {
     if (err.message && err.message.includes('duplicate key')) {
       const detail = err.detail || '';
       if (detail.includes('code')) {
-        return res.status(409).json({ error: 'Bu şirket kodu zaten mevcut: ' + finalCode });
+        return res.status(409).json({ error: 'This company code already exists: ' + finalCode });
       }
       if (detail.includes('email')) {
-        return res.status(409).json({ error: 'Bu e-posta zaten mevcut' });
+        return res.status(409).json({ error: 'This email already exists' });
       }
-      return res.status(409).json({ error: 'Çakışan kayıt: ' + detail });
+      return res.status(409).json({ error: 'Conflicting record: ' + detail });
     }
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -875,7 +903,7 @@ router.post('/tenants', authenticate, requireSuperAdmin, validate(CreateTenantSc
 router.put('/tenants/:id', authenticate, requireSuperAdmin, validate(UpdateTenantSchema), async (req, res) => {
   try {
     const tenant = await tenantStore.findById(req.params.id);
-    if (!tenant) return res.status(404).json({ error: 'Şirket bulunamadı' });
+    if (!tenant) return res.status(404).json({ error: 'Company not found' });
 
     const updates = {};
     const allowed = ['name', 'title', 'domain', 'tax_id', 'tax_office', 'address', 'iban', 'contact_person', 'phone', 'plan', 'is_active'];
@@ -895,11 +923,11 @@ router.put('/tenants/:id', authenticate, requireSuperAdmin, validate(UpdateTenan
 router.delete('/tenants/:id', authenticate, requireSuperAdmin, async (req, res) => {
   try {
     const tenant = await tenantStore.findById(req.params.id);
-    if (!tenant) return res.status(404).json({ error: 'Şirket bulunamadı' });
+    if (!tenant) return res.status(404).json({ error: 'Company not found' });
 
     // Sistem tenant'i (REDIGO) silinemez
     if (tenant.code === 'REDIGO') {
-      return res.status(403).json({ error: 'Sistem şirketi silinemez' });
+      return res.status(403).json({ error: 'System company cannot be deleted' });
     }
 
     // Aktivite kontrolu: is emri, transaction, kullanici var mi?
@@ -909,7 +937,7 @@ router.delete('/tenants/:id', authenticate, requireSuperAdmin, async (req, res) 
 
     if (woCount.rows[0].cnt > 0 || txCount.rows[0].cnt > 0) {
       return res.status(409).json({
-        error: 'Bu şirketin iş emirleri veya işlem geçmişi bulunduğu için silinemez. Pasif yapabilirsiniz.',
+        error: 'Cannot delete: company has work orders or transaction history. You can deactivate instead.',
         work_orders: woCount.rows[0].cnt,
         transactions: txCount.rows[0].cnt
       });
@@ -921,7 +949,7 @@ router.delete('/tenants/:id', authenticate, requireSuperAdmin, async (req, res) 
     await tenantStore.remove(req.params.id);
 
     logAudit(req, 'tenant', req.params.id, 'DELETE', tenant, null);
-    res.json({ success: true, message: 'Şirket silindi: ' + tenant.code });
+    res.json({ success: true, message: 'Company deleted: ' + tenant.code });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -984,17 +1012,17 @@ router.post('/users', authenticate, requireRole('TENANT_ADMIN'), validate(Create
       : req.tenantId;
 
     if (req.userRole === 'TENANT_ADMIN' && (effectiveRole === 'SUPER_ADMIN' || effectiveRole === 'TENANT_ADMIN')) {
-      return res.status(403).json({ error: 'TENANT_ADMIN veya SUPER_ADMIN rolü atanamaz' });
+      return res.status(403).json({ error: 'Cannot assign TENANT_ADMIN or SUPER_ADMIN role' });
     }
 
     let superFlag = false;
     if (effectiveRole === 'SUPER_ADMIN' || is_super_admin === true) {
       if (req.user.is_super_admin !== true) {
-        return res.status(403).json({ error: 'SUPER_ADMIN yetkisi atanamaz' });
+        return res.status(403).json({ error: 'Cannot assign SUPER_ADMIN role' });
       }
       if (!validateSuperAdminEmail(emailLower)) {
         return res.status(400).json({
-          error: 'Süper Admin için ' + SUPER_ADMIN_DOMAIN + ' uzantılı e-posta zorunludur'
+          error: SUPER_ADMIN_DOMAIN + ' email domain required for SUPER_ADMIN'
         });
       }
       superFlag = true;
@@ -1024,7 +1052,7 @@ router.post('/users', authenticate, requireRole('TENANT_ADMIN'), validate(Create
     });
   } catch (err) {
     if (err.message && err.message.includes('duplicate key')) {
-      return res.status(409).json({ error: 'Bu e-posta zaten mevcut' });
+      return res.status(409).json({ error: 'This email already exists' });
     }
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -1033,15 +1061,15 @@ router.post('/users', authenticate, requireRole('TENANT_ADMIN'), validate(Create
 router.put('/users/:id', authenticate, requireRole('TENANT_ADMIN'), validate(UpdateUserSchema), async (req, res) => {
   try {
     const targetUser = await userStore.findById(req.params.id);
-    if (!targetUser) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    if (!targetUser) return res.status(404).json({ error: 'User not found' });
 
     if (req.userRole === 'TENANT_ADMIN' && targetUser.tenant_id !== req.tenantId) {
-      return res.status(403).json({ error: 'Farklı şirketin kullanıcısı düzenlenemez' });
+      return res.status(403).json({ error: 'Cannot edit user from a different company' });
     }
 
     // Super admin kullanıcıyı sadece super admin düzenleyebilir
     if (targetUser.is_super_admin === true && req.user.is_super_admin !== true) {
-      return res.status(403).json({ error: 'Süper Admin kullanıcısı düzenlenemez' });
+      return res.status(403).json({ error: 'Cannot edit Super Admin user' });
     }
 
     const updates = {};
@@ -1051,14 +1079,14 @@ router.put('/users/:id', authenticate, requireRole('TENANT_ADMIN'), validate(Upd
 
     if (req.body.role !== undefined) {
       if (req.userRole === 'TENANT_ADMIN' && (req.body.role === 'SUPER_ADMIN' || req.body.role === 'TENANT_ADMIN')) {
-        return res.status(403).json({ error: 'TENANT_ADMIN veya SUPER_ADMIN rolü atanamaz' });
+        return res.status(403).json({ error: 'Cannot assign TENANT_ADMIN or SUPER_ADMIN role' });
       }
       if (req.body.role === 'SUPER_ADMIN' && req.user.is_super_admin !== true) {
-        return res.status(403).json({ error: 'SUPER_ADMIN rolü atanamaz' });
+        return res.status(403).json({ error: 'Cannot assign SUPER_ADMIN role' });
       }
       if (req.body.role === 'SUPER_ADMIN' && !validateSuperAdminEmail(req.body.email || targetUser.email)) {
         return res.status(400).json({
-          error: 'SUPER_ADMIN için ' + SUPER_ADMIN_DOMAIN + ' uzantılı e-posta zorunludur'
+          error: SUPER_ADMIN_DOMAIN + ' email domain required for SUPER_ADMIN'
         });
       }
       updates.role = req.body.role;
@@ -1068,7 +1096,7 @@ router.put('/users/:id', authenticate, requireRole('TENANT_ADMIN'), validate(Upd
     if (req.body.is_super_admin !== undefined && req.user.is_super_admin === true) {
       if (req.body.is_super_admin === true && !validateSuperAdminEmail(req.body.email || targetUser.email)) {
         return res.status(400).json({
-          error: 'Süper Admin için ' + SUPER_ADMIN_DOMAIN + ' uzantılı e-posta zorunludur'
+          error: SUPER_ADMIN_DOMAIN + ' email domain required for SUPER_ADMIN'
         });
       }
       updates.is_super_admin = req.body.is_super_admin;
@@ -1076,7 +1104,7 @@ router.put('/users/:id', authenticate, requireRole('TENANT_ADMIN'), validate(Upd
 
     if (req.body.password) {
       if (req.body.password.length < 6) {
-        return res.status(400).json({ error: 'Şifre en az 6 karakter olmalı' });
+        return res.status(400).json({ error: 'Password must be at least 6 characters' });
       }
       updates.password_hash = await bcrypt.hash(req.body.password, 10);
     }
@@ -1091,7 +1119,7 @@ router.put('/users/:id', authenticate, requireRole('TENANT_ADMIN'), validate(Upd
     });
   } catch (err) {
     if (err.message && err.message.includes('duplicate key')) {
-      return res.status(409).json({ error: 'Bu e-posta zaten mevcut' });
+      return res.status(409).json({ error: 'This email already exists' });
     }
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -1127,14 +1155,14 @@ router.post('/unlock-account', authenticate, requireRole('TENANT_ADMIN'), valida
   try {
     const { user_id } = req.body;
     if (!user_id) {
-      return res.status(400).json({ error: 'user_id gerekli' });
+      return res.status(400).json({ error: 'user_id required' });
     }
 
     const targetUser = await userStore.findById(user_id);
-    if (!targetUser) return res.status(404).json({ error: 'Kullan\u0131c\u0131 bulunamad\u0131' });
+    if (!targetUser) return res.status(404).json({ error: 'User not found' });
 
     if (req.userRole !== 'SUPER_ADMIN' && targetUser.tenant_id !== req.tenantId) {
-      return res.status(403).json({ error: 'Farkl\u0131 \u015firketin kullan\u0131c\u0131s\u0131' });
+      return res.status(403).json({ error: 'User belongs to a different company' });
     }
 
     await userStore.update(user_id, {
@@ -1150,14 +1178,14 @@ router.post('/unlock-account', authenticate, requireRole('TENANT_ADMIN'), valida
       entity_id: user_id,
       action: 'ACCOUNT_UNLOCKED',
       severity: 'INFO',
-      detail: 'Hesap kilidi a\u00e7\u0131ld\u0131: ' + targetUser.username,
+      detail: 'Account unlocked: ' + targetUser.username,
       new_values: { target_username: targetUser.username },
       ip_address: req.ip,
       user_agent: req.headers['user-agent']
     });
 
     logger.info('Account unlocked', { target: targetUser.username, by: req.user.username });
-    res.json({ message: 'Hesap kilidi a\u00e7\u0131ld\u0131' });
+    res.json({ message: 'Account unlocked' });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -1261,11 +1289,11 @@ router.post('/roles', authenticate, requireRole('TENANT_ADMIN'), validate(Create
   try {
     const { code, name, description, permissions } = req.body;
     if (!code || !name) {
-      return res.status(400).json({ error: 'Rol kodu ve adı gerekli' });
+      return res.status(400).json({ error: 'Role code and name required' });
     }
     // Sistem rol kodlarini engelle
     if (['SUPER_ADMIN', 'TENANT_ADMIN', 'TENANT_USER'].includes(code.toUpperCase())) {
-      return res.status(400).json({ error: 'Sistem rol kodları kullanılamaz' });
+      return res.status(400).json({ error: 'System role codes cannot be used' });
     }
     // tenants.manage her zaman false (ozel roller icin)
     const safePerms = { ...(permissions || DEFAULTS.TENANT_USER) };
@@ -1283,7 +1311,7 @@ router.post('/roles', authenticate, requireRole('TENANT_ADMIN'), validate(Create
     res.json({ data: role });
   } catch (err) {
     if (err.message && err.message.includes('unique')) {
-      return res.status(409).json({ error: 'Bu rol kodu zaten mevcut' });
+      return res.status(409).json({ error: 'This role code already exists' });
     }
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -1293,13 +1321,13 @@ router.post('/roles', authenticate, requireRole('TENANT_ADMIN'), validate(Create
 router.put('/roles/:id', authenticate, requireRole('TENANT_ADMIN'), validate(UpdateRoleSchema), async (req, res) => {
   try {
     const role = await roleStore.findById(req.params.id);
-    if (!role) return res.status(404).json({ error: 'Rol bulunamadı' });
+    if (!role) return res.status(404).json({ error: 'Role not found' });
     if (role.tenant_id !== req.tenantId && req.userRole !== 'SUPER_ADMIN') {
-      return res.status(403).json({ error: 'Yetkiniz yok' });
+      return res.status(403).json({ error: 'Unauthorized' });
     }
     // SUPER_ADMIN yetkisi degistirilemez
     if (role.code === 'SUPER_ADMIN') {
-      return res.status(403).json({ error: 'Süper Admin yetkileri değiştirilemez' });
+      return res.status(403).json({ error: 'Super Admin permissions cannot be modified' });
     }
     // TENANT_ADMIN: users.view + users.manage her zaman true
     const { name, description, permissions } = req.body;
@@ -1326,20 +1354,20 @@ router.put('/roles/:id', authenticate, requireRole('TENANT_ADMIN'), validate(Upd
 router.delete('/roles/:id', authenticate, requireRole('TENANT_ADMIN'), async (req, res) => {
   try {
     const role = await roleStore.findById(req.params.id);
-    if (!role) return res.status(404).json({ error: 'Rol bulunamadı' });
+    if (!role) return res.status(404).json({ error: 'Role not found' });
     if (role.is_system) {
-      return res.status(403).json({ error: 'Sistem rolleri silinemez' });
+      return res.status(403).json({ error: 'System roles cannot be deleted' });
     }
     // Bu roldeki kullanici var mi?
     const usersWithRole = await userStore.readAll({ filter: { role: role.code, tenant_id: req.tenantId } });
     if (usersWithRole.length > 0) {
       return res.status(409).json({
-        error: 'Bu role atanmış ' + usersWithRole.length + ' kullanıcı var. Önce rollerini değiştirin.'
+        error: 'There are ' + usersWithRole.length + ' users assigned to this role. Change their roles first.'
       });
     }
     await roleStore.remove(req.params.id);
     logAudit(req, 'role', req.params.id, 'DELETE', role, null);
-    res.json({ message: 'Rol silindi' });
+    res.json({ message: 'Role deleted' });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }

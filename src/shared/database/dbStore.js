@@ -16,7 +16,7 @@ const JSONB_COLUMNS = new Set([
   'threepl_response_sample_json', 'field_rules', 'response_rules',
   'sap_raw_payload', 'wms_raw_payload', 'sap_request', 'sap_response',
   'edited_payload', 'unit_conversions', 'kit_components', 'wms_serial_numbers',
-  'wms_hu_ids', 'discrepancies', 'aliases', 'lines'
+  'wms_hu_ids', 'discrepancies', 'aliases', 'lines', 'excel_row_data', 'sap_stock_data'
 ]);
 
 // System columns managed by PostgreSQL — never include in INSERT/UPDATE
@@ -58,7 +58,7 @@ class DbStore {
     }
 
     // tenant_id olan tablolara tenant code/name join et
-    const tenantJoinTables = ['process_configs', 'process_types', 'warehouses', 'field_mappings', 'movement_mappings', 'security_profiles'];
+    const tenantJoinTables = ['process_configs', 'process_types', 'warehouses', 'field_mappings', 'movement_mappings', 'security_profiles', 'service_users'];
     const useJoin = tenantJoinTables.includes(this.table);
 
     let sql;

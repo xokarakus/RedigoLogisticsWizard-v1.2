@@ -6,8 +6,11 @@
  */
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const config = require('../config');
 const logger = require('../utils/logger');
+const { query } = require('../database/pool');
 
 const JWT_SECRET = process.env.JWT_SECRET || (
   process.env.NODE_ENV === 'production'
@@ -63,7 +66,7 @@ function authenticate(req, res, next) {
   // Local JWT auth
   var authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token gerekli' });
+    return res.status(401).json({ error: 'Authentication required' });
   }
 
   try {
@@ -90,7 +93,7 @@ function requireScope(scope) {
     if (!req.authInfo) return res.status(401).json({ error: 'Unauthorized' });
     const fullScope = config.xsuaa.xsappname + '.' + scope;
     if (req.authInfo.checkScope(fullScope)) return next();
-    res.status(403).json({ error: 'Yetersiz yetki: ' + scope + ' scope gerekli' });
+    res.status(403).json({ error: 'Insufficient permissions: ' + scope + ' scope required' });
   };
 }
 
@@ -106,7 +109,7 @@ function requireRole(role) {
     var requiredLevel = roleHierarchy[role] || 0;
     if (req.user.is_super_admin) userLevel = 3;
     if (userLevel >= requiredLevel) return next();
-    res.status(403).json({ error: 'Yetersiz yetki: ' + role + ' veya ustu gerekli' });
+    res.status(403).json({ error: 'Insufficient permissions: ' + role + ' or higher required' });
   };
 }
 
@@ -116,7 +119,7 @@ function requireRole(role) {
 function requireSuperAdmin(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
   if (req.user.is_super_admin === true) return next();
-  res.status(403).json({ error: 'Super Admin yetkisi gerekli' });
+  res.status(403).json({ error: 'Super Admin access required' });
 }
 
 /**
@@ -126,7 +129,7 @@ function requireSuperAdmin(req, res, next) {
 function requirePlatformAdmin(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
   if (req.user.is_super_admin === true && req.user.is_system_tenant === true) return next();
-  res.status(403).json({ error: 'Platform Admin yetkisi gerekli (sistem tenant + super admin)' });
+  res.status(403).json({ error: 'Platform Admin access required' });
 }
 
 /**
@@ -145,6 +148,97 @@ function tenantFilter(req) {
 /**
  * Super admin e-posta domain doğrulaması.
  */
+/**
+ * Servis kullanıcı kimlik doğrulama.
+ * X-Service-Key ve X-Service-Secret header'larını kontrol eder.
+ * Başarılıysa req.user, req.tenantId set eder ve usage_count artırır.
+ */
+async function authenticateServiceUser(req, res, next) {
+  const serviceKey = req.headers['x-service-key'];
+  const serviceSecret = req.headers['x-service-secret'];
+
+  if (!serviceKey || !serviceSecret) {
+    return res.status(401).json({ error: 'Service credentials required (X-Service-Key, X-Service-Secret)' });
+  }
+
+  try {
+    // API key ile kullanıcıyı bul
+    const result = await query(
+      `SELECT su.*, t.code AS tenant_code, t.name AS tenant_name, t.is_active AS tenant_active
+       FROM service_users su
+       JOIN tenants t ON t.id = su.tenant_id
+       WHERE su.api_key = $1`,
+      [serviceKey]
+    );
+
+    if (!result.rows.length) {
+      return res.status(401).json({ error: 'Invalid service credentials' });
+    }
+
+    const su = result.rows[0];
+
+    // Aktiflik kontrolleri
+    if (!su.is_active) {
+      return res.status(403).json({ error: 'Service user is deactivated' });
+    }
+    if (!su.tenant_active) {
+      return res.status(403).json({ error: 'Tenant is deactivated' });
+    }
+
+    // Süre dolum kontrolü
+    if (su.expires_at && new Date(su.expires_at) < new Date()) {
+      return res.status(403).json({ error: 'Service user credentials have expired' });
+    }
+
+    // Secret doğrula (bcrypt)
+    const secretValid = await bcrypt.compare(serviceSecret, su.api_secret_hash);
+    if (!secretValid) {
+      return res.status(401).json({ error: 'Invalid service credentials' });
+    }
+
+    // Usage count artır (async, hata response'u engellemez)
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    query(
+      'UPDATE service_users SET usage_count = usage_count + 1, last_used_at = NOW(), last_used_ip = $2 WHERE id = $1',
+      [su.id, clientIp]
+    ).catch(err => logger.warn('Service user usage update failed', { id: su.id, error: err.message }));
+
+    // req.user set et
+    req.user = {
+      user_id: su.id,
+      tenant_id: su.tenant_id,
+      tenant_code: su.tenant_code,
+      tenant_name: su.tenant_name,
+      role: 'SERVICE_USER',
+      is_super_admin: false,
+      is_service_user: true,
+      username: su.name,
+      display_name: su.name,
+      scopes: su.scopes || []
+    };
+    req.tenantId = su.tenant_id;
+    req.userRole = 'SERVICE_USER';
+
+    next();
+  } catch (err) {
+    logger.error('Service user auth error', { error: err.message });
+    return res.status(500).json({ error: 'Authentication error' });
+  }
+}
+
+/**
+ * Hibrit auth: Önce JWT dene, yoksa service user auth dene.
+ * Her iki yöntemden biri başarılıysa devam et.
+ */
+function authenticateAny(req, res, next) {
+  // Service key varsa direkt service user auth kullan
+  if (req.headers['x-service-key']) {
+    return authenticateServiceUser(req, res, next);
+  }
+  // Yoksa normal JWT auth
+  return authenticate(req, res, next);
+}
+
 function validateSuperAdminEmail(email) {
   if (!SUPER_ADMIN_DOMAIN || SUPER_ADMIN_DOMAIN === '@') return true;
   if (!email) return false;
@@ -154,6 +248,8 @@ function validateSuperAdminEmail(email) {
 module.exports = {
   setupAuth,
   authenticate,
+  authenticateServiceUser,
+  authenticateAny,
   requireScope,
   requireRole,
   requireSuperAdmin,

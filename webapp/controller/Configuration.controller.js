@@ -12,16 +12,17 @@ sap.ui.define([
   "./config/WarehouseMixin",
   "./config/FieldMappingMixin",
   "./config/FlowDesignerMixin",
-  "./config/SecurityMixin"
+  "./config/SecurityMixin",
+  "./config/ServiceUsersMixin"
 ], function (Controller, JSONModel, MessageToast, MessageBox, Dialog, Input, Label, MButton, SimpleForm, API,
-             WarehouseMixin, FieldMappingMixin, FlowDesignerMixin, SecurityMixin) {
+             WarehouseMixin, FieldMappingMixin, FlowDesignerMixin, SecurityMixin, ServiceUsersMixin) {
   "use strict";
 
   // Mixin'leri prototype seviyesinde birlestir (onInit'ten ONCE)
   // SAPUI5 XMLView event handler'lari view parse sirasinda cozumler,
   // bu nedenle metotlar Controller.extend taniminda olmali.
   var oProto = jQuery.extend({},
-    WarehouseMixin, FieldMappingMixin, FlowDesignerMixin, SecurityMixin,
+    WarehouseMixin, FieldMappingMixin, FlowDesignerMixin, SecurityMixin, ServiceUsersMixin,
     {
       onInit: function () {
         this._oModel = new JSONModel({
@@ -36,7 +37,8 @@ sap.ui.define([
           selectedFMSourceApi: "", selectedFMSourceSecurityId: "",
           sourceSecurityProfiles: [],
           testInputJson: "", testResponseJson: "", testStatus: "", testStatusState: "None",
-          securityProfiles: [], securityCount: 0
+          securityProfiles: [], securityCount: 0,
+          serviceUsers: [], serviceUserCount: 0
         });
         this.getView().setModel(this._oModel, "cfg");
 
@@ -98,6 +100,18 @@ sap.ui.define([
           var aData = result.data || [];
           that._oModel.setProperty("/securityProfiles", aData);
           that._oModel.setProperty("/securityCount", aData.length);
+        }).catch(fnErr);
+
+        API.get("/api/v1/service-users").then(function (result) {
+          var aData = result.data || [];
+          aData.forEach(function (su) {
+            su._scopesText = (su.scopes || []).join(", ");
+            su._lastUsedFormatted = su.last_used_at
+              ? new Date(su.last_used_at).toLocaleString("tr-TR")
+              : "-";
+          });
+          that._oModel.setProperty("/serviceUsers", aData);
+          that._oModel.setProperty("/serviceUserCount", aData.length);
         }).catch(fnErr);
       },
 

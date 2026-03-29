@@ -71,6 +71,33 @@
   - 2000/WH-ANK-01: LF, FASON, NL (Transfer)
   - 3000/WH-IZM-01: LF
 
+### 3.5. ✅ Servis Kullanıcıları Sistemi
+**Tarih**: Mart 2026
+**Açıklama**: Şirket bazlı API servis kullanıcıları (credentials) sistemi eklendi.
+
+**Yapılan değişiklikler:**
+- `src/shared/database/migrations/034_service_users.sql` → Yeni tablo + Iron Rule trigger + Max 5 trigger
+- `src/api/routes/serviceUsers.js` → CRUD + regenerate endpoint (YENİ DOSYA)
+- `src/shared/middleware/auth.js` → `authenticateServiceUser()` + `authenticateAny()` eklendi
+- `src/api/routes/auth.js` → Tenant oluşturmada otomatik default servis kullanıcı
+- `src/index.js` → Route kaydı + CORS header'lar
+- `src/shared/database/dbStore.js` → tenantJoinTables'a eklendi
+- `src/shared/validators/config.schemas.js` → Create/Update Zod şemaları
+- `webapp/controller/config/ServiceUsersMixin.js` → Frontend mixin (YENİ DOSYA)
+- `webapp/controller/Configuration.controller.js` → Mixin import + model + data loading
+- `webapp/view/Configuration.view.xml` → Servis Kullanıcıları tab'ı (TAB 8)
+- `webapp/i18n/*.properties` → 23 yeni key (5 dil: EN, TR, DE, FR, ES)
+
+**Özellikler:**
+- Şirket oluşturulunca otomatik default servis kullanıcı yaratılır
+- Şirket başına max 5 adet (DB trigger ile garanti)
+- Iron Rule: usage_count > 0 → silinemez, sadece deaktive edilebilir
+- API Key formatı: `rsk_<TENANT_CODE>_<random>`
+- Auth: `X-Service-Key` + `X-Service-Secret` header'ları
+- Credentials sadece oluşturma/yenileme anında bir kez gösterilir
+- Kopyala butonları ile güvenli aktarım
+- Configuration ekranında tam CRUD yönetimi
+
 ---
 
 ## Yapılacak İşler

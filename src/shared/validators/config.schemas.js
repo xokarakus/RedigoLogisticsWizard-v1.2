@@ -67,11 +67,11 @@ const TestDispatchSchema = z.object({
 });
 
 const EmailTestSchema = z.object({
-  to: z.string().email('Gecerli bir e-posta adresi gerekli')
+  to: z.string().email('Valid email address required')
 });
 
 const ApplyTemplateSchema = z.object({
-  tenant_id: z.string().uuid('Gecerli bir tenant_id gerekli').optional(),
+  tenant_id: z.string().uuid('Valid tenant_id required').optional(),
   provider_code: z.string().min(1, 'provider_code zorunlu'),
   sub_services: z.array(z.string()).optional()
 });
@@ -92,10 +92,26 @@ const CreateProviderTemplateSchema = z.object({
 const UpdateProviderTemplateSchema = CreateProviderTemplateSchema.partial();
 
 const ExportTenantTemplateSchema = z.object({
-  tenant_id: z.string().uuid('Gecerli bir tenant_id gerekli').optional(),
+  tenant_id: z.string().uuid('Valid tenant_id required').optional(),
   code: z.string().min(1, 'code zorunlu').max(30),
   name: z.string().min(1, 'name zorunlu').max(100),
   description: z.string().max(500).nullish()
+});
+
+const CreateServiceUserSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+  scopes: z.array(z.string()).optional(),
+  is_active: z.boolean().optional(),
+  expires_at: z.string().nullable().optional()
+});
+
+const UpdateServiceUserSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).optional(),
+  scopes: z.array(z.string()).optional(),
+  is_active: z.boolean().optional(),
+  expires_at: z.string().nullable().optional()
 });
 
 module.exports = {
@@ -110,5 +126,7 @@ module.exports = {
   ApplyTemplateSchema,
   CreateProviderTemplateSchema,
   UpdateProviderTemplateSchema,
-  ExportTenantTemplateSchema
+  ExportTenantTemplateSchema,
+  CreateServiceUserSchema,
+  UpdateServiceUserSchema
 };

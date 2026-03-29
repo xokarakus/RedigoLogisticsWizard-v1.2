@@ -65,7 +65,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Service-Key', 'X-Service-Secret']
 }));
 
 app.use(compression());
@@ -232,6 +232,7 @@ v1.use('/archive', authenticate, require('./api/routes/archive'));
 v1.use('/bulk', authenticate, require('./api/routes/bulk'));
 v1.use('/gdpr', authenticate, require('./api/routes/gdpr'));
 v1.use('/secrets', authenticate, require('./api/routes/secrets'));
+v1.use('/service-users', authenticate, require('./api/routes/serviceUsers'));
 v1.use('/reports', authenticate, require('./api/routes/reports'));
 
 // Queue API
@@ -303,7 +304,7 @@ app.use((err, req, res, _next) => {
   // Zod validation hatalari (validate middleware'den gecmemis durumlar)
   if (err.name === 'ZodError') {
     return res.status(400).json({
-      error: 'Dogrulama hatasi',
+      error: 'Validation error',
       correlationId,
       details: err.errors
     });
