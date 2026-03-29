@@ -741,6 +741,7 @@ router.get('/tenants/stats', authenticate, requireSuperAdmin, async (req, res) =
 });
 
 router.post('/tenants', authenticate, requireSuperAdmin, validate(CreateTenantSchema), async (req, res) => {
+  let finalCode = '';
   try {
     const { code, name, domain, tax_id, tax_office, address, iban, contact_person, phone, plan, title, admin_user } = req.body;
 
@@ -754,7 +755,7 @@ router.post('/tenants', authenticate, requireSuperAdmin, validate(CreateTenantSc
     const existing = await tenantStore.readAll();
     const codes = new Set(existing.map(t => t.code));
 
-    let finalCode = (code || '').trim().toUpperCase();
+    finalCode = (code || '').trim().toUpperCase();
     if (!finalCode) {
       // domain'in ilk kısmını al (tesla.com → TESLA)
       const domainBase = domain.split('.')[0].toUpperCase().replace(/[^A-Z0-9]/g, '');
